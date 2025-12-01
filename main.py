@@ -1,12 +1,13 @@
+import sys
 import yaml
 import numpy as np
 import matplotlib.pyplot as plt
 
-NUM_SHARDS: int = 16
+num_shards: int = int(sys.argv[1])
 BAR_WIDTH = 0.25
 
 def get_data(yaml_dict, getter, default=0):
-    result = [default for _ in range(NUM_SHARDS)]
+    result = [default for _ in range(num_shards)]
 
     for el in yaml_dict:
         result[el['shard']] = getter(el)
@@ -34,7 +35,7 @@ def make_plot(title: str, filename: str, xlabel: str, ylabel: str, asymmetric_da
     plt.savefig(filename)
 
 def make_plot_getter(title: str, filename: str, ylabel: str, asymmetric_data, symmetric_data, getter):
-    make_plot(title, filename, "shard", ylabel, get_data(asymmetric_data, getter), get_data(symmetric_data, getter), list(range(NUM_SHARDS)))
+    make_plot(title, filename, "shard", ylabel, get_data(asymmetric_data, getter), get_data(symmetric_data, getter), list(range(num_shards)))
 
 def load_data(raw_output: str):
     yaml_part = raw_output.split('Starting evaluation...\n---\n')[1]

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 IO_TESTER=$1
+PLOT_NUM_SHARDS=$2
 
 mkdir -p build
 cd build
@@ -21,4 +22,4 @@ fi
 
 rmdir temp
 
-python3 ../main.py
+python3 ../main.py $PLOT_NUM_SHARDS
