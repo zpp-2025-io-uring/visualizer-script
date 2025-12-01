@@ -1,9 +1,14 @@
 import sys
 import yaml
 import numpy as np
+import argparse
 import matplotlib.pyplot as plt
 
-num_shards: int = int(sys.argv[1])
+parser = argparse.ArgumentParser(description="IO Tester Visualizer")
+parser.add_argument("num_shards", type=int, help="Number of shards")
+args = parser.parse_args()
+
+num_shards: int = args.num_shards
 BAR_WIDTH = 0.25
 
 def get_data(yaml_dict, getter, default=0):
