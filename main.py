@@ -36,11 +36,16 @@ def make_plot(title: str, filename: str, xlabel: str, ylabel: str, asymmetric_da
 def make_plot_getter(title: str, filename: str, ylabel: str, asymmetric_data, symmetric_data, getter):
     make_plot(title, filename, "shard", ylabel, get_data(asymmetric_data, getter), get_data(symmetric_data, getter), list(range(NUM_SHARDS)))
 
+def load_data(raw_output: str):
+    yaml_part = raw_output.split('Starting evaluation...\n---\n')[1]
+    yaml_part = yaml_part.removesuffix("...\n")
+    return yaml.safe_load(yaml_part)
+
 with open("asynchronous.in", 'r') as f:
-    asymmetric_data = yaml.safe_load(f.read())
+    asymmetric_data = load_data(f.read())
 
 with open("synchronous.in", 'r') as f:
-    symmetric_data = yaml.safe_load(f.read())
+    symmetric_data = load_data(f.read())
 
 get_throughput = lambda x: x['big_writes']['throughput']
 make_plot_getter("Throughput", "throughput.png", "kB/s", asymmetric_data, symmetric_data, get_throughput)
