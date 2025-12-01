@@ -8,16 +8,16 @@ cd build
 
 mkdir -p temp
 
-if "$IO_TESTER" --conf ../config.yaml --storage './temp' > asynchronous.in; then
-    echo "Successfully ran asynchronous benchmark"
+if "$IO_TESTER" --conf ../config.yaml --storage './temp' > asymmetric.in; then
+    echo "Successfully ran asymmetric benchmark"
 else
-    echo "Asynchronous benchmark failed"
+    echo "Asymmetric benchmark failed"
 fi
 
-if "$IO_TESTER" --conf ../config.yaml --storage './temp' --reactor-backend io_uring > synchronous.in; then
-    echo "Successfully ran synchronous benchmark"
+if "$IO_TESTER" --conf ../config.yaml --storage './temp' --reactor-backend io_uring > symmetric.in; then
+    echo "Successfully ran symmetric benchmark"
 else
-    echo "Synchronous benchmark failed"
+    echo "Symmetric benchmark failed"
 fi
 
 rmdir temp

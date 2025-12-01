@@ -47,10 +47,10 @@ def load_data(raw_output: str):
     yaml_part = yaml_part.removesuffix("...\n")
     return yaml.safe_load(yaml_part)
 
-with open("asynchronous.in", 'r') as f:
+with open("asymmetric.in", 'r') as f:
     asymmetric_data = load_data(f.read())
 
-with open("synchronous.in", 'r') as f:
+with open("symmetric.in", 'r') as f:
     symmetric_data = load_data(f.read())
 
 get_throughput = lambda x: x['big_writes']['throughput']
