@@ -52,7 +52,11 @@ def make_plot(title: str, filename: str, xlabel: str, ylabel: str, asymmetric_da
     )
 
     fig.update_layout(bargap=0.5, bargroupgap=0.1)
-    fig.update_xaxes(tickmode="linear", dtick=1)
+
+    if xticks:
+        fig.update_xaxes(tickmode="linear", dtick=1)
+    else:
+        fig.update_xaxes(showticklabels=False)
 
     # Optional: show values on top of bars
     fig.update_traces(texttemplate="%{y}", textposition="outside")
@@ -61,7 +65,7 @@ def make_plot(title: str, filename: str, xlabel: str, ylabel: str, asymmetric_da
 
 def make_plot_getter(title: str, filename: str, ylabel: str, asymmetric_data, symmetric_data, getter):
     num_shards = len(symmetric_data)
-    make_plot(title, filename, "shard", ylabel, get_data(asymmetric_data, getter, num_shards), get_data(symmetric_data, getter, num_shards), list(range(num_shards)))
+    make_plot(title, filename, "shard", ylabel, get_data(asymmetric_data, getter, num_shards), get_data(symmetric_data, getter, num_shards), True)
 
 def load_data(raw_output: str):
     yaml_part = raw_output.split('---\n')[1]
@@ -105,7 +109,7 @@ def plot_data_point(data_point, asymmetric_data, symmetric_data):
 
     asymmetric_total = total_data(asymmetric_data, getter)
     symmetric_total = total_data(symmetric_data, getter)
-    make_plot(f"Total {plot_title}", f"auto_total_{file_basename}.svg", None, None, [asymmetric_total], [symmetric_total], [])
+    make_plot(f"Total {plot_title}", f"auto_total_{file_basename}.svg", None, None, [asymmetric_total], [symmetric_total], False)
     print(f"{plot_title}: asymmetric: {asymmetric_total:.4f}, symmetric: {symmetric_total:.4f}" + (f", percentage: {asymmetric_total * 100 / symmetric_total:.4f}%" if symmetric_total != 0 else ""))
 
 def auto_generate(asymmetric_data, symmetric_data):
