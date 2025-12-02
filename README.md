@@ -3,7 +3,9 @@
 ## Running
 
 ```bash
-./run.sh [path_to_io_tester] [num_shards]
+./run.sh [path_to_io_tester] [path_to_confic]
 ```
 
-Num shards is used for plot generation, not the benchmark itself.
+```bash
+./run_rpc.sh [path_to_rpc_tester] [path_to_confic]
+```

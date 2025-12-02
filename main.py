@@ -45,7 +45,7 @@ def make_plot_getter(title: str, filename: str, ylabel: str, asymmetric_data, sy
     make_plot(title, filename, "shard", ylabel, get_data(asymmetric_data, getter, num_shards), get_data(symmetric_data, getter, num_shards), list(range(num_shards)))
 
 def load_data(raw_output: str):
-    yaml_part = raw_output.split('Starting evaluation...\n---\n')[1]
+    yaml_part = raw_output.split('---\n')[1]
     yaml_part = yaml_part.removesuffix("...\n")
     return yaml.safe_load(yaml_part)
 
