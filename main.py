@@ -34,10 +34,13 @@ def make_plot(title: str, filename: str, xlabel: str, ylabel: str, asymmetric_da
     plt.bar(br2, symmetric_data, width=BAR_WIDTH, color='blue', label='symmetric')
     plt.xticks([r + BAR_WIDTH / 2 for r in range(size)], xticks)
     plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
+    if xlabel is not None:
+        plt.xlabel(xlabel)
+    if ylabel is not None:
+        plt.ylabel(ylabel)
     plt.legend()
     plt.savefig(filename)
+    plt.close()
 
 def make_plot_getter(title: str, filename: str, ylabel: str, asymmetric_data, symmetric_data, getter):
     make_plot(title, filename, "shard", ylabel, get_data(asymmetric_data, getter), get_data(symmetric_data, getter), list(range(num_shards)))
@@ -47,29 +50,54 @@ def load_data(raw_output: str):
     yaml_part = yaml_part.removesuffix("...\n")
     return yaml.safe_load(yaml_part)
 
+
+def auto_generate_data_points(asymmetric_data, symmetric_data):
+    data_points = set()
+
+    def walk_tree(prefix, data):
+        if not isinstance(data, dict):
+            return [prefix]
+
+        result = []
+        for key, val in data.items():
+            result += walk_tree(prefix + [key], val)
+
+        return result
+    
+    for el in asymmetric_data:
+        data_points |= set([tuple(x) for x in walk_tree([], el)])
+
+    for el in symmetric_data:
+        data_points |= set([tuple(x) for x in walk_tree([], el)])
+
+    data_points.remove(('shard',))
+
+    return data_points
+
+def plot_data_point(data_point, asymmetric_data, symmetric_data):
+    def getter(data):
+        for point in data_point:
+            data = data[point]
+        return data
+    
+    plot_title: str = " ".join(data_point).capitalize()
+    file_basename: str = "_".join(data_point).replace('/', '_')
+    
+    make_plot_getter(plot_title, f"auto_{file_basename}.png", None, asymmetric_data, symmetric_data, getter)
+
+    asymmetric_total = total_data(asymmetric_data, getter)
+    symmetric_total = total_data(symmetric_data, getter)
+    make_plot(f"Total {plot_title}", f"auto_total_{file_basename}.png", None, None, [asymmetric_total], [symmetric_total], [])
+    print(f"{plot_title}: asymmetric: {asymmetric_total}, symmetric: {symmetric_total}" + (f" percentage: {asymmetric_total * 100 / symmetric_total})" if symmetric_total != 0 else ""))
+
+def auto_generate(asymmetric_data, symmetric_data):
+    for data_point in auto_generate_data_points(asymmetric_data, symmetric_data):
+        plot_data_point(data_point, asymmetric_data, symmetric_data)
+
 with open("asymmetric.in", 'r') as f:
     asymmetric_data = load_data(f.read())
 
 with open("symmetric.in", 'r') as f:
     symmetric_data = load_data(f.read())
 
-get_throughput = lambda x: x['big_writes']['throughput']
-make_plot_getter("Throughput", "throughput.png", "kB/s", asymmetric_data, symmetric_data, get_throughput)
-
-get_iops = lambda x: x['big_writes']['IOPS']
-make_plot_getter("IOPS", "iops.png", "IO/s", asymmetric_data, symmetric_data, get_iops)
-
-make_plot_getter("Average latency", "average_latency.png", "usec", asymmetric_data, symmetric_data, lambda x: x['big_writes']['latencies']['average'])
-make_plot_getter("p0.5 latency", "p05_latency.png", "usec", asymmetric_data, symmetric_data, lambda x: x['big_writes']['latencies']['p0.5'])
-make_plot_getter("p0.95 latency", "p095_latency.png", "usec", asymmetric_data, symmetric_data, lambda x: x['big_writes']['latencies']['p0.95'])
-make_plot_getter("p0.99 latency", "p099_latency.png", "usec", asymmetric_data, symmetric_data, lambda x: x['big_writes']['latencies']['p0.99'])
-make_plot_getter("p0.999 latency", "p0999_latency.png", "usec", asymmetric_data, symmetric_data, lambda x: x['big_writes']['latencies']['p0.999'])
-make_plot_getter("Max latency", "max_latency.png", "usec", asymmetric_data, symmetric_data, lambda x: x['big_writes']['latencies']['max'])
-
-get_total_requests = lambda x: x['big_writes']['stats']['total_requests']
-make_plot_getter("Total requests", "total_requests.png", "count", asymmetric_data, symmetric_data, get_total_requests)
-
-total_getters = {'throughput': lambda x: total_data(x, get_throughput), "IOPS": lambda x: total_data(x, get_iops), "requests": lambda x: total_data(x, get_total_requests)}
-
-for key, getter in total_getters.items():
-    make_plot(f"Total {key}", f"total_{key}.png", key, "", [getter(asymmetric_data)], [getter(symmetric_data)], [])
+auto_generate(asymmetric_data, symmetric_data)
