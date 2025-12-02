@@ -3,6 +3,8 @@ import yaml
 import numpy as np
 import argparse
 import matplotlib.pyplot as plt
+import plotly.express as px
+import pandas as pd
 
 parser = argparse.ArgumentParser(description="IO Tester Visualizer")
 args = parser.parse_args()
@@ -22,23 +24,40 @@ def total_data(yaml_dict, getter):
     return np.sum(result)
 
 def make_plot(title: str, filename: str, xlabel: str, ylabel: str, asymmetric_data, symmetric_data, xticks):
-    size = max(len(asymmetric_data), len(symmetric_data))
+    # ensure lengths match
+    if len(asymmetric_data) != len(symmetric_data):
+        raise ValueError(f"Asymmetric length {len(asymmetric_data)} != Symmetric length {len(symmetric_data)}")
+    size = len(symmetric_data)
 
-    br1 = np.arange(size) 
-    br2 = [x + BAR_WIDTH for x in br1] 
+    df = pd.DataFrame({
+        "Shard": list(range(0, size)),
+        "Asymmetric": asymmetric_data,
+        "Symmetric": symmetric_data
+    })
 
-    plt.figure()
-    plt.bar(br1, asymmetric_data, width=BAR_WIDTH, color='red', label="asymmetric")
-    plt.bar(br2, symmetric_data, width=BAR_WIDTH, color='blue', label='symmetric')
-    plt.xticks([r + BAR_WIDTH / 2 for r in range(size)], xticks)
-    plt.title(title)
-    if xlabel is not None:
-        plt.xlabel(xlabel)
-    if ylabel is not None:
-        plt.ylabel(ylabel)
-    plt.legend()
-    plt.savefig(filename)
-    plt.close()
+    # Convert to long form
+    df_long = df.melt(id_vars="Shard", value_vars=["Asymmetric", "Symmetric"],
+                    var_name="Type", value_name="Value")
+
+    labels = {"Shard": xlabel if xlabel is not None else "", "Value": ylabel if ylabel is not None else "", "Type": "Type"}
+
+    # Plot grouped bar chart
+    fig = px.bar(df_long,
+                x="Shard",
+                y="Value",
+                color="Type",
+                labels=labels,
+                barmode="group",
+                title=title,
+    )
+
+    fig.update_layout(bargap=0.5, bargroupgap=0.1)
+    fig.update_xaxes(tickmode="linear", dtick=1)
+
+    # Optional: show values on top of bars
+    fig.update_traces(texttemplate="%{y}", textposition="outside")
+
+    fig.write_image(filename)
 
 def make_plot_getter(title: str, filename: str, ylabel: str, asymmetric_data, symmetric_data, getter):
     num_shards = len(symmetric_data)
@@ -79,14 +98,14 @@ def plot_data_point(data_point, asymmetric_data, symmetric_data):
             data = data[point]
         return data
     
-    plot_title: str = " ".join(data_point).capitalize()
+    plot_title: str = " ".join([x.capitalize() for x in data_point])
     file_basename: str = "_".join(data_point).replace('/', '_')
     
-    make_plot_getter(plot_title, f"auto_{file_basename}.png", None, asymmetric_data, symmetric_data, getter)
+    make_plot_getter(plot_title, f"auto_{file_basename}.svg", None, asymmetric_data, symmetric_data, getter)
 
     asymmetric_total = total_data(asymmetric_data, getter)
     symmetric_total = total_data(symmetric_data, getter)
-    make_plot(f"Total {plot_title}", f"auto_total_{file_basename}.png", None, None, [asymmetric_total], [symmetric_total], [])
+    make_plot(f"Total {plot_title}", f"auto_total_{file_basename}.svg", None, None, [asymmetric_total], [symmetric_total], [])
     print(f"{plot_title}: asymmetric: {asymmetric_total:.4f}, symmetric: {symmetric_total:.4f}" + (f", percentage: {asymmetric_total * 100 / symmetric_total:.4f}%" if symmetric_total != 0 else ""))
 
 def auto_generate(asymmetric_data, symmetric_data):
