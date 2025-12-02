@@ -5,13 +5,11 @@ import argparse
 import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(description="IO Tester Visualizer")
-parser.add_argument("num_shards", type=int, help="Number of shards")
 args = parser.parse_args()
 
-num_shards: int = args.num_shards
 BAR_WIDTH = 0.25
 
-def get_data(yaml_dict, getter, default=0):
+def get_data(yaml_dict, getter, num_shards, default=0):
     result = [default for _ in range(num_shards)]
 
     for el in yaml_dict:
@@ -43,7 +41,8 @@ def make_plot(title: str, filename: str, xlabel: str, ylabel: str, asymmetric_da
     plt.close()
 
 def make_plot_getter(title: str, filename: str, ylabel: str, asymmetric_data, symmetric_data, getter):
-    make_plot(title, filename, "shard", ylabel, get_data(asymmetric_data, getter), get_data(symmetric_data, getter), list(range(num_shards)))
+    num_shards = len(symmetric_data)
+    make_plot(title, filename, "shard", ylabel, get_data(asymmetric_data, getter, num_shards), get_data(symmetric_data, getter, num_shards), list(range(num_shards)))
 
 def load_data(raw_output: str):
     yaml_part = raw_output.split('Starting evaluation...\n---\n')[1]
@@ -88,7 +87,7 @@ def plot_data_point(data_point, asymmetric_data, symmetric_data):
     asymmetric_total = total_data(asymmetric_data, getter)
     symmetric_total = total_data(symmetric_data, getter)
     make_plot(f"Total {plot_title}", f"auto_total_{file_basename}.png", None, None, [asymmetric_total], [symmetric_total], [])
-    print(f"{plot_title}: asymmetric: {asymmetric_total}, symmetric: {symmetric_total}" + (f" percentage: {asymmetric_total * 100 / symmetric_total})" if symmetric_total != 0 else ""))
+    print(f"{plot_title}: asymmetric: {asymmetric_total:.4f}, symmetric: {symmetric_total:.4f}" + (f", percentage: {asymmetric_total * 100 / symmetric_total:.4f}%" if symmetric_total != 0 else ""))
 
 def auto_generate(asymmetric_data, symmetric_data):
     for data_point in auto_generate_data_points(asymmetric_data, symmetric_data):
