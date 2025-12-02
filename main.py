@@ -102,10 +102,10 @@ def plot_data_point(data_point, asymmetric_data, symmetric_data):
             data = data[point]
         return data
     
-    plot_title: str = " ".join(data_point).capitalize()
+    plot_title: str = " ".join(data_point)
     file_basename: str = "_".join(data_point).replace('/', '_')
     
-    make_plot_getter(plot_title, f"auto_{file_basename}.svg", None, asymmetric_data, symmetric_data, getter)
+    make_plot_getter(plot_title.capitalize(), f"auto_{file_basename}.svg", None, asymmetric_data, symmetric_data, getter)
 
     asymmetric_total = total_data(asymmetric_data, getter)
     symmetric_total = total_data(symmetric_data, getter)
