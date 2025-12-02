@@ -3,9 +3,9 @@
 ## Running
 
 ```bash
-./run.sh [path_to_io_tester] [path_to_confic]
+./run.sh [path_to_io_tester] [path_to_config]
 ```
 
 ```bash
-./run_rpc.sh [path_to_rpc_tester] [path_to_confic]
+./run_rpc.sh [path_to_rpc_tester] [path_to_config]
 ```
