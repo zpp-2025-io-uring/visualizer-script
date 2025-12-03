@@ -6,22 +6,20 @@ from os import cpu_count
 from time import sleep
 
 class rpc_test_runner:
-    def __init__(self, tester_path: Path, config_path: Path, output_dir: Path, ip_address: str):
+    def __init__(self, tester_path: Path, config_path: Path, output_dir: Path, ip_address: str, server_cpuset: str, client_cpuset: str):
         self.tester_path: Path = tester_path.resolve()
         self.config_path: Path = config_path.resolve()
         self.output_dir: Path = output_dir.resolve()
         self.ip_address = ip_address
+        self.server_cpuset = server_cpuset
+        self.client_cpuset = client_cpuset
 
     def __run_test(self, backend: str, output_filename: str):
         print(f"Running rpc_tester with backend {backend}")
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-        cpus = cpu_count()
-        server_cpus = f"0-{int(cpus/2)-1}"
-        client_cpus = f"{int(cpus/2)}-{cpus-1}"
-
         server_process = subprocess.Popen(
-            [self.tester_path, "--conf", self.config_path, "--listen", self.ip_address, "--reactor-backend", backend, "--cpuset", server_cpus],
+            [self.tester_path, "--conf", self.config_path, "--listen", self.ip_address, "--reactor-backend", backend, "--cpuset", self.server_cpuset],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -30,7 +28,7 @@ class rpc_test_runner:
         sleep(1)
 
         client = subprocess.run(
-            [self.tester_path, "--conf", self.config_path, "--connect", self.ip_address, "--reactor-backend", backend, "--cpuset", client_cpus],
+            [self.tester_path, "--conf", self.config_path, "--connect", self.ip_address, "--reactor-backend", backend, "--cpuset", self.client_cpuset],
             capture_output=True,
             text=True,
         )
@@ -80,16 +78,22 @@ class rpc_test_runner:
         print("Generating graphs")
         generate_graphs(asymmetric_data, symmetric_data, self.output_dir)
 
-def run_rpc_test(tester_path, config_path, output_dir, ip_address):
-    rpc_test_runner(Path(tester_path), Path(config_path), Path(output_dir), ip_address).run()
+def run_rpc_test(tester_path, config_path, output_dir, ip_address, server_cpuset, client_cpuset):
+    rpc_test_runner(Path(tester_path), Path(config_path), Path(output_dir), ip_address, server_cpuset, client_cpuset).run()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="io_tester runner and visualizer")
+
+    cpus = cpu_count()
+    server_cpus = f"0-{int(cpus/2)-1}"
+    client_cpus = f"{int(cpus/2)}-{cpus-1}"
 
     parser.add_argument("--tester", help="Path to io_tester", required=True)
     parser.add_argument("--config", help="Path to configuration .yaml file", required=True)
     parser.add_argument("--output-dir", help="Directory to save the output to", required=True)
     parser.add_argument("--ip", help="Ip address to connect on", default="127.0.0.5")
+    parser.add_argument("--server-cpuset", help="Cpuset for the server", default=server_cpus)
+    parser.add_argument("--client-cpuset", help="Cpuset for the client", default=client_cpus)
 
     args = parser.parse_args()
-    run_rpc_test(args.tester, args.config, args.output_dir, args.ip)
+    run_rpc_test(args.tester, args.config, args.output_dir, args.ip, args.server_cpuset, args.client_cpuset)
