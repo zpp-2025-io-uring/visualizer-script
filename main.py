@@ -1,10 +1,9 @@
-import sys
 import yaml
 import numpy as np
 import argparse
-import matplotlib.pyplot as plt
 import plotly.express as px
 import pandas as pd
+import pathlib
 
 parser = argparse.ArgumentParser(description="IO Tester Visualizer")
 args = parser.parse_args()
@@ -19,7 +18,7 @@ def get_data(yaml_dict, getter, num_shards, default=0):
 
     return result
 
-def total_data(yaml_dict, getter):
+def total_data(yaml_dict, getter):  
     result = [getter(el) for el in yaml_dict]
     return np.sum(result)
 
@@ -96,7 +95,7 @@ def auto_generate_data_points(asymmetric_data, symmetric_data):
 
     return data_points
 
-def plot_data_point(data_point, asymmetric_data, symmetric_data):
+def plot_data_point(data_point, asymmetric_data, symmetric_data, build_dir: pathlib.Path):
     def getter(data):
         for point in data_point:
             data = data[point]
@@ -104,22 +103,28 @@ def plot_data_point(data_point, asymmetric_data, symmetric_data):
     
     plot_title: str = " ".join(data_point)
     file_basename: str = "_".join(data_point).replace('/', '_')
+    filename = build_dir / pathlib.Path(f"auto_{file_basename}.svg")
     
-    make_plot_getter(plot_title.capitalize(), f"auto_{file_basename}.svg", None, asymmetric_data, symmetric_data, getter)
+    make_plot_getter(plot_title.capitalize(), filename, None, asymmetric_data, symmetric_data, getter)
 
     asymmetric_total = total_data(asymmetric_data, getter)
     symmetric_total = total_data(symmetric_data, getter)
-    make_plot(f"Total {plot_title}", f"auto_total_{file_basename}.svg", None, None, [asymmetric_total], [symmetric_total], False)
+    filename = build_dir / pathlib.Path(f"auto_total_{file_basename}.svg")
+    make_plot(f"Total {plot_title}", filename, None, None, [asymmetric_total], [symmetric_total], False)
     print(f"{plot_title}: asymmetric: {asymmetric_total:.4f}, symmetric: {symmetric_total:.4f}" + (f", percentage: {asymmetric_total * 100 / symmetric_total:.4f}%" if symmetric_total != 0 else ""))
 
-def auto_generate(asymmetric_data, symmetric_data):
+def auto_generate(asymmetric_data, symmetric_data, build_dir: pathlib.Path):
     for data_point in auto_generate_data_points(asymmetric_data, symmetric_data):
-        plot_data_point(data_point, asymmetric_data, symmetric_data)
+        plot_data_point(data_point, asymmetric_data, symmetric_data, build_dir)
 
-with open("asymmetric.in", 'r') as f:
-    asymmetric_data = load_data(f.read())
 
-with open("symmetric.in", 'r') as f:
-    symmetric_data = load_data(f.read())
+def generate_graphs_from_files(asymmetrc_file_dir: pathlib.Path, symmetrc_file_dir: pathlib.Path, build_dir: pathlib.Path):
+    with open(asymmetrc_file_dir, 'r') as f:
+        asymmetric_data = load_data(f.read())
 
-auto_generate(asymmetric_data, symmetric_data)
+    with open(symmetrc_file_dir, 'r') as f:
+        symmetric_data = load_data(f.read())
+
+    auto_generate(asymmetric_data, symmetric_data, build_dir)
+
+generate_graphs_from_files("asymmetric.in", "symmetric.in", ".")
