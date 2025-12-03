@@ -16,8 +16,12 @@ class rpc_test_runner:
         print(f"Running rpc_tester with backend {backend}")
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
+        cpus = cpu_count()
+        server_cpus = f"0-{int(cpus/2)-1}"
+        client_cpus = f"{int(cpus/2)}-{cpus-1}"
+
         server_process = subprocess.Popen(
-            [self.tester_path, "--conf", self.config_path, "--listen", self.ip_address, "--reactor-backend", backend],
+            [self.tester_path, "--conf", self.config_path, "--listen", self.ip_address, "--reactor-backend", backend, "--cpuset", server_cpus],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -26,7 +30,7 @@ class rpc_test_runner:
         sleep(1)
 
         client = subprocess.run(
-            [self.tester_path, "--conf", self.config_path, "--connect", self.ip_address, "--reactor-backend", backend],
+            [self.tester_path, "--conf", self.config_path, "--connect", self.ip_address, "--reactor-backend", backend, "--cpuset", client_cpus],
             capture_output=True,
             text=True,
         )
