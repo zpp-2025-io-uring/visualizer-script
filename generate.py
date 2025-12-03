@@ -5,9 +5,6 @@ import plotly.express as px
 import pandas as pd
 import pathlib
 
-parser = argparse.ArgumentParser(description="IO Tester Visualizer")
-args = parser.parse_args()
-
 BAR_WIDTH = 0.25
 
 def get_data(yaml_dict, getter, num_shards, default=0):
@@ -118,13 +115,5 @@ def auto_generate(asymmetric_data, symmetric_data, build_dir: pathlib.Path):
         plot_data_point(data_point, asymmetric_data, symmetric_data, build_dir)
 
 
-def generate_graphs_from_files(asymmetrc_file_dir: pathlib.Path, symmetrc_file_dir: pathlib.Path, build_dir: pathlib.Path):
-    with open(asymmetrc_file_dir, 'r') as f:
-        asymmetric_data = load_data(f.read())
-
-    with open(symmetrc_file_dir, 'r') as f:
-        symmetric_data = load_data(f.read())
-
-    auto_generate(asymmetric_data, symmetric_data, build_dir)
-
-generate_graphs_from_files("asymmetric.in", "symmetric.in", ".")
+def generate_graphs(asymmetric_data, symmetric_data, build_dir: pathlib.Path):
+    auto_generate(load_data(asymmetric_data), load_data(symmetric_data), build_dir)
