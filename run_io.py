@@ -5,7 +5,7 @@ from generate import generate_graphs
 
 class io_test_runner:
     def __init__(self, tester_path: Path, config_path: Path, output_dir: Path, storage_dir: Path):
-        self.io_tester_path: Path = tester_path.resolve()
+        self.tester_path: Path = tester_path.resolve()
         self.config_path: Path = config_path.resolve()
         self.output_dir: Path = output_dir.resolve()
         self.storage_dir: Path = storage_dir.resolve()
@@ -16,10 +16,9 @@ class io_test_runner:
         self.storage_dir.mkdir(parents=True, exist_ok=True)
 
         result = subprocess.run(
-            [self.io_tester_path, "--conf", self.config_path, "--storage", self.storage_dir, "--reactor-backend", backend],
+            [self.tester_path, "--conf", self.config_path, "--storage", self.storage_dir, "--reactor-backend", backend],
             capture_output=True,
             text=True,
-            check=True
         )
 
         stdout_output_path: Path = self.output_dir / (output_filename + ".out")
@@ -33,6 +32,10 @@ class io_test_runner:
             print(result.stderr, file=f)
 
         self.storage_dir.rmdir()
+
+        if (err := result.returncode != 0):
+            raise RuntimeError(f"Tester failed with exit code {err}")
+
 
         return result.stdout
 
@@ -50,7 +53,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="io_tester runner and visualizer")
 
     parser.add_argument("--tester", help="Path to io_tester", required=True)
-    parser.add_argument("--config", help="Enable verbose output", required=True)
+    parser.add_argument("--config", help="Path to configuration .yaml file", required=True)
     parser.add_argument("--output-dir", help="Directory to save the output to", required=True)
     parser.add_argument("--storage", help="Directory for temporary files", default="./temp")
 

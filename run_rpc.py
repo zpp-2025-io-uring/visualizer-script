@@ -1,0 +1,91 @@
+import argparse
+import subprocess
+from pathlib import Path
+from generate import generate_graphs
+from os import cpu_count
+from time import sleep
+
+class rpc_test_runner:
+    def __init__(self, tester_path: Path, config_path: Path, output_dir: Path, ip_address: str):
+        self.tester_path: Path = tester_path.resolve()
+        self.config_path: Path = config_path.resolve()
+        self.output_dir: Path = output_dir.resolve()
+        self.ip_address = ip_address
+
+    def __run_test(self, backend: str, output_filename: str):
+        print(f"Running rpc_tester with backend {backend}")
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+
+        server_process = subprocess.Popen(
+            [self.tester_path, "--conf", self.config_path, "--listen", self.ip_address, "--reactor-backend", backend],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+
+        sleep(1)
+
+        client = subprocess.run(
+            [self.tester_path, "--conf", self.config_path, "--connect", self.ip_address, "--reactor-backend", backend],
+            capture_output=True,
+            text=True,
+        )
+
+        server_process.terminate()
+
+        sleep(1)
+
+        if server_process.poll() is None:
+            server_process.kill()
+
+        server_process.wait()
+
+        server_stdout, server_stderr = server_process.communicate()
+
+        server_stdout_output_path: Path = self.output_dir / (output_filename + ".server.out")
+
+        with open(server_stdout_output_path, "w") as f:
+            print(server_stdout, file=f)
+
+        server_stderr_output_path: Path = self.output_dir / (output_filename + ".server.err")
+
+        with open(server_stderr_output_path, "w") as f:
+            print(server_stderr, file=f)
+
+        client_stdout_output_path: Path = self.output_dir / (output_filename + ".client.out")
+
+        with open(client_stdout_output_path, "w") as f:
+            print(client.stdout, file=f)
+
+        client_stderr_output_path: Path = self.output_dir / (output_filename + ".client.err")
+
+        with open(client_stderr_output_path, "w") as f:
+            print(client.stderr, file=f)
+
+        if (err := server_process.returncode) != 0:
+            raise RuntimeError(f"Server failed with exit code {err}")
+        
+        if (err := client.returncode != 0):
+            raise RuntimeError(f"Client failed with exit code {err}")
+
+        return client.stdout
+
+    def run(self):
+        asymmetric_data = self.__run_test("asymmetric_io_uring", "asymmetric")
+        symmetric_data = self.__run_test("io_uring", "symmetric")
+        print("Generating graphs")
+        generate_graphs(asymmetric_data, symmetric_data, self.output_dir)
+
+def run_rpc_test(tester_path, config_path, output_dir, ip_address):
+    rpc_test_runner(Path(tester_path), Path(config_path), Path(output_dir), ip_address).run()
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="io_tester runner and visualizer")
+
+    parser.add_argument("--tester", help="Path to io_tester", required=True)
+    parser.add_argument("--config", help="Path to configuration .yaml file", required=True)
+    parser.add_argument("--output-dir", help="Directory to save the output to", required=True)
+    parser.add_argument("--ip", help="Ip address to connect on", default="127.0.0.5")
+
+    args = parser.parse_args()
+    run_rpc_test(args.tester, args.config, args.output_dir, args.ip)
