@@ -75,7 +75,7 @@ class rpc_test_runner:
     def run(self):
         asymmetric_data = self.__run_test("asymmetric_io_uring", "asymmetric")
         symmetric_data = self.__run_test("io_uring", "symmetric")
-        print("Generating graphs", asy)
+        print("Generating graphs")
         generate_graphs(asymmetric_data, symmetric_data, self.output_dir)
 
 def run_rpc_test(tester_path, config_path, output_dir, ip_address, server_cpuset, client_cpuset):
