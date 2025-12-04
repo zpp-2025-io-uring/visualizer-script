@@ -60,7 +60,7 @@ def make_plot(title: str, filename: str, xlabel: str, ylabel: str, asymmetric_da
     fig.write_image(filename)
 
 def make_plot_getter(title: str, filename: str, ylabel: str, asymmetric_data, symmetric_data, getter):
-    num_shards = len(symmetric_data)
+    num_shards = max(len(asymmetric_data), len(symmetric_data))
     make_plot(title, filename, "shard", ylabel, get_data(asymmetric_data, getter, num_shards), get_data(symmetric_data, getter, num_shards), True)
 
 def load_data(raw_output: str):
