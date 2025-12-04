@@ -48,14 +48,15 @@ class io_test_runner:
 def run_io_test(tester_path, config_path, output_dir, storage_dir):
     io_test_runner(Path(tester_path), Path(config_path), Path(output_dir), Path(storage_dir)).run()
 
+def configure_run_io_parser(parser: argparse.ArgumentParser):
+    parser.add_argument("--tester", help="path to io_tester", required=True)
+    parser.add_argument("--config", help="path to configuration .yaml file", required=True)
+    parser.add_argument("--output-dir", help="directory to save the output to", required=True)
+    parser.add_argument("--storage", help="directory for temporary files", default="./temp")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="io_tester runner and visualizer")
-
-    parser.add_argument("--tester", help="Path to io_tester", required=True)
-    parser.add_argument("--config", help="Path to configuration .yaml file", required=True)
-    parser.add_argument("--output-dir", help="Directory to save the output to", required=True)
-    parser.add_argument("--storage", help="Directory for temporary files", default="./temp")
-
+    configure_run_io_parser(parser)
     args = parser.parse_args()
     run_io_test(args.tester, args.config, args.output_dir, args.storage)

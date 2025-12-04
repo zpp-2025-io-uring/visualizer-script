@@ -81,19 +81,21 @@ class rpc_test_runner:
 def run_rpc_test(tester_path, config_path, output_dir, ip_address, server_cpuset, client_cpuset):
     rpc_test_runner(Path(tester_path), Path(config_path), Path(output_dir), ip_address, server_cpuset, client_cpuset).run()
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="rpc_tester runner and visualizer")
 
+def configure_run_rpc_parser(parser: argparse.ArgumentParser):
     cpus = cpu_count()
     server_cpus = f"0-{int(cpus/2)-1}"
     client_cpus = f"{int(cpus/2)}-{cpus-1}"
 
-    parser.add_argument("--tester", help="Path to rpc_tester", required=True)
-    parser.add_argument("--config", help="Path to configuration .yaml file", required=True)
-    parser.add_argument("--output-dir", help="Directory to save the output to", required=True)
-    parser.add_argument("--ip", help="Ip address to connect on", default="127.0.0.5")
-    parser.add_argument("--server-cpuset", help="Cpuset for the server", default=server_cpus)
-    parser.add_argument("--client-cpuset", help="Cpuset for the client", default=client_cpus)
+    parser.add_argument("--tester", help="path to rpc_tester", required=True)
+    parser.add_argument("--config", help="path to configuration .yaml file", required=True)
+    parser.add_argument("--output-dir", help="directory to save the output to", required=True)
+    parser.add_argument("--ip", help="ip address to connect on", default="127.0.0.5")
+    parser.add_argument("--server-cpuset", help="cpuset for the server", default=server_cpus)
+    parser.add_argument("--client-cpuset", help="cpuset for the client", default=client_cpus)
 
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="rpc_tester runner and visualizer")
+    configure_run_rpc_parser(parser)
     args = parser.parse_args()
     run_rpc_test(args.tester, args.config, args.output_dir, args.ip, args.server_cpuset, args.client_cpuset)
