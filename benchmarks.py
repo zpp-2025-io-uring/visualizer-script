@@ -5,16 +5,18 @@ from run_io import run_io_test
 from run_rpc import run_rpc_test
 
 class benchmark_suite_runner:
-    def __init__(self, benchmarks, io_tester_path: Path, rpc_tester_path: Path, output_dir: Path, storage_dir: Path, ip_address: str, server_cpuset: str, client_cpuset: str, io_asymmetric_cpuset: str, io_symmetric_cpuset):
-        self.io_tester_path: Path = io_tester_path.expanduser().resolve()
-        self.rpc_tester_path: Path = rpc_tester_path.expanduser().resolve()
-        self.output_dir: Path = output_dir.resolve()
-        self.storage_dir: Path = storage_dir.resolve()
-        self.ip_address = ip_address
-        self.server_cpuset = server_cpuset
-        self.client_cpuset = client_cpuset
-        self.io_asymmetric_cpuset = io_asymmetric_cpuset
-        self.io_symmetric_cpuset = io_symmetric_cpuset
+    def __init__(self, benchmarks, config: dict):
+        self.io_tester_path: Path = Path(config['io_tester_path']).expanduser().resolve()
+        self.rpc_tester_path: Path = Path(config['rpc_tester_path']).expanduser().resolve()
+        self.output_dir: Path = Path(config['output_dir']).resolve()
+        self.storage_dir: Path = Path(config['storage_dir']).resolve()
+        self.ip_address = config['ip_address']
+        self.io_asymmetric_cpuset = config['io_asymmetric_cpuset']
+        self.io_symmetric_cpuset = config['io_symmetric_cpuset']
+        self.rpc_asymmetric_server_cpuset = config['rpc_asymmetric_server_cpuset']
+        self.rpc_symmetric_server_cpuset = config['rpc_symmetric_server_cpuset']
+        self.rpc_asymmetric_client_cpuset = config['rpc_asymmetric_client_cpuset'] 
+        self.rpc_symmetric_client_cpuset = config['rpc_symmetric_client_cpuset'] 
 
         self.benchmarks = benchmarks
 
@@ -36,7 +38,7 @@ class benchmark_suite_runner:
                 case "io":
                     run_io_test(self.io_tester_path, config_path, output_dir, self.storage_dir, self.io_asymmetric_cpuset, self.io_symmetric_cpuset)
                 case "rpc":
-                    run_rpc_test(self.rpc_tester_path, config_path, output_dir, self.ip_address, self.server_cpuset, self.client_cpuset)
+                    run_rpc_test(self.rpc_tester_path, config_path, output_dir, self.ip_address, self.rpc_asymmetric_client_cpuset, self.rpc_symmetric_server_cpuset, self.rpc_asymmetric_client_cpuset, self.rpc_symmetric_client_cpuset)
                 case _:
                     raise Exception(f"Unknown benchmark type {benchmark['type']}")
 
@@ -49,16 +51,9 @@ def run_benchmark_suite_args(args):
     with open(config_path, "r") as f:
         config_yaml = f.read()
 
-    config = safe_load(config_yaml)
     runner = benchmark_suite_runner(
         safe_load(benchmark_yaml),
-        Path(config['io_tester_path']),
-        Path(config['rpc_tester_path']),
-        Path(config['output_dir']),
-        Path(config['storage_dir']),
-        config['ip_address'],
-        config['server_cpuset'],
-        config['client_cpuset']
+        safe_load(config_yaml)
     )
 
     runner.run()
