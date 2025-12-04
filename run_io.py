@@ -61,7 +61,7 @@ def configure_run_io_parser(parser: argparse.ArgumentParser):
     parser.add_argument("--config", help="path to configuration .yaml file", required=True)
     parser.add_argument("--output-dir", help="directory to save the output to", required=True)
     parser.add_argument("--storage", help="directory for temporary files", default="./temp")
-    parser.add_argument("--asymmetric--cpuset", help="cpuset for the asymmetric seastar app", default=f"0-{cpus-1}")
-    parser.add_argument("--symmetric--cpuset", help="cpuset for the symmetric seastar app", default=f"0-{cpus-1}")
+    parser.add_argument("--asymmetric-cpuset", help="cpuset for the asymmetric seastar app", default=f"0-{cpus-1}")
+    parser.add_argument("--symmetric-cpuset", help="cpuset for the symmetric seastar app", default=f"0-{cpus-1}")
     parser.set_defaults(func=run_io_test_args)
     parser.formatter_class = argparse.ArgumentDefaultsHelpFormatter
