@@ -1,22 +1,25 @@
 import argparse
+from os import cpu_count
 import subprocess
 from pathlib import Path
 from generate import generate_graphs
 
 class io_test_runner:
-    def __init__(self, tester_path: Path, config_path: Path, output_dir: Path, storage_dir: Path):
+    def __init__(self, tester_path: Path, config_path: Path, output_dir: Path, storage_dir: Path, asymmetric_cpuset: str, symmetric_cpuset: str):
         self.tester_path: Path = tester_path.resolve()
         self.config_path: Path = config_path.resolve()
         self.output_dir: Path = output_dir.resolve()
         self.storage_dir: Path = storage_dir.resolve()
+        self.asymmetric_cpuset = asymmetric_cpuset
+        self.symmetric_cpuset = symmetric_cpuset
 
-    def __run_test(self, backend: str, output_filename: str):
+    def __run_test(self, backend: str, output_filename: str, cpuset: str):
         print(f"Running io_tester with backend {backend}")
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.storage_dir.mkdir(parents=True, exist_ok=True)
 
         result = subprocess.run(
-            [self.tester_path, "--conf", self.config_path, "--storage", self.storage_dir, "--reactor-backend", backend],
+            [self.tester_path, "--conf", self.config_path, "--storage", self.storage_dir, "--reactor-backend", backend, "--cpuset", cpuset],
             capture_output=True,
             text=True,
         )
@@ -40,21 +43,25 @@ class io_test_runner:
         return result.stdout
 
     def run(self):
-        asymmetric_data = self.__run_test("asymmetric_io_uring", "asymmetric")
-        symmetric_data = self.__run_test("io_uring", "symmetric")
+        asymmetric_data = self.__run_test("asymmetric_io_uring", "asymmetric", self.asymmetric_cpuset)
+        symmetric_data = self.__run_test("io_uring", "symmetric", self.symmetric_cpuset)
         print("Generating graphs")
         generate_graphs(asymmetric_data, symmetric_data, self.output_dir)
 
-def run_io_test(tester_path, config_path, output_dir, storage_dir):
-    io_test_runner(Path(tester_path), Path(config_path), Path(output_dir), Path(storage_dir)).run()
+def run_io_test(tester_path, config_path, output_dir, storage_dir, asymmetric_cpuset, symmetric_cpuset):
+    io_test_runner(Path(tester_path), Path(config_path), Path(output_dir), Path(storage_dir), asymmetric_cpuset, symmetric_cpuset).run()
 
 def run_io_test_args(args):
-    run_io_test(args.tester, args.config, args.output_dir, args.storage)
+    run_io_test(args.tester, args.config, args.output_dir, args.storage, args.asymmetric_cpuset, args.symmetric_cpuset)
 
 def configure_run_io_parser(parser: argparse.ArgumentParser):
+    cpus = cpu_count()
+
     parser.add_argument("--tester", help="path to io_tester", required=True)
     parser.add_argument("--config", help="path to configuration .yaml file", required=True)
     parser.add_argument("--output-dir", help="directory to save the output to", required=True)
     parser.add_argument("--storage", help="directory for temporary files", default="./temp")
+    parser.add_argument("--asymmetric--cpuset", help="cpuset for the asymmetric seastar app", default=f"0-{cpus-1}")
+    parser.add_argument("--symmetric--cpuset", help="cpuset for the symmetric seastar app", default=f"0-{cpus-1}")
     parser.set_defaults(func=run_io_test_args)
     parser.formatter_class = argparse.ArgumentDefaultsHelpFormatter

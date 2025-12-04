@@ -5,7 +5,7 @@ from run_io import run_io_test
 from run_rpc import run_rpc_test
 
 class benchmark_suite_runner:
-    def __init__(self, benchmarks, io_tester_path: Path, rpc_tester_path: Path, output_dir: Path, storage_dir: Path, ip_address: str, server_cpuset: str, client_cpuset: str):
+    def __init__(self, benchmarks, io_tester_path: Path, rpc_tester_path: Path, output_dir: Path, storage_dir: Path, ip_address: str, server_cpuset: str, client_cpuset: str, io_asymmetric_cpuset: str, io_symmetric_cpuset):
         self.io_tester_path: Path = io_tester_path.expanduser().resolve()
         self.rpc_tester_path: Path = rpc_tester_path.expanduser().resolve()
         self.output_dir: Path = output_dir.resolve()
@@ -13,6 +13,8 @@ class benchmark_suite_runner:
         self.ip_address = ip_address
         self.server_cpuset = server_cpuset
         self.client_cpuset = client_cpuset
+        self.io_asymmetric_cpuset = io_asymmetric_cpuset
+        self.io_symmetric_cpuset = io_symmetric_cpuset
 
         self.benchmarks = benchmarks
 
@@ -32,7 +34,7 @@ class benchmark_suite_runner:
             print(f"Running benchmark {test_name}")
             match benchmark['type']:
                 case "io":
-                    run_io_test(self.io_tester_path, config_path, output_dir, self.storage_dir)
+                    run_io_test(self.io_tester_path, config_path, output_dir, self.storage_dir, self.io_asymmetric_cpuset, self.io_symmetric_cpuset)
                 case "rpc":
                     run_rpc_test(self.rpc_tester_path, config_path, output_dir, self.ip_address, self.server_cpuset, self.client_cpuset)
                 case _:
