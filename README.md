@@ -11,7 +11,7 @@ to check the required arguments
 ## Benchmark suite configuration
 The benchmark suite mode requires two .yaml files:
 
-### `--banchmark`
+### `--benchmark`
 
 Consists of a list of the following elements:
 ```yaml
