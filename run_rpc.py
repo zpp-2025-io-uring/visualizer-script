@@ -81,6 +81,8 @@ class rpc_test_runner:
 def run_rpc_test(tester_path, config_path, output_dir, ip_address, server_cpuset, client_cpuset):
     rpc_test_runner(Path(tester_path), Path(config_path), Path(output_dir), ip_address, server_cpuset, client_cpuset).run()
 
+def run_rpc_test_args(args):
+    run_rpc_test(args.tester, args.config, args.output_dir, args.ip, args.server_cpuset, args.client_cpuset)
 
 def configure_run_rpc_parser(parser: argparse.ArgumentParser):
     cpus = cpu_count()
@@ -93,9 +95,5 @@ def configure_run_rpc_parser(parser: argparse.ArgumentParser):
     parser.add_argument("--ip", help="ip address to connect on", default="127.0.0.5")
     parser.add_argument("--server-cpuset", help="cpuset for the server", default=server_cpus)
     parser.add_argument("--client-cpuset", help="cpuset for the client", default=client_cpus)
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="rpc_tester runner and visualizer")
-    configure_run_rpc_parser(parser)
-    args = parser.parse_args()
-    run_rpc_test(args.tester, args.config, args.output_dir, args.ip, args.server_cpuset, args.client_cpuset)
+    parser.set_defaults(func=run_rpc_test_args)
+    parser.formatter_class = argparse.ArgumentDefaultsHelpFormatter
