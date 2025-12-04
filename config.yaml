@@ -1,8 +1,0 @@
-- name: big_writes
-  type: seqread
-  shards: all
-  shard_info:
-    parallelism: 10
-    reqsize: 256kB
-    shares: 10
-    think_time: 0
