@@ -10,13 +10,13 @@ def run_redraw(asymmetric_path, symmetric_path, output_dir):
     with open(symmetric_path, "r") as f:
         symmetric_data = f.read()
 
-    with open(symmetric_path, "r") as f:
+    with open(asymmetric_path, "r") as f:
         asymmetric_data = f.read()
 
     generate_graphs(asymmetric_data, symmetric_data, output_dir)
 
 def run_redraw_args(args):
-    run_redraw(args.asymmetric_path, args.symmetric_path, args.output_dir)
+    run_redraw(args.asymmetric, args.symmetric, args.output_dir)
 
 def configure_redraw_parser(parser: argparse.ArgumentParser):
     parser.add_argument("--symmetric", help="path to symmetric results", required=True)
