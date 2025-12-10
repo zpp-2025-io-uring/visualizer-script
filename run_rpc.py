@@ -30,11 +30,22 @@ class rpc_test_runner:
 
         sleep(1)
 
-        client = subprocess.run(
-            [self.tester_path, "--conf", self.config_path, "--connect", self.ip_address, "--reactor-backend", backend, "--cpuset", client_cpuset],
-            capture_output=True,
-            text=True,
-        )
+        try:
+            client = subprocess.run(
+                [self.tester_path, "--conf", self.config_path, "--connect", self.ip_address, "--reactor-backend", backend, "--cpuset", client_cpuset],
+                capture_output=True,
+                text=True,
+            )
+        except KeyboardInterrupt:
+            server_process.terminate()
+
+            if server_process.poll() is None:
+                sleep(1)
+
+            if server_process.poll() is None:
+                server_process.kill()
+
+            raise
 
         server_process.terminate()
 
