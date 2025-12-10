@@ -72,7 +72,7 @@ def load_data(raw_output: str):
     yaml_part = yaml_part.removesuffix("...\n")
     return yaml.safe_load(yaml_part)
 
-def auto_generate_data_points(asymmetric_data, symmetric_data):
+def auto_generate_data_points(backends_data: dict):
     data_points = set()
 
     def walk_tree(prefix, data):
@@ -85,11 +85,9 @@ def auto_generate_data_points(asymmetric_data, symmetric_data):
 
         return result
     
-    for el in asymmetric_data:
-        data_points |= set([tuple(x) for x in walk_tree([], el)])
-
-    for el in symmetric_data:
-        data_points |= set([tuple(x) for x in walk_tree([], el)])
+    for data in backends_data.values():
+        for el in data:
+            data_points |= set([tuple(x) for x in walk_tree([], el)])
 
     data_points.remove(('shard',))
 
@@ -114,7 +112,7 @@ def plot_data_point(data_point, asymmetric_data, symmetric_data, build_dir: path
     print(f"{plot_title}: asymmetric: {asymmetric_total:.4f}, symmetric: {symmetric_total:.4f}" + (f", percentage: {asymmetric_total * 100 / symmetric_total:.4f}%" if symmetric_total != 0 else ""))
 
 def auto_generate(asymmetric_data, symmetric_data, build_dir: pathlib.Path):
-    for data_point in auto_generate_data_points(asymmetric_data, symmetric_data):
+    for data_point in auto_generate_data_points({'asm':asymmetric_data, 'sym':symmetric_data}):
         plot_data_point(data_point, asymmetric_data, symmetric_data, build_dir)
 
 
