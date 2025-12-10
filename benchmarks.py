@@ -1,5 +1,7 @@
 import argparse
 from pathlib import Path
+from datetime import datetime
+import subprocess
 from yaml import safe_load, safe_dump
 from run_io import run_io_test
 from run_rpc import run_rpc_test
@@ -51,9 +53,74 @@ def run_benchmark_suite_args(args):
     with open(config_path, "r") as f:
         config_yaml = f.read()
 
+    config = safe_load(config_yaml)
+    output_dir = Path(config['output_dir']).resolve()
+
+    timestamped_output_dir: Path = output_dir / datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
+    timestamped_output_dir.mkdir(exist_ok=True, parents=True)
+
+    with open(timestamped_output_dir / 'suite.yaml', 'w') as f:
+        print(benchmark_yaml, end='', file=f)
+
+    with open(timestamped_output_dir / 'config.yaml', 'w') as f:
+        print(config_yaml, end='', file=f)
+
+
+    config['output_dir'] = timestamped_output_dir
+
+    lscpu = subprocess.run(
+            ['lscpu'],
+            capture_output=True,
+            text=True,
+    )
+
+    with open(timestamped_output_dir / 'lscpu.txt', 'w') as f:
+        print(lscpu.stdout, file=f)
+
+    if lscpu.returncode != 0:
+        raise Exception("lscpu failed")
+    
+    lscpu_e = subprocess.run(
+            ['lscpu', '-e'],
+            capture_output=True,
+            text=True,
+    )
+
+    with open(timestamped_output_dir / 'lscpu_e.txt', 'w') as f:
+        print(lscpu_e.stdout, file=f)
+
+    if lscpu_e.returncode != 0:
+        raise Exception("lscpu -e failed")
+    
+    hostname = subprocess.run(
+            ['hostname'],
+            capture_output=True,
+            text=True,
+    )
+
+    with open(timestamped_output_dir / 'hostname.txt', 'w') as f:
+        print(hostname.stdout, file=f)
+
+    if hostname.returncode != 0:
+        raise Exception("hostname failed")
+    
+    git_log = subprocess.run(
+            ['git', 'log', '--since="2025-12-01"'],
+            cwd=Path(config['io_tester_path']).expanduser().resolve().parent,
+            capture_output=True,
+            text=True,
+    )
+
+    with open(timestamped_output_dir / 'git_log.txt', 'w') as f:
+        print(git_log.stdout, file=f)
+
+    if git_log.returncode != 0:
+        raise Exception("git_log failed")
+    
+
     runner = benchmark_suite_runner(
         safe_load(benchmark_yaml),
-        safe_load(config_yaml)
+        config
     )
 
     runner.run()
