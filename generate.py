@@ -93,7 +93,7 @@ def auto_generate_data_points(backends_data: dict):
 
     return data_points
 
-def plot_data_point(data_point, asymmetric_data, symmetric_data, build_dir: pathlib.Path):
+def plot_data_point(data_point, backends_data: dict, build_dir: pathlib.Path):
     def getter(data):
         for point in data_point:
             data = data[point]
@@ -103,18 +103,20 @@ def plot_data_point(data_point, asymmetric_data, symmetric_data, build_dir: path
     file_basename: str = "_".join(data_point).replace('/', '_')
     filename = build_dir / pathlib.Path(f"auto_{file_basename}.svg")
     
-    make_plot_getter(plot_title.capitalize(), filename, None, {"asm":asymmetric_data, "sym":symmetric_data}, getter)
+    make_plot_getter(plot_title.capitalize(), filename, None, backends_data, getter)
 
-    asymmetric_total = total_data(asymmetric_data, getter)
-    symmetric_total = total_data(symmetric_data, getter)
+    totals = dict()
+    for backend, data in backends_data.items():
+        totals[backend] = [total_data(data, getter)]
+
     filename = build_dir / pathlib.Path(f"auto_total_{file_basename}.svg")
-    make_plot(f"Total {plot_title}", filename, None, None, {'Asymmetric':[asymmetric_total], 'Symmetric':[symmetric_total]}, False)
-    print(f"{plot_title}: asymmetric: {asymmetric_total:.4f}, symmetric: {symmetric_total:.4f}" + (f", percentage: {asymmetric_total * 100 / symmetric_total:.4f}%" if symmetric_total != 0 else ""))
+    make_plot(f"Total {plot_title}", filename, None, None, totals, False)
+    print(f"{plot_title}: ", ', '.join((f"{key}: {val[0]}" for key, val in totals.items())))
 
 def auto_generate(asymmetric_data, symmetric_data, build_dir: pathlib.Path):
-    for data_point in auto_generate_data_points({'asm':asymmetric_data, 'sym':symmetric_data}):
-        plot_data_point(data_point, asymmetric_data, symmetric_data, build_dir)
-
+    backends_data = {'Asymmetric':asymmetric_data, 'Symmetric':symmetric_data}
+    for data_point in auto_generate_data_points(backends_data):
+        plot_data_point(data_point, backends_data, build_dir)
 
 def generate_graphs(asymmetric_data, symmetric_data, build_dir: pathlib.Path):
     auto_generate(load_data(asymmetric_data), load_data(symmetric_data), build_dir)
