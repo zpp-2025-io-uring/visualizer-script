@@ -13,7 +13,7 @@ def run_redraw(backend_paths: dict, output_dir):
     generate_graphs(backends_data_raw, output_dir)
 
 def run_redraw_args(args):
-    backend_names = ['asymmetric_io_uring', 'io_uring', 'linux_aio', 'epoll']
+    backend_names = ['asymmetric_io_uring', 'io_uring', 'linux-aio', 'epoll']
 
     backend_paths = dict()
 
@@ -27,7 +27,7 @@ def run_redraw_args(args):
 def configure_redraw_parser(parser: argparse.ArgumentParser):
     parser.add_argument("--asymmetric_io_uring", help="path to asymmetric_io_uring results", default=None)
     parser.add_argument("--io_uring", help="path to asymmetric_io_uring results", default=None)
-    parser.add_argument("--linux_aio", help="path to linux_aio results", default=None)
+    parser.add_argument("--linux-aio", help="path to linux-aio results", default=None)
     parser.add_argument("--epoll", help="path to epoll results", default=None)
     parser.add_argument("--output-dir", help="directory to save the output to", required=True)
     parser.set_defaults(func=run_redraw_args)
