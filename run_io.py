@@ -5,13 +5,14 @@ from pathlib import Path
 from generate import generate_graphs
 
 class io_test_runner:
-    def __init__(self, tester_path: Path, config_path: Path, output_dir: Path, storage_dir: Path, asymmetric_cpuset: str, symmetric_cpuset: str):
+    def __init__(self, tester_path: Path, config_path: Path, output_dir: Path, storage_dir: Path, asymmetric_cpuset: str, symmetric_cpuset: str, backends):
         self.tester_path: Path = tester_path.resolve()
         self.config_path: Path = config_path.resolve()
         self.output_dir: Path = output_dir.resolve()
         self.storage_dir: Path = storage_dir.resolve()
         self.asymmetric_cpuset = asymmetric_cpuset
         self.symmetric_cpuset = symmetric_cpuset
+        self.backends = backends
 
     def __run_test(self, backend: str, output_filename: str, cpuset: str):
         print(f"Running io_tester with backend {backend}")
@@ -43,16 +44,19 @@ class io_test_runner:
         return result.stdout
 
     def run(self):
-        asymmetric_data = self.__run_test("asymmetric_io_uring", "asymmetric", self.asymmetric_cpuset)
-        symmetric_data = self.__run_test("io_uring", "symmetric", self.symmetric_cpuset)
-        print("Generating graphs")
-        generate_graphs(asymmetric_data, symmetric_data, self.output_dir)
+        backends_data_raw = dict()
 
-def run_io_test(tester_path, config_path, output_dir, storage_dir, asymmetric_cpuset, symmetric_cpuset):
-    io_test_runner(Path(tester_path), Path(config_path), Path(output_dir), Path(storage_dir), asymmetric_cpuset, symmetric_cpuset).run()
+        for backend in self.backends:
+            backends_data_raw[backend] = self.__run_test(backend, backend, self.asymmetric_cpuset if backend=='asymmetric_io_uring' else self.symmetric_cpuset)
+
+        print("Generating graphs")
+        generate_graphs(backends_data_raw, self.output_dir)
+
+def run_io_test(tester_path, config_path, output_dir, storage_dir, asymmetric_cpuset, symmetric_cpuset, backends):
+    io_test_runner(Path(tester_path), Path(config_path), Path(output_dir), Path(storage_dir), asymmetric_cpuset, symmetric_cpuset, backends).run()
 
 def run_io_test_args(args):
-    run_io_test(args.tester, args.config, args.output_dir, args.storage, args.asymmetric_cpuset, args.symmetric_cpuset)
+    run_io_test(args.tester, args.config, args.output_dir, args.storage, args.asymmetric_cpuset, args.symmetric_cpuset, args.backends)
 
 def configure_run_io_parser(parser: argparse.ArgumentParser):
     cpus = cpu_count()
@@ -63,5 +67,6 @@ def configure_run_io_parser(parser: argparse.ArgumentParser):
     parser.add_argument("--storage", help="directory for temporary files", default="./temp")
     parser.add_argument("--asymmetric-cpuset", help="cpuset for the asymmetric seastar app", default=f"0-{cpus-1}")
     parser.add_argument("--symmetric-cpuset", help="cpuset for the symmetric seastar app", default=f"0-{cpus-1}")
+    parser.add_argument("--backends", help="list of backends to compare", nargs='+', default=['asymmetric_io_uring', 'io_uring'])
     parser.set_defaults(func=run_io_test_args)
     parser.formatter_class = argparse.ArgumentDefaultsHelpFormatter

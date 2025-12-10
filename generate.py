@@ -19,29 +19,28 @@ def total_data(yaml_dict, getter):
     result = [getter(el) for el in yaml_dict]
     return np.sum(result)
 
-def make_plot(title: str, filename: str, xlabel: str, ylabel: str, asymmetric_data, symmetric_data, xticks):
-    # ensure lengths match
-    if len(asymmetric_data) != len(symmetric_data):
-        raise ValueError(f"Asymmetric length {len(asymmetric_data)} != Symmetric length {len(symmetric_data)}")
-    size = len(symmetric_data)
+def make_plot(title: str, filename: str, xlabel: str, ylabel: str, per_backend_data_vec: dict, xticks):
+    size = len(next(iter(per_backend_data_vec.values())))
+    for val in per_backend_data_vec.values():
+        if len(val) != size:
+            raise ValueError(f"Plotted data must have the same length")
 
-    df = pd.DataFrame({
-        "Shard": list(range(0, size)),
-        "Asymmetric": asymmetric_data,
-        "Symmetric": symmetric_data
-    })
+    per_backend_data_with_shardnum = per_backend_data_vec.copy()
+    per_backend_data_with_shardnum['Shard'] = list(range(0,size))
+
+    df = pd.DataFrame(per_backend_data_with_shardnum)
 
     # Convert to long form
-    df_long = df.melt(id_vars="Shard", value_vars=["Asymmetric", "Symmetric"],
-                    var_name="Type", value_name="Value")
+    df_long = df.melt(id_vars="Shard", value_vars=per_backend_data_vec.keys(),
+                    var_name="Backend", value_name="Value")
 
-    labels = {"Shard": xlabel if xlabel is not None else "", "Value": ylabel if ylabel is not None else "", "Type": "Type"}
+    labels = {"Shard": xlabel if xlabel is not None else "", "Value": ylabel if ylabel is not None else "", "Backend": "Backend"}
 
     # Plot grouped bar chart
     fig = px.bar(df_long,
                 x="Shard",
                 y="Value",
-                color="Type",
+                color="Backend",
                 labels=labels,
                 barmode="group",
                 title=title,
@@ -59,17 +58,21 @@ def make_plot(title: str, filename: str, xlabel: str, ylabel: str, asymmetric_da
 
     fig.write_image(filename)
 
-def make_plot_getter(title: str, filename: str, ylabel: str, asymmetric_data, symmetric_data, getter):
-    num_shards = max(len(asymmetric_data), len(symmetric_data))
-    make_plot(title, filename, "shard", ylabel, get_data(asymmetric_data, getter, num_shards), get_data(symmetric_data, getter, num_shards), True)
+def make_plot_getter(title: str, filename: str, ylabel: str, backends_data: dict, getter):
+    num_shards = max((len(x) for x in backends_data.values()))
+
+    per_backend_data_vec = dict()
+    for backend, data in backends_data.items():
+        per_backend_data_vec[backend] = get_data(data, getter, num_shards)
+
+    make_plot(title, filename, "shard", ylabel, per_backend_data_vec, True)
 
 def load_data(raw_output: str):
     yaml_part = raw_output.split('---\n')[1]
     yaml_part = yaml_part.removesuffix("...\n")
     return yaml.safe_load(yaml_part)
 
-
-def auto_generate_data_points(asymmetric_data, symmetric_data):
+def auto_generate_data_points(backends_data: dict):
     data_points = set()
 
     def walk_tree(prefix, data):
@@ -82,17 +85,15 @@ def auto_generate_data_points(asymmetric_data, symmetric_data):
 
         return result
     
-    for el in asymmetric_data:
-        data_points |= set([tuple(x) for x in walk_tree([], el)])
-
-    for el in symmetric_data:
-        data_points |= set([tuple(x) for x in walk_tree([], el)])
+    for data in backends_data.values():
+        for el in data:
+            data_points |= set([tuple(x) for x in walk_tree([], el)])
 
     data_points.remove(('shard',))
 
     return data_points
 
-def plot_data_point(data_point, asymmetric_data, symmetric_data, build_dir: pathlib.Path):
+def plot_data_point(data_point, backends_data: dict, build_dir: pathlib.Path):
     def getter(data):
         for point in data_point:
             data = data[point]
@@ -102,18 +103,23 @@ def plot_data_point(data_point, asymmetric_data, symmetric_data, build_dir: path
     file_basename: str = "_".join(data_point).replace('/', '_')
     filename = build_dir / pathlib.Path(f"auto_{file_basename}.svg")
     
-    make_plot_getter(plot_title.capitalize(), filename, None, asymmetric_data, symmetric_data, getter)
+    make_plot_getter(plot_title.capitalize(), filename, None, backends_data, getter)
 
-    asymmetric_total = total_data(asymmetric_data, getter)
-    symmetric_total = total_data(symmetric_data, getter)
+    totals = dict()
+    for backend, data in backends_data.items():
+        totals[backend] = [total_data(data, getter)]
+
     filename = build_dir / pathlib.Path(f"auto_total_{file_basename}.svg")
-    make_plot(f"Total {plot_title}", filename, None, None, [asymmetric_total], [symmetric_total], False)
-    print(f"{plot_title}: asymmetric: {asymmetric_total:.4f}, symmetric: {symmetric_total:.4f}" + (f", percentage: {asymmetric_total * 100 / symmetric_total:.4f}%" if symmetric_total != 0 else ""))
+    make_plot(f"Total {plot_title}", filename, None, None, totals, False)
+    print(f"{plot_title}: ", ', '.join((f"{key}: {val[0]}" for key, val in totals.items())))
 
-def auto_generate(asymmetric_data, symmetric_data, build_dir: pathlib.Path):
-    for data_point in auto_generate_data_points(asymmetric_data, symmetric_data):
-        plot_data_point(data_point, asymmetric_data, symmetric_data, build_dir)
+def auto_generate(backends_data: dict, build_dir: pathlib.Path):
+    for data_point in auto_generate_data_points(backends_data):
+        plot_data_point(data_point, backends_data, build_dir)
 
+def generate_graphs(backends_data_raw: dict, build_dir: pathlib.Path):
+    backends_data = dict()
+    for backend, data_raw in backends_data_raw.items():
+        backends_data[backend] = load_data(data_raw)
 
-def generate_graphs(asymmetric_data, symmetric_data, build_dir: pathlib.Path):
-    auto_generate(load_data(asymmetric_data), load_data(symmetric_data), build_dir)
+    auto_generate(backends_data, build_dir)
