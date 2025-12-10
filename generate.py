@@ -32,15 +32,15 @@ def make_plot(title: str, filename: str, xlabel: str, ylabel: str, per_backend_d
 
     # Convert to long form
     df_long = df.melt(id_vars="Shard", value_vars=per_backend_data_vec.keys(),
-                    var_name="Type", value_name="Value")
+                    var_name="Backend", value_name="Value")
 
-    labels = {"Shard": xlabel if xlabel is not None else "", "Value": ylabel if ylabel is not None else "", "Type": "Type"}
+    labels = {"Shard": xlabel if xlabel is not None else "", "Value": ylabel if ylabel is not None else "", "Backend": "Backend"}
 
     # Plot grouped bar chart
     fig = px.bar(df_long,
                 x="Shard",
                 y="Value",
-                color="Type",
+                color="Backend",
                 labels=labels,
                 barmode="group",
                 title=title,
