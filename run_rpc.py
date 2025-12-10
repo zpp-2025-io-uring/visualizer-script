@@ -6,7 +6,7 @@ from os import cpu_count
 from time import sleep
 
 class rpc_test_runner:
-    def __init__(self, tester_path: Path, config_path: Path, output_dir: Path, ip_address: str, asymmetric_server_cpuset: str, symmetric_server_cpuset: str, asymmetric_client_cpuset: str, symmetric_client_cpuset: str):
+    def __init__(self, tester_path: Path, config_path: Path, output_dir: Path, ip_address: str, asymmetric_server_cpuset: str, symmetric_server_cpuset: str, asymmetric_client_cpuset: str, symmetric_client_cpuset: str,  backends):
         self.tester_path: Path = tester_path.resolve()
         self.config_path: Path = config_path.resolve()
         self.output_dir: Path = output_dir.resolve()
@@ -15,6 +15,7 @@ class rpc_test_runner:
         self.symmetric_server_cpuset = symmetric_server_cpuset
         self.asymmetric_client_cpuset = asymmetric_client_cpuset 
         self.symmetric_client_cpuset = symmetric_client_cpuset 
+        self.backends = backends
 
 
     def __run_test(self, backend: str, output_filename: str, server_cpuset: str, client_cpuset: str):
@@ -76,16 +77,22 @@ class rpc_test_runner:
         return client.stdout
 
     def run(self):
-        asymmetric_data = self.__run_test("asymmetric_io_uring", "asymmetric", self.asymmetric_server_cpuset, self.asymmetric_client_cpuset)
-        symmetric_data = self.__run_test("io_uring", "symmetric", self.symmetric_server_cpuset, self.symmetric_client_cpuset)
-        print("Generating graphs")
-        generate_graphs(asymmetric_data, symmetric_data, self.output_dir)
+        backends_data_raw = dict()
 
-def run_rpc_test(tester_path, config_path, output_dir, ip_address, asymmetric_server_cpuset, symmetric_server_cpuset, asymmetric_client_cpuset, symmetric_client_cpuset):
-    rpc_test_runner(Path(tester_path), Path(config_path), Path(output_dir), ip_address, asymmetric_server_cpuset, symmetric_server_cpuset, asymmetric_client_cpuset, symmetric_client_cpuset).run()
+        for backend in self.backends:
+            if backend == 'asymmetric_io_uring':
+                backends_data_raw[backend] = self.__run_test(backend, backend, self.asymmetric_server_cpuset, self.asymmetric_client_cpuset)
+            else:
+                backends_data_raw[backend] = self.__run_test(backend, backend, self.symmetric_server_cpuset, self.symmetric_client_cpuset)
+
+        print("Generating graphs")
+        generate_graphs(backends_data_raw, self.output_dir)
+
+def run_rpc_test(tester_path, config_path, output_dir, ip_address, asymmetric_server_cpuset, symmetric_server_cpuset, asymmetric_client_cpuset, symmetric_client_cpuset, backends):
+    rpc_test_runner(Path(tester_path), Path(config_path), Path(output_dir), ip_address, asymmetric_server_cpuset, symmetric_server_cpuset, asymmetric_client_cpuset, symmetric_client_cpuset, backends).run()
 
 def run_rpc_test_args(args):
-    run_rpc_test(args.tester, args.config, args.output_dir, args.ip, args.asymmetric_server_cpuset, args.symmetric_server_cpuset, args.asymmetric_client_cpuset, args.symmetric_client_cpuset)
+    run_rpc_test(args.tester, args.config, args.output_dir, args.ip, args.asymmetric_server_cpuset, args.symmetric_server_cpuset, args.asymmetric_client_cpuset, args.symmetric_client_cpuset, args.backends)
 
 def configure_run_rpc_parser(parser: argparse.ArgumentParser):
     cpus = cpu_count()
@@ -100,5 +107,6 @@ def configure_run_rpc_parser(parser: argparse.ArgumentParser):
     parser.add_argument("--symmetric-server-cpuset", help="cpuset for the symmetric server", default=server_cpus)
     parser.add_argument("--asymmetric-client-cpuset", help="cpuset for the asymmetric client", default=client_cpus)
     parser.add_argument("--symmetric-client-cpuset", help="cpuset for the symmetric client", default=client_cpus)
+    parser.add_argument("--backends", help="list of backends to compare", nargs='+', default=['asymmetric_io_uring', 'io_uring'])
     parser.set_defaults(func=run_rpc_test_args)
     parser.formatter_class = argparse.ArgumentDefaultsHelpFormatter
