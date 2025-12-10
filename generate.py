@@ -113,10 +113,13 @@ def plot_data_point(data_point, backends_data: dict, build_dir: pathlib.Path):
     make_plot(f"Total {plot_title}", filename, None, None, totals, False)
     print(f"{plot_title}: ", ', '.join((f"{key}: {val[0]}" for key, val in totals.items())))
 
-def auto_generate(asymmetric_data, symmetric_data, build_dir: pathlib.Path):
-    backends_data = {'Asymmetric':asymmetric_data, 'Symmetric':symmetric_data}
+def auto_generate(backends_data: dict, build_dir: pathlib.Path):
     for data_point in auto_generate_data_points(backends_data):
         plot_data_point(data_point, backends_data, build_dir)
 
-def generate_graphs(asymmetric_data, symmetric_data, build_dir: pathlib.Path):
-    auto_generate(load_data(asymmetric_data), load_data(symmetric_data), build_dir)
+def generate_graphs(backends_data_raw: dict, build_dir: pathlib.Path):
+    backends_data = dict()
+    for backend, data_raw in backends_data_raw.items():
+        backends_data[backend] = load_data(data_raw)
+
+    auto_generate(backends_data, build_dir)
