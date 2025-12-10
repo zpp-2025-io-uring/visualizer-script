@@ -43,6 +43,7 @@ class rpc_test_runner:
                 sleep(1)
 
             if server_process.poll() is None:
+                print("WARNING: Force killing server")
                 server_process.kill()
 
             raise
