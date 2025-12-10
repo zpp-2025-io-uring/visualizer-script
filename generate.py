@@ -19,20 +19,19 @@ def total_data(yaml_dict, getter):
     result = [getter(el) for el in yaml_dict]
     return np.sum(result)
 
-def make_plot(title: str, filename: str, xlabel: str, ylabel: str, asymmetric_data, symmetric_data, xticks):
-    # ensure lengths match
-    if len(asymmetric_data) != len(symmetric_data):
-        raise ValueError(f"Asymmetric length {len(asymmetric_data)} != Symmetric length {len(symmetric_data)}")
-    size = len(symmetric_data)
+def make_plot(title: str, filename: str, xlabel: str, ylabel: str, per_backend_data_vec: dict, xticks):
+    size = len(next(iter(per_backend_data_vec.values()), None))
+    for val in per_backend_data_vec.values():
+        if len(val) != size:
+            raise ValueError(f"Plotted data must have the same length")
 
-    df = pd.DataFrame({
-        "Shard": list(range(0, size)),
-        "Asymmetric": asymmetric_data,
-        "Symmetric": symmetric_data
-    })
+    per_backend_data_with_shardnum = per_backend_data_vec.copy()
+    per_backend_data_with_shardnum['Shard'] = list(range(0,size))
+
+    df = pd.DataFrame(per_backend_data_with_shardnum)
 
     # Convert to long form
-    df_long = df.melt(id_vars="Shard", value_vars=["Asymmetric", "Symmetric"],
+    df_long = df.melt(id_vars="Shard", value_vars=per_backend_data_vec.keys(),
                     var_name="Type", value_name="Value")
 
     labels = {"Shard": xlabel if xlabel is not None else "", "Value": ylabel if ylabel is not None else "", "Type": "Type"}
@@ -61,7 +60,7 @@ def make_plot(title: str, filename: str, xlabel: str, ylabel: str, asymmetric_da
 
 def make_plot_getter(title: str, filename: str, ylabel: str, asymmetric_data, symmetric_data, getter):
     num_shards = max(len(asymmetric_data), len(symmetric_data))
-    make_plot(title, filename, "shard", ylabel, get_data(asymmetric_data, getter, num_shards), get_data(symmetric_data, getter, num_shards), True)
+    make_plot(title, filename, "shard", ylabel, {"Asymmetric":get_data(asymmetric_data, getter, num_shards), "Symmetric":get_data(symmetric_data, getter, num_shards)}, True)
 
 def load_data(raw_output: str):
     yaml_part = raw_output.split('---\n')[1]
@@ -107,7 +106,7 @@ def plot_data_point(data_point, asymmetric_data, symmetric_data, build_dir: path
     asymmetric_total = total_data(asymmetric_data, getter)
     symmetric_total = total_data(symmetric_data, getter)
     filename = build_dir / pathlib.Path(f"auto_total_{file_basename}.svg")
-    make_plot(f"Total {plot_title}", filename, None, None, [asymmetric_total], [symmetric_total], False)
+    make_plot(f"Total {plot_title}", filename, None, None, {'Asymmetric':[asymmetric_total], 'Symmetric':[symmetric_total]}, False)
     print(f"{plot_title}: asymmetric: {asymmetric_total:.4f}, symmetric: {symmetric_total:.4f}" + (f", percentage: {asymmetric_total * 100 / symmetric_total:.4f}%" if symmetric_total != 0 else ""))
 
 def auto_generate(asymmetric_data, symmetric_data, build_dir: pathlib.Path):
