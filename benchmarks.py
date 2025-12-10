@@ -19,6 +19,7 @@ class benchmark_suite_runner:
         self.rpc_symmetric_server_cpuset = config['rpc_symmetric_server_cpuset']
         self.rpc_asymmetric_client_cpuset = config['rpc_asymmetric_client_cpuset'] 
         self.rpc_symmetric_client_cpuset = config['rpc_symmetric_client_cpuset'] 
+        self.backends = config['backends']
 
         self.benchmarks = benchmarks
 
@@ -38,9 +39,9 @@ class benchmark_suite_runner:
             print(f"Running benchmark {test_name}")
             match benchmark['type']:
                 case "io":
-                    run_io_test(self.io_tester_path, config_path, output_dir, self.storage_dir, self.io_asymmetric_cpuset, self.io_symmetric_cpuset)
+                    run_io_test(self.io_tester_path, config_path, output_dir, self.storage_dir, self.io_asymmetric_cpuset, self.io_symmetric_cpuset, self.backends)
                 case "rpc":
-                    run_rpc_test(self.rpc_tester_path, config_path, output_dir, self.ip_address, self.rpc_asymmetric_server_cpuset, self.rpc_symmetric_server_cpuset, self.rpc_asymmetric_client_cpuset, self.rpc_symmetric_client_cpuset)
+                    run_rpc_test(self.rpc_tester_path, config_path, output_dir, self.ip_address, self.rpc_asymmetric_server_cpuset, self.rpc_symmetric_server_cpuset, self.rpc_asymmetric_client_cpuset, self.rpc_symmetric_client_cpuset, self.backends)
                 case _:
                     raise Exception(f"Unknown benchmark type {benchmark['type']}")
 
@@ -117,6 +118,10 @@ def run_benchmark_suite_args(args):
     if git_log.returncode != 0:
         raise Exception("git_log failed")
     
+
+    if 'backends' not in config:
+        config['backends'] = ['asymmetric_io_uring', 'io_uring']
+        print(f"Warning: backends selecton not detected, assuming {config['backends']}")
 
     runner = benchmark_suite_runner(
         safe_load(benchmark_yaml),
