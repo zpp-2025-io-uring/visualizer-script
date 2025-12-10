@@ -20,7 +20,7 @@ def total_data(yaml_dict, getter):
     return np.sum(result)
 
 def make_plot(title: str, filename: str, xlabel: str, ylabel: str, per_backend_data_vec: dict, xticks):
-    size = len(next(iter(per_backend_data_vec.values()), None))
+    size = len(next(iter(per_backend_data_vec.values())))
     for val in per_backend_data_vec.values():
         if len(val) != size:
             raise ValueError(f"Plotted data must have the same length")
@@ -58,15 +58,19 @@ def make_plot(title: str, filename: str, xlabel: str, ylabel: str, per_backend_d
 
     fig.write_image(filename)
 
-def make_plot_getter(title: str, filename: str, ylabel: str, asymmetric_data, symmetric_data, getter):
-    num_shards = max(len(asymmetric_data), len(symmetric_data))
-    make_plot(title, filename, "shard", ylabel, {"Asymmetric":get_data(asymmetric_data, getter, num_shards), "Symmetric":get_data(symmetric_data, getter, num_shards)}, True)
+def make_plot_getter(title: str, filename: str, ylabel: str, backends_data: dict, getter):
+    num_shards = max((len(x) for x in backends_data.values()))
+
+    per_backend_data_vec = dict()
+    for backend, data in backends_data.items():
+        per_backend_data_vec[backend] = get_data(data, getter, num_shards)
+
+    make_plot(title, filename, "shard", ylabel, per_backend_data_vec, True)
 
 def load_data(raw_output: str):
     yaml_part = raw_output.split('---\n')[1]
     yaml_part = yaml_part.removesuffix("...\n")
     return yaml.safe_load(yaml_part)
-
 
 def auto_generate_data_points(asymmetric_data, symmetric_data):
     data_points = set()
@@ -101,7 +105,7 @@ def plot_data_point(data_point, asymmetric_data, symmetric_data, build_dir: path
     file_basename: str = "_".join(data_point).replace('/', '_')
     filename = build_dir / pathlib.Path(f"auto_{file_basename}.svg")
     
-    make_plot_getter(plot_title.capitalize(), filename, None, asymmetric_data, symmetric_data, getter)
+    make_plot_getter(plot_title.capitalize(), filename, None, {"asm":asymmetric_data, "sym":symmetric_data}, getter)
 
     asymmetric_total = total_data(asymmetric_data, getter)
     symmetric_total = total_data(symmetric_data, getter)
