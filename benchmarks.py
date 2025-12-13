@@ -49,6 +49,67 @@ class benchmark_suite_runner:
                 
             generate_graphs(result, output_dir)
 
+def dump_environment(dir_for_config: Path, dir_to_seastar: Path):
+    """
+    Dumps environment information into files in dir_for_config.
+    dir_to_seastar is the path to the seastar repository, used to get git log.
+
+    Dumps:
+    - lscpu output
+    - lscpu -e output
+    - hostname output
+    - git log of seastar repo since 2025-12-01
+    """
+
+    lscpu = subprocess.run(
+            ['lscpu'],
+            capture_output=True,
+            text=True,
+    )
+
+    with open(dir_for_config / 'lscpu.txt', 'w') as f:
+        print(lscpu.stdout, file=f)
+
+    if lscpu.returncode != 0:
+        raise Exception("lscpu failed")
+    
+    lscpu_e = subprocess.run(
+            ['lscpu', '-e'],
+            capture_output=True,
+            text=True,
+    )
+
+    with open(dir_for_config / 'lscpu_e.txt', 'w') as f:
+        print(lscpu_e.stdout, file=f)
+
+    if lscpu_e.returncode != 0:
+        raise Exception("lscpu -e failed")
+    
+    hostname = subprocess.run(
+            ['hostname'],
+            capture_output=True,
+            text=True,
+    )
+
+    with open(dir_for_config / 'hostname.txt', 'w') as f:
+        print(hostname.stdout, file=f)
+
+    if hostname.returncode != 0:
+        raise Exception("hostname failed")
+    
+    git_log = subprocess.run(
+            ['git', 'log', '--since="2025-12-01"'],
+            cwd=Path(dir_to_seastar).expanduser().resolve(),
+            capture_output=True,
+            text=True,
+    )
+
+    with open(dir_for_config / 'git_log.txt', 'w') as f:
+        print(git_log.stdout, file=f)
+
+    if git_log.returncode != 0:
+        raise Exception("git_log failed")
+
 def run_benchmark_suite_args(args):
     benchmark_path = Path(args.benchmark).resolve()
     with open(benchmark_path, "r") as f:
@@ -63,6 +124,7 @@ def run_benchmark_suite_args(args):
 
     timestamped_output_dir: Path = output_dir / datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
     timestamped_output_dir.mkdir(exist_ok=True, parents=True)
+    config['output_dir'] = timestamped_output_dir
 
     with open(timestamped_output_dir / 'suite.yaml', 'w') as f:
         print(benchmark_yaml, end='', file=f)
@@ -70,58 +132,7 @@ def run_benchmark_suite_args(args):
     with open(timestamped_output_dir / 'config.yaml', 'w') as f:
         print(config_yaml, end='', file=f)
 
-
-    config['output_dir'] = timestamped_output_dir
-
-    lscpu = subprocess.run(
-            ['lscpu'],
-            capture_output=True,
-            text=True,
-    )
-
-    with open(timestamped_output_dir / 'lscpu.txt', 'w') as f:
-        print(lscpu.stdout, file=f)
-
-    if lscpu.returncode != 0:
-        raise Exception("lscpu failed")
-    
-    lscpu_e = subprocess.run(
-            ['lscpu', '-e'],
-            capture_output=True,
-            text=True,
-    )
-
-    with open(timestamped_output_dir / 'lscpu_e.txt', 'w') as f:
-        print(lscpu_e.stdout, file=f)
-
-    if lscpu_e.returncode != 0:
-        raise Exception("lscpu -e failed")
-    
-    hostname = subprocess.run(
-            ['hostname'],
-            capture_output=True,
-            text=True,
-    )
-
-    with open(timestamped_output_dir / 'hostname.txt', 'w') as f:
-        print(hostname.stdout, file=f)
-
-    if hostname.returncode != 0:
-        raise Exception("hostname failed")
-    
-    git_log = subprocess.run(
-            ['git', 'log', '--since="2025-12-01"'],
-            cwd=Path(config['io_tester_path']).expanduser().resolve().parent,
-            capture_output=True,
-            text=True,
-    )
-
-    with open(timestamped_output_dir / 'git_log.txt', 'w') as f:
-        print(git_log.stdout, file=f)
-
-    if git_log.returncode != 0:
-        raise Exception("git_log failed")
-    
+    dump_environment(timestamped_output_dir, Path(config['io_tester_path']).expanduser().resolve().parent)
 
     if 'backends' not in config:
         config['backends'] = ['asymmetric_io_uring', 'io_uring']
