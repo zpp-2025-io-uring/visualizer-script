@@ -72,7 +72,7 @@ def load_data(raw_output: str):
     yaml_part = yaml_part.removesuffix("...\n")
     return yaml.safe_load(yaml_part)
 
-def auto_generate_data_points(backends_data: dict):
+def auto_generate_data_points(backends_data: dict) -> set[tuple]:
     data_points = set()
 
     def walk_tree(prefix, data):
@@ -116,6 +116,48 @@ def plot_data_point(data_point, backends_data: dict, build_dir: pathlib.Path):
 def auto_generate(backends_data: dict, build_dir: pathlib.Path):
     for data_point in auto_generate_data_points(backends_data):
         plot_data_point(data_point, backends_data, build_dir)
+
+def join_stats(backends_data_raw: list[dict]):
+    """Joins multiple runs of benchmarks into a single data structure suitable for plotting.
+    For each data point, for each backend, collects data from all runs.
+    
+    Example:
+    {('rpc_echo', 'latencies', 'p0.99'): {'epoll': {0: [624, 584, 580]}, 'io_uring': {0: [703, 703, 704]}}, ('rpc_echo', 'latencies', 'max'): {'epoll': {0: [803, 831, 827]}, 'io_uring': {0: [935, 958, 1045]}}
+    """
+
+    parsed_iterations = list()
+    for iteration in backends_data_raw:
+        backends_data = dict()
+        for backend, data_raw in iteration.items():
+            backends_data[backend] = load_data(data_raw)
+        parsed_iterations.append(backends_data)
+
+    def getter(data):
+        for point in data_point:
+            data = data[point]
+        return data
+    
+    results_per_data_point = dict(dict(list()))
+
+    for iteration_data in parsed_iterations:
+        for data_point in auto_generate_data_points(iteration_data):
+            if data_point not in results_per_data_point:
+                results_per_data_point[data_point] = dict(list())
+
+            num_shards = max((len(x) for x in iteration_data.values()))
+            per_backend_data_vec = dict()
+            for backend, data in iteration_data.items():
+                if backend not in results_per_data_point[data_point]:
+                    results_per_data_point[data_point][backend] = dict(list())
+
+                per_backend_data_vec[backend] = get_data(data, getter, num_shards)
+                for shard_idx in range(num_shards):
+                    if shard_idx not in results_per_data_point[data_point][backend]:
+                        results_per_data_point[data_point][backend][shard_idx] = list()
+                    results_per_data_point[data_point][backend][shard_idx].append(per_backend_data_vec[backend][shard_idx])
+
+
+    return results_per_data_point
 
 def generate_graphs(backends_data_raw: dict, build_dir: pathlib.Path):
     backends_data = dict()
