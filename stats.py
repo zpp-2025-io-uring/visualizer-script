@@ -15,9 +15,10 @@ def join_sharded_metrics(sharded_data_points: list[dict[dict[dict]]]):
 
                 for shard, value in shard_map.items():
                     if shard not in summed_metrics[metric_name][backend]:
-                        summed_metrics[metric_name][backend][shard] = 0
+                        summed_metrics[metric_name][backend][shard] = list()
 
                     summed_metrics[metric_name][backend][shard].append(value)
+    return summed_metrics
 
 def join_shardless_metrics(metrics_list: list[dict[dict]]):
     """Join shardless metrics from multiple runs."""
