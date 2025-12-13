@@ -5,8 +5,9 @@ import subprocess
 from yaml import safe_load, safe_dump
 from run_io import run_io_test
 from run_rpc import run_rpc_test
-from generate import generate_graphs, join_stats
+from generate import generate_graphs
 from parse import load_data, auto_generate_data_points, join_metrics
+from stats import join_stats
 
 class benchmark_suite_runner:
     def __init__(self, benchmarks, config: dict):
@@ -59,11 +60,10 @@ class benchmark_suite_runner:
                     parsed = load_data(raw)
                     backends_parsed[backend] = auto_generate_data_points(parsed)
 
-                metrics = join_metrics(backends_parsed)
-                metrics_runs.append(metrics)
+                [shardless_metrics, sharded_metrics] = join_metrics(backends_parsed)
+                metrics_runs.append((sharded_metrics, shardless_metrics))
 
-                # generate graphs from metrics mapping
-                generate_graphs(metrics, run_output_dir)
+                generate_graphs(sharded_metrics, shardless_metrics, run_output_dir)
 
             joined_stats = join_stats(metrics_runs)
             print(joined_stats)

@@ -1,3 +1,5 @@
+"""Generates plots for sharded and shardless metrics."""
+
 import pathlib
 import pandas as pd
 import plotly.express as px
@@ -46,126 +48,84 @@ def make_plot(title: str, filename: str, xlabel: str, ylabel: str, per_backend_d
     fig.write_image(filename)
 
 
-def _is_sharded_metric(metric_map: dict) -> bool:
-    # metric_map: backend -> either scalar or dict-of-shard
-    for v in metric_map.values():
-        if isinstance(v, dict):
-            return True
-    return False
+def plot_sharded_metric(metric_name: str, sharded_metric_by_backend: dict, build_dir: pathlib.Path):
+    """Plot a single metric described by `metric_map` (backend -> shard -> value).
 
-
-def plot_metric(metric_name: str, metric_map: dict, build_dir: pathlib.Path):
-    """Plot a single metric described by `metric_map` (backend -> value-or-dict).
-
-    Produces a per-shard grouped plot when sharded data is present and a
-    separate totals plot. Non-sharded scalar values are shown as single-bar
-    grouped charts.
+    Produces a per-shard grouped plot and a separate totals plot.
     """
-    # sanitize filename
-    file_basename = metric_name.replace('/', '_')
+    file_basename = sanitize_filename(metric_name)
 
-    if _is_sharded_metric(metric_map):
-        # determine number of shards
-        max_shard = -1
-        for v in metric_map.values():
-            if isinstance(v, dict):
-                # keys may be ints or strings like '_total'
-                for k in v.keys():
-                    if isinstance(k, int):
-                        max_shard = max(max_shard, k)
-                    else:
-                        try:
-                            ik = int(k)
-                            max_shard = max(max_shard, ik)
-                        except Exception:
-                            pass
+    # determine max shard index
+    max_shard = -1
+    for backend, result_by_shard in sharded_metric_by_backend.items():
+        for shard, result in result_by_shard.items():
+            try:
+                shard_idx = int(shard)
+                if shard_idx > max_shard:
+                    max_shard = shard_idx
+            except Exception:
+                pass
 
-        num_shards = max_shard + 1 if max_shard >= 0 else 0
+    if max_shard == -1:
+        raise ValueError(f"No sharded data found for metric {metric_name}")
 
-        if num_shards > 0:
-            per_backend = {}
-            for backend, v in metric_map.items():
-                vec = [0 for _ in range(num_shards)]
-                if isinstance(v, dict):
-                    for k, val in v.items():
-                        # treat keys that are ints or numeric strings as shard indices
-                        if k == '_total':
-                            continue
-                        try:
-                            idx = int(k)
-                        except Exception:
-                            continue
-                        if idx < num_shards:
-                            vec[idx] = val
-                # scalars remain zero-filled for per-shard plot
-                per_backend[backend] = vec
+    num_shards = max_shard + 1
 
-            filename = build_dir / pathlib.Path(f"auto_{file_basename}.svg")
-            make_plot(metric_name, filename, "shard", None, per_backend, True)
-
-        # totals plot
-        totals = {}
-        for backend, v in metric_map.items():
-            if isinstance(v, dict):
-                # sum numeric shards, ignore '_total' if present (prefer explicit)
-                total_val = 0
-                for k, val in v.items():
-                    if k == '_total':
-                        total_val = val
-                        break
-                    try:
-                        float(val)
-                        total_val += val
-                    except Exception:
-                        pass
-                totals[backend] = [total_val]
+    per_backend = {}
+    for backend, result_by_shard in sharded_metric_by_backend.items():
+        values = []
+        for shard_idx in range(num_shards):
+            if shard_idx in result_by_shard:
+                values.append(result_by_shard[shard_idx])
             else:
-                totals[backend] = [v]
+                values.append(0)
+        per_backend[backend] = values
+    
+    file_path = build_dir / pathlib.Path(f"auto_{file_basename}.svg")
+    make_plot(metric_name, file_path, "shard", None, per_backend, True)
 
-        filename = build_dir / pathlib.Path(f"auto_total_{file_basename}.svg")
-        make_plot(f"Total {metric_name}", filename, None, None, totals, False)
-        print(f"{metric_name}: ", ', '.join((f"{key}: {val[0]}" for key, val in totals.items())))
-    else:
-        # all scalars -> single grouped bar chart
-        per_backend = {backend: [v] for backend, v in metric_map.items()}
-        filename = build_dir / pathlib.Path(f"auto_{file_basename}.svg")
-        make_plot(metric_name, filename, None, None, per_backend, False)
-        print(f"{metric_name}: ", ', '.join((f"{key}: {val[0]}" for key, val in per_backend.items())))
+def plot_shardless_metric(metric_name: str, shardless_metric_by_backend: dict, build_dir: pathlib.Path):
+    """Plot a single shardless metric described by `metric_map` (backend -> value).
 
+    Produces a single bar chart.
+    """
+    file_basename = sanitize_filename(metric_name)
 
-def generate_graphs(metrics: dict, build_dir: pathlib.Path):
+    per_backend = {}
+    for backend, value in shardless_metric_by_backend.items():
+        per_backend[backend] = [value]
+
+    file_path = build_dir / pathlib.Path(f"auto_{file_basename}_total.svg")
+    make_plot(metric_name + " (total)", file_path, None, None, per_backend, False)
+
+def plot_total_metric(metric_name: str, sharded_metric_by_backend: dict, build_dir: pathlib.Path):
+    """Plot a sharded metric as total values per backend.
+
+    Produces a single bar chart.
+    """
+    file_basename = sanitize_filename(metric_name)
+
+    per_backend = {}
+    for backend, result_by_shard in sharded_metric_by_backend.items():
+        total = 0
+        for _, value in result_by_shard.items():
+            total += value
+        per_backend[backend] = [total]
+
+    file_path = build_dir / pathlib.Path(f"auto_total_{file_basename}.svg")
+    make_plot("Total " + metric_name, file_path, None, None, per_backend, False)
+
+def sanitize_filename(name: str) -> str:
+    return name.replace('/', '_')
+
+def generate_graphs(sharded_metrics: dict[dict[dict]], shardless_metrics: dict[dict], build_dir: pathlib.Path):
     """Generate plots from a metrics mapping (metric_name -> backend -> value-or-dict).
 
     This function expects the output of `parse.join_metrics` as input.
     """
-    for metric_name, metric_map in metrics.items():
-        try:
-            plot_metric(metric_name, metric_map, build_dir)
-        except Exception as e:
-            print(f"Failed to plot {metric_name}: {e}")
+    for metric_name, metric_by_backend in sharded_metrics.items():
+        plot_sharded_metric(metric_name, metric_by_backend, build_dir)
+        plot_total_metric(metric_name, metric_by_backend, build_dir)
 
-
-def join_stats(metrics_list: list[dict]):
-    """Join metrics from multiple runs.
-
-    Input: list where each element is a metrics mapping (metric_name -> backend -> value-or-dict)
-    Output: mapping metric_name -> backend -> shard_index_or__total -> list_of_values
-    """
-    results = {}
-
-    for metrics in metrics_list:
-        for metric_name, backend_map in metrics.items():
-            if metric_name not in results:
-                results[metric_name] = {}
-            for backend, val in backend_map.items():
-                if backend not in results[metric_name]:
-                    results[metric_name][backend] = {}
-                if isinstance(val, dict):
-                    for k, v in val.items():
-                        key = k if k == '_total' else int(k) if isinstance(k, (int, str)) and str(k).isdigit() else k
-                        results[metric_name][backend].setdefault(key, []).append(v)
-                else:
-                    # scalar value -> append under '_total'
-                    results[metric_name][backend].setdefault('_total', []).append(val)
-
-    return results
+    for metric_name, metric_by_backend in shardless_metrics.items():
+        plot_shardless_metric(metric_name, metric_by_backend, build_dir)

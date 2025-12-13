@@ -154,48 +154,17 @@ def join_metrics(backends_parsed: dict):
     where each of those dicts maps path-tuples (or path tuples with shard as first
     element for sharded) to values.
 
-    Returns a mapping: metric_name -> backend -> value-or-{shard: value,...}
-    If a metric exists both sharded and shardless for the same backend, the
-    shardless value will be stored under the key '_total' alongside shard keys.
+    Returns: A tuple (shardless_metrics, sharded_metrics) where each value is a mapping:
+        metric_name -> backend -> value-or-dict
     """
 
-    # build per-backend dicts expected by existing join helpers
     shardless_all = {backend: parsed[0] for backend, parsed in backends_parsed.items()}
     sharded_all = {backend: parsed[1] for backend, parsed in backends_parsed.items()}
 
     shardless_metrics = join_shardless_metrics(shardless_all)
     sharded_metrics = join_sharded_metrics(sharded_all)
 
-    metrics = dict()
-
-    # start with shardless metrics
-    for path, backends in shardless_metrics.items():
-        metrics.setdefault(path, {})
-        for backend, val in backends.items():
-            metrics[path][backend] = val
-
-    # merge sharded metrics
-    for path, backends in sharded_metrics.items():
-        metrics.setdefault(path, {})
-        for backend, shards in backends.items():
-            if backend not in metrics[path]:
-                # no shardless value, use shards dict directly
-                metrics[path][backend] = shards
-            else:
-                # shardless value exists; combine under a dict with '_total'
-                existing = metrics[path][backend]
-                # ensure we don't clobber if existing is already a dict
-                if isinstance(existing, dict):
-                    # merge, prefer existing keys (unlikely)
-                    merged = existing.copy()
-                    merged.update(shards)
-                    metrics[path][backend] = merged
-                else:
-                    merged = {'_total': existing}
-                    merged.update(shards)
-                    metrics[path][backend] = merged
-
-    return metrics
+    return (shardless_metrics, sharded_metrics)
 
 def generate_metric_name_from_path(path: tuple) -> str:
     return '_'.join(str(p) for p in path)
