@@ -27,27 +27,31 @@ class benchmark_suite_runner:
     def run(self):
         for benchmark in self.benchmarks:
             test_name = benchmark['name']
+            iterations= benchmark.get('iterations', 1)
 
-            output_dir: Path = self.output_dir / test_name
+            test_output_dir: Path = self.output_dir / test_name
+            test_output_dir.mkdir(exist_ok=True, parents=True)
 
-            output_dir.mkdir(exist_ok=True, parents=True)
-
-            config_path = output_dir / "conf.yaml"
-
+            config_path = test_output_dir / "conf.yaml"
             with open(config_path, "w") as f:
                 print(safe_dump(benchmark['config']), file=f)
 
-            print(f"Running benchmark {test_name}")
-            result: dict = None    
+            for i in range(iterations):
+                print(f"Running benchmark {test_name}, i={i}")
 
-            if benchmark['type'] == "io":
-                result = run_io_test(self.io_tester_path, config_path, output_dir, self.storage_dir, self.io_asymmetric_cpuset, self.io_symmetric_cpuset, self.backends)
-            elif benchmark['type'] == "rpc":
-                result = run_rpc_test(self.rpc_tester_path, config_path, output_dir, self.ip_address, self.rpc_asymmetric_server_cpuset, self.rpc_symmetric_server_cpuset, self.rpc_asymmetric_client_cpuset, self.rpc_symmetric_client_cpuset, self.backends)
-            else:
-                raise Exception(f"Unknown benchmark type {benchmark['type']}")
+                run_output_dir: Path = test_output_dir / f"run_{i}"
+                run_output_dir.mkdir(exist_ok=True, parents=True)
+
+                result: dict = None    
+
+                if benchmark['type'] == "io":
+                    result = run_io_test(self.io_tester_path, config_path, run_output_dir, self.storage_dir, self.io_asymmetric_cpuset, self.io_symmetric_cpuset, self.backends)
+                elif benchmark['type'] == "rpc":
+                    result = run_rpc_test(self.rpc_tester_path, config_path, run_output_dir, self.ip_address, self.rpc_asymmetric_server_cpuset, self.rpc_symmetric_server_cpuset, self.rpc_asymmetric_client_cpuset, self.rpc_symmetric_client_cpuset, self.backends)
+                else:
+                    raise Exception(f"Unknown benchmark type {benchmark['type']}")
                 
-            generate_graphs(result, output_dir)
+                generate_graphs(result, run_output_dir)
 
 def dump_environment(dir_for_config: Path, dir_to_seastar: Path):
     """
