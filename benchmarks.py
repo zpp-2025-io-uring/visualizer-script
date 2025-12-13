@@ -5,6 +5,7 @@ import subprocess
 from yaml import safe_load, safe_dump
 from run_io import run_io_test
 from run_rpc import run_rpc_test
+from generate import generate_graphs
 
 class benchmark_suite_runner:
     def __init__(self, benchmarks, config: dict):
@@ -37,13 +38,16 @@ class benchmark_suite_runner:
                 print(safe_dump(benchmark['config']), file=f)
 
             print(f"Running benchmark {test_name}")
-            match benchmark['type']:
-                case "io":
-                    run_io_test(self.io_tester_path, config_path, output_dir, self.storage_dir, self.io_asymmetric_cpuset, self.io_symmetric_cpuset, self.backends)
-                case "rpc":
-                    run_rpc_test(self.rpc_tester_path, config_path, output_dir, self.ip_address, self.rpc_asymmetric_server_cpuset, self.rpc_symmetric_server_cpuset, self.rpc_asymmetric_client_cpuset, self.rpc_symmetric_client_cpuset, self.backends)
-                case _:
-                    raise Exception(f"Unknown benchmark type {benchmark['type']}")
+            result: dict = None    
+
+            if benchmark['type'] == "io":
+                result = run_io_test(self.io_tester_path, config_path, output_dir, self.storage_dir, self.io_asymmetric_cpuset, self.io_symmetric_cpuset, self.backends)
+            elif benchmark['type'] == "rpc":
+                result = run_rpc_test(self.rpc_tester_path, config_path, output_dir, self.ip_address, self.rpc_asymmetric_server_cpuset, self.rpc_symmetric_server_cpuset, self.rpc_asymmetric_client_cpuset, self.rpc_symmetric_client_cpuset, self.backends)
+            else:
+                raise Exception(f"Unknown benchmark type {benchmark['type']}")
+                
+            generate_graphs(result, output_dir)
 
 def run_benchmark_suite_args(args):
     benchmark_path = Path(args.benchmark).resolve()

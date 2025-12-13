@@ -1,7 +1,6 @@
 import argparse
 import subprocess
 from pathlib import Path
-from generate import generate_graphs
 from os import cpu_count
 from time import sleep
 
@@ -88,7 +87,7 @@ class rpc_test_runner:
 
         return client.stdout
 
-    def run(self):
+    def run(self) -> dict:
         backends_data_raw = dict()
 
         for backend in self.backends:
@@ -97,11 +96,10 @@ class rpc_test_runner:
             else:
                 backends_data_raw[backend] = self.__run_test(backend, backend, self.symmetric_server_cpuset, self.symmetric_client_cpuset)
 
-        print("Generating graphs")
-        generate_graphs(backends_data_raw, self.output_dir)
+        return backends_data_raw
 
-def run_rpc_test(tester_path, config_path, output_dir, ip_address, asymmetric_server_cpuset, symmetric_server_cpuset, asymmetric_client_cpuset, symmetric_client_cpuset, backends):
-    rpc_test_runner(Path(tester_path), Path(config_path), Path(output_dir), ip_address, asymmetric_server_cpuset, symmetric_server_cpuset, asymmetric_client_cpuset, symmetric_client_cpuset, backends).run()
+def run_rpc_test(tester_path, config_path, output_dir, ip_address, asymmetric_server_cpuset, symmetric_server_cpuset, asymmetric_client_cpuset, symmetric_client_cpuset, backends) -> dict:
+    return rpc_test_runner(Path(tester_path), Path(config_path), Path(output_dir), ip_address, asymmetric_server_cpuset, symmetric_server_cpuset, asymmetric_client_cpuset, symmetric_client_cpuset, backends).run()
 
 def run_rpc_test_args(args):
     run_rpc_test(args.tester, args.config, args.output_dir, args.ip, args.asymmetric_server_cpuset, args.symmetric_server_cpuset, args.asymmetric_client_cpuset, args.symmetric_client_cpuset, args.backends)
