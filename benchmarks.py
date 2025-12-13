@@ -5,7 +5,8 @@ import subprocess
 from yaml import safe_load, safe_dump
 from run_io import run_io_test
 from run_rpc import run_rpc_test
-from generate import generate_graphs
+from generate import generate_graphs, join_stats
+from parse import load_data, auto_generate_data_points, join_metrics
 
 class benchmark_suite_runner:
     def __init__(self, benchmarks, config: dict):
@@ -36,6 +37,7 @@ class benchmark_suite_runner:
             with open(config_path, "w") as f:
                 print(safe_dump(benchmark['config']), file=f)
 
+            metrics_runs = []
             for i in range(iterations):
                 print(f"Running benchmark {test_name}, i={i}")
 
@@ -50,8 +52,21 @@ class benchmark_suite_runner:
                     result = run_rpc_test(self.rpc_tester_path, config_path, run_output_dir, self.ip_address, self.rpc_asymmetric_server_cpuset, self.rpc_symmetric_server_cpuset, self.rpc_asymmetric_client_cpuset, self.rpc_symmetric_client_cpuset, self.backends)
                 else:
                     raise Exception(f"Unknown benchmark type {benchmark['type']}")
-                
-                generate_graphs(result, run_output_dir)
+
+                # convert raw backend outputs to the "metrics" shape using parse helpers
+                backends_parsed = {}
+                for backend, raw in result.items():
+                    parsed = load_data(raw)
+                    backends_parsed[backend] = auto_generate_data_points(parsed)
+
+                metrics = join_metrics(backends_parsed)
+                metrics_runs.append(metrics)
+
+                # generate graphs from metrics mapping
+                generate_graphs(metrics, run_output_dir)
+
+            joined_stats = join_stats(metrics_runs)
+            print(joined_stats)
 
 def dump_environment(dir_for_config: Path, dir_to_seastar: Path):
     """

@@ -1,6 +1,7 @@
 import argparse
 from pathlib import Path
 from generate import generate_graphs
+from parse import load_data, auto_generate_data_points, join_metrics
 
 def run_redraw(backend_paths: dict, output_dir):
     output_dir = Path(output_dir)
@@ -10,7 +11,14 @@ def run_redraw(backend_paths: dict, output_dir):
         with open(Path(path), "r") as f:
             backends_data_raw[backend] = f.read()
 
-    generate_graphs(backends_data_raw, output_dir)
+    # Convert raw outputs to metrics mapping expected by generate_graphs
+    backends_parsed = {}
+    for backend, raw in backends_data_raw.items():
+        parsed = load_data(raw)
+        backends_parsed[backend] = auto_generate_data_points(parsed)
+
+    metrics = join_metrics(backends_parsed)
+    generate_graphs(metrics, output_dir)
 
 def run_redraw_args(args):
     backend_names = ['asymmetric_io_uring', 'io_uring', 'linux-aio', 'epoll']

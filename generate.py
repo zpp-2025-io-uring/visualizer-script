@@ -1,25 +1,12 @@
-import yaml
-import numpy as np
-import argparse
-import plotly.express as px
-import pandas as pd
 import pathlib
+import pandas as pd
+import plotly.express as px
 
-BAR_WIDTH = 0.25
+def make_plot(title: str, filename: str, xlabel: str, ylabel: str, per_backend_data_vec: dict, xticks: bool):
+    """Draw a grouped bar chart from a mapping backend -> list-of-values.
 
-def get_data(yaml_dict, getter, num_shards, default=0):
-    result = [default for _ in range(num_shards)]
-
-    for el in yaml_dict:
-        result[el['shard']] = getter(el)
-
-    return result
-
-def total_data(yaml_dict, getter):  
-    result = [getter(el) for el in yaml_dict]
-    return np.sum(result)
-
-def make_plot(title: str, filename: str, xlabel: str, ylabel: str, per_backend_data_vec: dict, xticks):
+    Expects all value lists to have identical length.
+    """
     size = len(next(iter(per_backend_data_vec.values())))
     for val in per_backend_data_vec.values():
         if len(val) != size:
@@ -58,110 +45,127 @@ def make_plot(title: str, filename: str, xlabel: str, ylabel: str, per_backend_d
 
     fig.write_image(filename)
 
-def make_plot_getter(title: str, filename: str, ylabel: str, backends_data: dict, getter):
-    num_shards = max((len(x) for x in backends_data.values()))
 
-    per_backend_data_vec = dict()
-    for backend, data in backends_data.items():
-        per_backend_data_vec[backend] = get_data(data, getter, num_shards)
+def _is_sharded_metric(metric_map: dict) -> bool:
+    # metric_map: backend -> either scalar or dict-of-shard
+    for v in metric_map.values():
+        if isinstance(v, dict):
+            return True
+    return False
 
-    make_plot(title, filename, "shard", ylabel, per_backend_data_vec, True)
 
-def load_data(raw_output: str):
-    yaml_part = raw_output.split('---\n')[1]
-    yaml_part = yaml_part.removesuffix("...\n")
-    return yaml.safe_load(yaml_part)
+def plot_metric(metric_name: str, metric_map: dict, build_dir: pathlib.Path):
+    """Plot a single metric described by `metric_map` (backend -> value-or-dict).
 
-def auto_generate_data_points(backends_data: dict) -> set[tuple]:
-    data_points = set()
-
-    def walk_tree(prefix, data):
-        if not isinstance(data, dict):
-            return [prefix]
-
-        result = []
-        for key, val in data.items():
-            result += walk_tree(prefix + [key], val)
-
-        return result
-    
-    for data in backends_data.values():
-        for el in data:
-            data_points |= set([tuple(x) for x in walk_tree([], el)])
-
-    data_points.remove(('shard',))
-
-    return data_points
-
-def plot_data_point(data_point, backends_data: dict, build_dir: pathlib.Path):
-    def getter(data):
-        for point in data_point:
-            data = data[point]
-        return data
-    
-    plot_title: str = " ".join(data_point)
-    file_basename: str = "_".join(data_point).replace('/', '_')
-    filename = build_dir / pathlib.Path(f"auto_{file_basename}.svg")
-    
-    make_plot_getter(plot_title.capitalize(), filename, None, backends_data, getter)
-
-    totals = dict()
-    for backend, data in backends_data.items():
-        totals[backend] = [total_data(data, getter)]
-
-    filename = build_dir / pathlib.Path(f"auto_total_{file_basename}.svg")
-    make_plot(f"Total {plot_title}", filename, None, None, totals, False)
-    print(f"{plot_title}: ", ', '.join((f"{key}: {val[0]}" for key, val in totals.items())))
-
-def auto_generate(backends_data: dict, build_dir: pathlib.Path):
-    for data_point in auto_generate_data_points(backends_data):
-        plot_data_point(data_point, backends_data, build_dir)
-
-def join_stats(backends_data_raw: list[dict]):
-    """Joins multiple runs of benchmarks into a single data structure suitable for plotting.
-    For each data point, for each backend, collects data from all runs.
-    
-    Example:
-    {('rpc_echo', 'latencies', 'p0.99'): {'epoll': {0: [624, 584, 580]}, 'io_uring': {0: [703, 703, 704]}}, ('rpc_echo', 'latencies', 'max'): {'epoll': {0: [803, 831, 827]}, 'io_uring': {0: [935, 958, 1045]}}
+    Produces a per-shard grouped plot when sharded data is present and a
+    separate totals plot. Non-sharded scalar values are shown as single-bar
+    grouped charts.
     """
+    # sanitize filename
+    file_basename = metric_name.replace('/', '_')
 
-    parsed_iterations = list()
-    for iteration in backends_data_raw:
-        backends_data = dict()
-        for backend, data_raw in iteration.items():
-            backends_data[backend] = load_data(data_raw)
-        parsed_iterations.append(backends_data)
+    if _is_sharded_metric(metric_map):
+        # determine number of shards
+        max_shard = -1
+        for v in metric_map.values():
+            if isinstance(v, dict):
+                # keys may be ints or strings like '_total'
+                for k in v.keys():
+                    if isinstance(k, int):
+                        max_shard = max(max_shard, k)
+                    else:
+                        try:
+                            ik = int(k)
+                            max_shard = max(max_shard, ik)
+                        except Exception:
+                            pass
 
-    def getter(data):
-        for point in data_point:
-            data = data[point]
-        return data
-    
-    results_per_data_point = dict(dict(list()))
+        num_shards = max_shard + 1 if max_shard >= 0 else 0
 
-    for iteration_data in parsed_iterations:
-        for data_point in auto_generate_data_points(iteration_data):
-            if data_point not in results_per_data_point:
-                results_per_data_point[data_point] = dict(list())
+        if num_shards > 0:
+            per_backend = {}
+            for backend, v in metric_map.items():
+                vec = [0 for _ in range(num_shards)]
+                if isinstance(v, dict):
+                    for k, val in v.items():
+                        # treat keys that are ints or numeric strings as shard indices
+                        if k == '_total':
+                            continue
+                        try:
+                            idx = int(k)
+                        except Exception:
+                            continue
+                        if idx < num_shards:
+                            vec[idx] = val
+                # scalars remain zero-filled for per-shard plot
+                per_backend[backend] = vec
 
-            num_shards = max((len(x) for x in iteration_data.values()))
-            per_backend_data_vec = dict()
-            for backend, data in iteration_data.items():
-                if backend not in results_per_data_point[data_point]:
-                    results_per_data_point[data_point][backend] = dict(list())
+            filename = build_dir / pathlib.Path(f"auto_{file_basename}.svg")
+            make_plot(metric_name, filename, "shard", None, per_backend, True)
 
-                per_backend_data_vec[backend] = get_data(data, getter, num_shards)
-                for shard_idx in range(num_shards):
-                    if shard_idx not in results_per_data_point[data_point][backend]:
-                        results_per_data_point[data_point][backend][shard_idx] = list()
-                    results_per_data_point[data_point][backend][shard_idx].append(per_backend_data_vec[backend][shard_idx])
+        # totals plot
+        totals = {}
+        for backend, v in metric_map.items():
+            if isinstance(v, dict):
+                # sum numeric shards, ignore '_total' if present (prefer explicit)
+                total_val = 0
+                for k, val in v.items():
+                    if k == '_total':
+                        total_val = val
+                        break
+                    try:
+                        float(val)
+                        total_val += val
+                    except Exception:
+                        pass
+                totals[backend] = [total_val]
+            else:
+                totals[backend] = [v]
+
+        filename = build_dir / pathlib.Path(f"auto_total_{file_basename}.svg")
+        make_plot(f"Total {metric_name}", filename, None, None, totals, False)
+        print(f"{metric_name}: ", ', '.join((f"{key}: {val[0]}" for key, val in totals.items())))
+    else:
+        # all scalars -> single grouped bar chart
+        per_backend = {backend: [v] for backend, v in metric_map.items()}
+        filename = build_dir / pathlib.Path(f"auto_{file_basename}.svg")
+        make_plot(metric_name, filename, None, None, per_backend, False)
+        print(f"{metric_name}: ", ', '.join((f"{key}: {val[0]}" for key, val in per_backend.items())))
 
 
-    return results_per_data_point
+def generate_graphs(metrics: dict, build_dir: pathlib.Path):
+    """Generate plots from a metrics mapping (metric_name -> backend -> value-or-dict).
 
-def generate_graphs(backends_data_raw: dict, build_dir: pathlib.Path):
-    backends_data = dict()
-    for backend, data_raw in backends_data_raw.items():
-        backends_data[backend] = load_data(data_raw)
+    This function expects the output of `parse.join_metrics` as input.
+    """
+    for metric_name, metric_map in metrics.items():
+        try:
+            plot_metric(metric_name, metric_map, build_dir)
+        except Exception as e:
+            print(f"Failed to plot {metric_name}: {e}")
 
-    auto_generate(backends_data, build_dir)
+
+def join_stats(metrics_list: list[dict]):
+    """Join metrics from multiple runs.
+
+    Input: list where each element is a metrics mapping (metric_name -> backend -> value-or-dict)
+    Output: mapping metric_name -> backend -> shard_index_or__total -> list_of_values
+    """
+    results = {}
+
+    for metrics in metrics_list:
+        for metric_name, backend_map in metrics.items():
+            if metric_name not in results:
+                results[metric_name] = {}
+            for backend, val in backend_map.items():
+                if backend not in results[metric_name]:
+                    results[metric_name][backend] = {}
+                if isinstance(val, dict):
+                    for k, v in val.items():
+                        key = k if k == '_total' else int(k) if isinstance(k, (int, str)) and str(k).isdigit() else k
+                        results[metric_name][backend].setdefault(key, []).append(v)
+                else:
+                    # scalar value -> append under '_total'
+                    results[metric_name][backend].setdefault('_total', []).append(val)
+
+    return results
