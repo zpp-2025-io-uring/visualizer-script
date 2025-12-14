@@ -18,8 +18,8 @@ def run_redraw(backend_paths: dict, output_dir):
         parsed = load_data(raw)
         backends_parsed[backend] = auto_generate_data_points(parsed)
 
-    metrics = join_metrics(backends_parsed)
-    generate_graphs(metrics, output_dir)
+    (shardless_metrics, sharded_metrics) = join_metrics(backends_parsed)
+    generate_graphs(sharded_metrics, shardless_metrics, output_dir)
 
 def run_redraw_args(args):
     backend_names = ['asymmetric_io_uring', 'io_uring', 'linux-aio', 'epoll']
@@ -28,7 +28,7 @@ def run_redraw_args(args):
 
     args_dict = vars(args)
     for backend in backend_names:
-        if args_dict[backend] is not None:
+        if backend in args_dict and args_dict[backend] is not None:
             backend_paths[backend] = args_dict[backend]
 
     run_redraw(backend_paths, args.output_dir)
