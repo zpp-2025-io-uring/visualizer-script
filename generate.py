@@ -121,8 +121,9 @@ def sanitize_filename(name: str) -> str:
 def generate_graphs(sharded_metrics: dict[dict[dict]], shardless_metrics: dict[dict], build_dir: pathlib.Path):
     """Generate plots from a metrics mapping (metric_name -> backend -> value-or-dict).
 
-    This function expects the output of `parse.join_metrics` as input.
+    This function expects the output of `stats.join_metrics` as input.
     """
+
     for metric_name, metric_by_backend in sharded_metrics.items():
         plot_sharded_metric(metric_name, metric_by_backend, build_dir)
         plot_total_metric(metric_name, metric_by_backend, build_dir)
