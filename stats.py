@@ -1,6 +1,80 @@
 import statistics
 from typing import Iterable
 
+def join_sharded_metrics(sharded_data_points: dict):
+    """Aggregate sharded data points into metric -> backend -> {shard: value}.
+
+    The expected input shape is a mapping: backend -> { (shard, *path): value }
+    where keys are tuples whose first element is the shard index. This helper
+    converts the tuple path into a string metric name (using
+    `generate_metric_name_from_path`) and groups values by backend and shard.
+
+    Returns:
+        dict mapping metric_name -> backend -> { shard_index: value, ... }
+    """
+
+    metrics = dict()
+
+    for backend in sharded_data_points:
+        for key, val in sharded_data_points[backend].items():
+            shard = key[0]
+            path = generate_metric_name_from_path(key[1:])
+            if path not in metrics:
+                metrics[path] = dict()
+            if backend not in metrics[path]:
+                metrics[path][backend] = dict()
+            metrics[path][backend][shard] = val
+    
+    return metrics
+
+def join_shardless_metrics(shardless_data_points: dict):
+    """Aggregate shardless data points into metric -> backend -> value.
+
+    The expected input shape is a mapping: backend -> { (path,): value } (note
+    the path is a tuple of path components). This helper converts the tuple
+    path into a string metric name (using `generate_metric_name_from_path`) and
+    groups values by backend.
+
+    Returns:
+        dict mapping metric_name -> backend -> value
+    """
+
+    metrics = dict()
+
+    for backend in shardless_data_points:
+        for key, val in shardless_data_points[backend].items():
+            path = generate_metric_name_from_path(key)
+            if path not in metrics:
+                metrics[path] = dict()
+            if backend not in metrics[path]:
+                metrics[path][backend] = dict()
+            # store raw (non-sharded) value directly for the backend
+            metrics[path][backend] = val
+    
+    return metrics
+
+def generate_metric_name_from_path(path: tuple) -> str:
+    return '_'.join(str(p) for p in path)
+
+def join_metrics(backends_parsed: dict):
+    """Merge sharded and shardless metrics produced per-backend.
+
+    Expects `backends_parsed` to be a mapping: backend -> (shardless_dict, sharded_dict)
+    where each of those dicts maps path-tuples (or path tuples with shard as first
+    element for sharded) to values.
+
+    Returns: A tuple (shardless_metrics, sharded_metrics) where each value is a mapping:
+        metric_name -> backend -> value-or-dict
+    """
+
+    shardless_all = {backend: parsed[0] for backend, parsed in backends_parsed.items()}
+    sharded_all = {backend: parsed[1] for backend, parsed in backends_parsed.items()}
+
+    shardless_metrics = join_shardless_metrics(shardless_all)
+    sharded_metrics = join_sharded_metrics(sharded_all)
+
+    return (shardless_metrics, sharded_metrics)
+
 def join_stats(metrics_runs: list[dict]):
     """Aggregate per-run metrics into a run-oriented structure.
 
@@ -110,3 +184,5 @@ def summarize_stats(sharded_metrics: dict, shardless_metrics: dict):
     for metric_name, backends in summary_stats['shardless_metrics'].items():
         for backend_name, samples in list(backends.items()):
             backends[backend_name] = compute_stats(samples)
+
+    return summary_stats

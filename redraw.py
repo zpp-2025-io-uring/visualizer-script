@@ -1,7 +1,8 @@
 import argparse
 from pathlib import Path
 from generate import generate_graphs
-from parse import load_data, auto_generate_data_points, join_metrics
+from parse import load_data, auto_generate_data_points
+from stats import join_metrics
 
 def run_redraw(backend_paths: dict, output_dir):
     output_dir = Path(output_dir)

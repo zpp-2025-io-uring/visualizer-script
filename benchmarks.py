@@ -6,8 +6,8 @@ from yaml import safe_load, safe_dump
 from run_io import run_io_test
 from run_rpc import run_rpc_test
 from generate import generate_graphs
-from parse import load_data, auto_generate_data_points, join_metrics, save_results_for_benchmark
-from stats import join_stats
+from parse import load_data, auto_generate_data_points, save_results_for_benchmark
+from stats import join_stats, join_metrics
 
 class benchmark_suite_runner:
     def __init__(self, benchmarks, config: dict):
