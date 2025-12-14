@@ -1,31 +1,6 @@
-"""Helpers to parse raw io-tester client output and produce metric maps.
-
-This module provides two layers of helpers:
-- low-level helpers that transform raw backend data into two shapes:
-    - shardless data points: mapping from a path-tuple -> value
-    - sharded data points: mapping from a path-tuple prefixed with shard -> value
-- a single, small public API `join_metrics(backends_parsed)` that merges
-    per-backend parsed data into a unified mapping suitable for plotting or
-    aggregation.
-
-Typical usage:
-    backends_parsed = {
-            'epoll': (shardless_dict, sharded_dict),
-            'io_uring': (shardless_dict, sharded_dict),
-    }
-
-    metrics = join_metrics(backends_parsed)
-
-The returned `metrics` mapping has the shape:
-    metric_name -> backend -> value
-where `value` is either a raw value (for shardless metrics) or a dict of
-shard -> value for sharded metrics. If both a sharded and a shardless value
-exist for the same backend/metric, the shardless value is stored under the
-special key '_total' alongside shard keys.
-"""
-
 from yaml import safe_load, safe_dump
 from pathlib import Path
+from stats import summarize_stats
 
 
 def load_data(raw_output: str):
@@ -170,7 +145,7 @@ def join_metrics(backends_parsed: dict):
 def generate_metric_name_from_path(path: tuple) -> str:
     return '_'.join(str(p) for p in path)
 
-def save_results_for_benchmark(benchmark_output_dir: Path, sharded_metrics: dict, shardless_metrics: dict, benchmark_info: dict | None = None):
+def save_results_for_benchmark(benchmark_output_dir: Path, sharded_metrics: dict, shardless_metrics: dict, benchmark_info: dict):
     """Write a single, non-duplicated metrics summary organized by runs.
 
     Output structure:
@@ -205,13 +180,6 @@ def save_results_for_benchmark(benchmark_output_dir: Path, sharded_metrics: dict
     groups values under each run, which makes it natural to extend run
     properties in the future.
     """
-
-    benchmark = benchmark_info or {
-        'id': benchmark_output_dir.name,
-        'path': str(benchmark_output_dir),
-        'properties': {},
-    }
-
     # build map run_id -> run entry
     runs_map: dict = {}
 
@@ -259,10 +227,13 @@ def save_results_for_benchmark(benchmark_output_dir: Path, sharded_metrics: dict
     # prepare final summary
     runs_list = [runs_map[k] for k in sorted(runs_map.keys(), key=lambda x: (int(x) if isinstance(x, (int, str)) and str(x).isdigit() else str(x)))]
     summary = {
-        'benchmark': benchmark,
+        'benchmark': benchmark_info,
         'run_count': len(runs_list),
         'runs': runs_list,
     }
+
+    summary_stats = summarize_stats(sharded_metrics, shardless_metrics)
+    summary['summary'] = summary_stats
 
     benchmark_output_dir.mkdir(parents=True, exist_ok=True)
     with open(benchmark_output_dir / 'metrics_summary.yaml', 'w') as f:
