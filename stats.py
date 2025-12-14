@@ -1,49 +1,47 @@
 
-def join_sharded_metrics(sharded_data_points: list[dict[dict[dict]]]):
-    """Join sharded metrics from multiple runs."""
+def join_stats(metrics_runs: list[dict]):
+    """Aggregate per-run metrics into a run-oriented structure.
 
-    summed_metrics = dict()
+    Expected input: list of dicts with keys:
+        - 'run_id': arbitrary run identifier (int or str)
+        - 'sharded': mapping metric -> backend -> { shard: value }
+        - 'shardless': mapping metric -> backend -> value
 
-    for iteration in sharded_data_points:
-        for metric_name, backend_map in iteration.items():
-            if metric_name not in summed_metrics:
-                summed_metrics[metric_name] = dict()
+    Returns a tuple (sharded, shardless) where:
+        sharded: metric -> backend -> list of { 'run_id', 'shard', 'value' }
+        shardless: metric -> backend -> list of { 'run_id', 'value' }
+
+    This shape avoids duplicating aggregated lists per metric and keeps per-run
+    information available for downstream consumers.
+    """
+
+    sharded_out: dict = {}
+    shardless_out: dict = {}
+
+    for run in metrics_runs:
+        run_id = run.get('run_id')
+
+        # sharded metrics: iterate over metrics and backends and record each shard as a run entry
+        for metric_name, backend_map in (run.get('sharded') or {}).items():
+            if metric_name not in sharded_out:
+                sharded_out[metric_name] = {}
 
             for backend, shard_map in backend_map.items():
-                if backend not in summed_metrics[metric_name]:
-                    summed_metrics[metric_name][backend] = dict()
+                if backend not in sharded_out[metric_name]:
+                    sharded_out[metric_name][backend] = []
 
                 for shard, value in shard_map.items():
-                    if shard not in summed_metrics[metric_name][backend]:
-                        summed_metrics[metric_name][backend][shard] = list()
+                    sharded_out[metric_name][backend].append({'run_id': run_id, 'shard': shard, 'value': value})
 
-                    summed_metrics[metric_name][backend][shard].append(value)
-    return summed_metrics
-
-def join_shardless_metrics(metrics_list: list[dict[dict]]):
-    """Join shardless metrics from multiple runs."""
-
-    summed_metrics = dict()
-    for iteration in metrics_list:
-        for metric_name, backend_map in iteration.items():
-            if metric_name not in summed_metrics:
-                summed_metrics[metric_name] = dict()
+        # shardless metrics: record single value per run per backend
+        for metric_name, backend_map in (run.get('shardless') or {}).items():
+            if metric_name not in shardless_out:
+                shardless_out[metric_name] = {}
 
             for backend, value in backend_map.items():
-                if backend not in summed_metrics[metric_name]:
-                    summed_metrics[metric_name][backend] = []
+                if backend not in shardless_out[metric_name]:
+                    shardless_out[metric_name][backend] = []
 
-                summed_metrics[metric_name][backend].append(value)
+                shardless_out[metric_name][backend].append({'run_id': run_id, 'value': value})
 
-    return summed_metrics
-
-def join_stats(metrics_list: list[tuple[dict[dict[dict]], dict[dict]]]):
-    """Join both sharded and shardless metrics from multiple runs."""
-
-    sharded_list = [m[0] for m in metrics_list]
-    shardless_list = [m[1] for m in metrics_list]
-
-    joined_sharded = join_sharded_metrics(sharded_list)
-    joined_shardless = join_shardless_metrics(shardless_list)
-
-    return (joined_sharded, joined_shardless)
+    return (sharded_out, shardless_out)

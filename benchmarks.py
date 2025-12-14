@@ -6,7 +6,7 @@ from yaml import safe_load, safe_dump
 from run_io import run_io_test
 from run_rpc import run_rpc_test
 from generate import generate_graphs
-from parse import load_data, auto_generate_data_points, join_metrics
+from parse import load_data, auto_generate_data_points, join_metrics, save_results_for_benchmark
 from stats import join_stats
 
 class benchmark_suite_runner:
@@ -25,13 +25,6 @@ class benchmark_suite_runner:
         self.backends = config['backends']
 
         self.benchmarks = benchmarks
-
-    def save_results_for_benchmark(benchmark_output_dir: Path, sharded_metrics: dict, shardless_metrics: dict):
-        with open(benchmark_output_dir / 'sharded_metrics.yaml', 'w') as f:
-            print(safe_dump(sharded_metrics), file=f)
-
-        with open(benchmark_output_dir / 'shardless_metrics.yaml', 'w') as f:
-            print(safe_dump(shardless_metrics), file=f)
 
     def run(self):
         for benchmark in self.benchmarks:
@@ -61,19 +54,18 @@ class benchmark_suite_runner:
                 else:
                     raise Exception(f"Unknown benchmark type {benchmark['type']}")
 
-                # convert raw backend outputs to the "metrics" shape using parse helpers
                 backends_parsed = {}
                 for backend, raw in result.items():
                     parsed = load_data(raw)
                     backends_parsed[backend] = auto_generate_data_points(parsed)
 
                 [shardless_metrics, sharded_metrics] = join_metrics(backends_parsed)
-                metrics_runs.append((sharded_metrics, shardless_metrics))
-
+                metrics_runs.append({'run_id': i, 'sharded': sharded_metrics, 'shardless': shardless_metrics})
                 generate_graphs(sharded_metrics, shardless_metrics, run_output_dir)
 
             (combined_sharded, combined_shardless) = join_stats(metrics_runs)
-            self.save_results_for_benchmark(test_output_dir, combined_sharded, combined_shardless)
+            benchmark_info = {'id': test_name, 'properties': {'iterations': iterations}}
+            save_results_for_benchmark(test_output_dir, combined_sharded, combined_shardless, benchmark_info)
 
 def dump_environment(dir_for_config: Path, dir_to_seastar: Path):
     """
