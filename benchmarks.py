@@ -26,6 +26,13 @@ class benchmark_suite_runner:
 
         self.benchmarks = benchmarks
 
+    def save_results_for_benchmark(benchmark_output_dir: Path, sharded_metrics: dict, shardless_metrics: dict):
+        with open(benchmark_output_dir / 'sharded_metrics.yaml', 'w') as f:
+            print(safe_dump(sharded_metrics), file=f)
+
+        with open(benchmark_output_dir / 'shardless_metrics.yaml', 'w') as f:
+            print(safe_dump(shardless_metrics), file=f)
+
     def run(self):
         for benchmark in self.benchmarks:
             test_name = benchmark['name']
@@ -65,8 +72,8 @@ class benchmark_suite_runner:
 
                 generate_graphs(sharded_metrics, shardless_metrics, run_output_dir)
 
-            joined_stats = join_stats(metrics_runs)
-            print(joined_stats)
+            (combined_sharded, combined_shardless) = join_stats(metrics_runs)
+            self.save_results_for_benchmark(test_output_dir, combined_sharded, combined_shardless)
 
 def dump_environment(dir_for_config: Path, dir_to_seastar: Path):
     """
