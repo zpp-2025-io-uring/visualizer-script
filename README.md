@@ -17,6 +17,7 @@ Consists of a list of the following elements:
 ```yaml
 - type: # "io" or "rpc"
   name: # used for the result directory name
+  iterations: # number of iterations to run, optional, default: 1
   config:
   ... # Configuration to be passed to the tester
 ```
