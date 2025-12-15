@@ -64,7 +64,7 @@ def plot_sharded_metric(metric_name: str, sharded_metric_by_backend: dict, build
                 if shard_idx > max_shard:
                     max_shard = shard_idx
             except Exception:
-                pass
+                raise ValueError(f"Shard identifiers must be integers, got {shard} for backend {backend}")
 
     if max_shard == -1:
         raise ValueError(f"No sharded data found for metric {metric_name}")
