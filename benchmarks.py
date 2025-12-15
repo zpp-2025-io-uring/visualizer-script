@@ -29,7 +29,7 @@ class benchmark_suite_runner:
     def run(self):
         for benchmark in self.benchmarks:
             test_name = benchmark['name']
-            iterations= benchmark.get('iterations', 1)
+            iterations = benchmark.get('iterations', 1)
 
             test_output_dir: Path = self.output_dir / test_name
             test_output_dir.mkdir(exist_ok=True, parents=True)
