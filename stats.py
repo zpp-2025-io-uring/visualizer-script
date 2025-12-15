@@ -182,7 +182,7 @@ def summarize_stats(sharded_metrics: dict, shardless_metrics: dict):
 
     # compute stats for shardless
     for metric_name, backends in summary_stats['shardless_metrics'].items():
-        for backend_name, samples in list(backends.items()):
+        for backend_name, samples in backends.items():
             backends[backend_name] = compute_stats(samples)
 
     return summary_stats
