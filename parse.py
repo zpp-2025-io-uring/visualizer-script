@@ -119,11 +119,11 @@ def save_results_for_benchmark(benchmark_output_dir: Path, sharded_metrics: dict
                     runs_map[run_id] = {'id': run_id, 'properties': {}, 'results': {'sharded_metrics': {}, 'shardless_metrics': {}}}
 
                 run_entry = runs_map[run_id]
-                sharded_metrics = run_entry['results']['sharded_metrics']
-                if metric_name not in sharded_metrics:
-                    sharded_metrics[metric_name] = {'properties': {}, 'backends': {}}
+                sharded_metrics_for_run = run_entry['results']['sharded_metrics']
+                if metric_name not in sharded_metrics_for_run:
+                    sharded_metrics_for_run[metric_name] = {'properties': {}, 'backends': {}}
 
-                backends_for_metric = sharded_metrics[metric_name]['backends']
+                backends_for_metric = sharded_metrics_for_run[metric_name]['backends']
                 if backend_name not in backends_for_metric:
                     backends_for_metric[backend_name] = {'properties': {}, 'shards': []}
 
@@ -140,11 +140,11 @@ def save_results_for_benchmark(benchmark_output_dir: Path, sharded_metrics: dict
                     runs_map[run_id] = {'id': run_id, 'properties': {}, 'results': {'sharded_metrics': {}, 'shardless_metrics': {}}}
 
                 run_entry = runs_map[run_id]
-                shardless_metrics = run_entry['results']['shardless_metrics']
-                if metric_name not in shardless_metrics:
-                    shardless_metrics[metric_name] = {'properties': {}, 'backends': {}}
+                shardless_metrics_for_run = run_entry['results']['shardless_metrics']
+                if metric_name not in shardless_metrics_for_run:
+                    shardless_metrics_for_run[metric_name] = {'properties': {}, 'backends': {}}
 
-                backends_for_metric = shardless_metrics[metric_name]['backends']
+                backends_for_metric = shardless_metrics_for_run[metric_name]['backends']
                 # for shardless, we store a single value per backend per run
                 backends_for_metric[backend_name] = {'properties': {}, 'value': value}
 
