@@ -10,7 +10,7 @@ from parse import load_data, auto_generate_data_points, save_results_for_benchma
 from stats import join_stats, join_metrics
 
 class benchmark_suite_runner:
-    def __init__(self, benchmarks, config: dict):
+    def __init__(self, benchmarks, config: dict, generate_graphs: bool):
         self.io_tester_path: Path = Path(config['io_tester_path']).expanduser().resolve()
         self.rpc_tester_path: Path = Path(config['rpc_tester_path']).expanduser().resolve()
         self.output_dir: Path = Path(config['output_dir']).resolve()
@@ -25,6 +25,7 @@ class benchmark_suite_runner:
         self.backends = config['backends']
 
         self.benchmarks = benchmarks
+        self.generate_graphs = generate_graphs
 
     def run(self):
         for benchmark in self.benchmarks:
@@ -61,7 +62,9 @@ class benchmark_suite_runner:
 
                 [shardless_metrics, sharded_metrics] = join_metrics(backends_parsed)
                 metrics_runs.append({'run_id': i, 'sharded': sharded_metrics, 'shardless': shardless_metrics})
-                generate_graphs(sharded_metrics, shardless_metrics, run_output_dir)
+
+                if self.generate_graphs:
+                    generate_graphs(sharded_metrics, shardless_metrics, run_output_dir)
 
             (combined_sharded, combined_shardless) = join_stats(metrics_runs)
             benchmark_info = {'id': test_name, 'properties': {'iterations': iterations}}
@@ -158,7 +161,8 @@ def run_benchmark_suite_args(args):
 
     runner = benchmark_suite_runner(
         safe_load(benchmark_yaml),
-        config
+        config,
+        args.generate_graphs
     )
 
     runner.run()
@@ -166,4 +170,5 @@ def run_benchmark_suite_args(args):
 def configure_run_benchmark_suite_parser(parser: argparse.ArgumentParser):
     parser.add_argument("--benchmark", help="path to .yaml file with the benchmark suite", required=True)
     parser.add_argument("--config", help="path to .yaml file with configuration for the test suite", required=True)
+    parser.add_argument("--generate-graphs", help="generate graphs for each run metric", action='store_true')
     parser.set_defaults(func=run_benchmark_suite_args)
