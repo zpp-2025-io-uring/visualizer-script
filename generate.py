@@ -1,25 +1,14 @@
-import yaml
-import numpy as np
-import argparse
-import plotly.express as px
-import pandas as pd
+"""Generates plots for sharded and shardless metrics."""
+
 import pathlib
+import pandas as pd
+import plotly.express as px
 
-BAR_WIDTH = 0.25
+def make_plot(title: str, filename: str, xlabel: str, ylabel: str, per_backend_data_vec: dict, xticks: bool):
+    """Draw a grouped bar chart from a mapping backend -> list-of-values.
 
-def get_data(yaml_dict, getter, num_shards, default=0):
-    result = [default for _ in range(num_shards)]
-
-    for el in yaml_dict:
-        result[el['shard']] = getter(el)
-
-    return result
-
-def total_data(yaml_dict, getter):  
-    result = [getter(el) for el in yaml_dict]
-    return np.sum(result)
-
-def make_plot(title: str, filename: str, xlabel: str, ylabel: str, per_backend_data_vec: dict, xticks):
+    Expects all value lists to have identical length.
+    """
     size = len(next(iter(per_backend_data_vec.values())))
     for val in per_backend_data_vec.values():
         if len(val) != size:
@@ -58,68 +47,86 @@ def make_plot(title: str, filename: str, xlabel: str, ylabel: str, per_backend_d
 
     fig.write_image(filename)
 
-def make_plot_getter(title: str, filename: str, ylabel: str, backends_data: dict, getter):
-    num_shards = max((len(x) for x in backends_data.values()))
 
-    per_backend_data_vec = dict()
-    for backend, data in backends_data.items():
-        per_backend_data_vec[backend] = get_data(data, getter, num_shards)
+def plot_sharded_metric(metric_name: str, sharded_metric_by_backend: dict, build_dir: pathlib.Path):
+    """Plot a single metric described by `metric_map` (backend -> shard -> value).
 
-    make_plot(title, filename, "shard", ylabel, per_backend_data_vec, True)
+    Produces a per-shard grouped plot and a separate totals plot.
+    """
+    file_basename = sanitize_filename(metric_name)
 
-def load_data(raw_output: str):
-    yaml_part = raw_output.split('---\n')[1]
-    yaml_part = yaml_part.removesuffix("...\n")
-    return yaml.safe_load(yaml_part)
+    # determine max shard index
+    max_shard = -1
+    for backend, result_by_shard in sharded_metric_by_backend.items():
+        for shard, result in result_by_shard.items():
+            try:
+                shard_idx = int(shard)
+                if shard_idx > max_shard:
+                    max_shard = shard_idx
+            except Exception:
+                raise ValueError(f"Shard identifiers must be integers, got {shard} for backend {backend}")
 
-def auto_generate_data_points(backends_data: dict):
-    data_points = set()
+    if max_shard == -1:
+        raise ValueError(f"No sharded data found for metric {metric_name}")
 
-    def walk_tree(prefix, data):
-        if not isinstance(data, dict):
-            return [prefix]
+    num_shards = max_shard + 1
 
-        result = []
-        for key, val in data.items():
-            result += walk_tree(prefix + [key], val)
-
-        return result
+    per_backend = {}
+    for backend, result_by_shard in sharded_metric_by_backend.items():
+        values = []
+        for shard_idx in range(num_shards):
+            if shard_idx in result_by_shard:
+                values.append(result_by_shard[shard_idx])
+            else:
+                values.append(0)
+        per_backend[backend] = values
     
-    for data in backends_data.values():
-        for el in data:
-            data_points |= set([tuple(x) for x in walk_tree([], el)])
+    file_path = build_dir / pathlib.Path(f"auto_{file_basename}.svg")
+    make_plot(metric_name, file_path, "shard", None, per_backend, True)
 
-    data_points.remove(('shard',))
+def plot_shardless_metric(metric_name: str, shardless_metric_by_backend: dict, build_dir: pathlib.Path):
+    """Plot a single shardless metric described by `metric_map` (backend -> value).
 
-    return data_points
+    Produces a single bar chart.
+    """
+    file_basename = sanitize_filename(metric_name)
 
-def plot_data_point(data_point, backends_data: dict, build_dir: pathlib.Path):
-    def getter(data):
-        for point in data_point:
-            data = data[point]
-        return data
-    
-    plot_title: str = " ".join(data_point)
-    file_basename: str = "_".join(data_point).replace('/', '_')
-    filename = build_dir / pathlib.Path(f"auto_{file_basename}.svg")
-    
-    make_plot_getter(plot_title.capitalize(), filename, None, backends_data, getter)
+    per_backend = {}
+    for backend, value in shardless_metric_by_backend.items():
+        per_backend[backend] = [value]
 
-    totals = dict()
-    for backend, data in backends_data.items():
-        totals[backend] = [total_data(data, getter)]
+    file_path = build_dir / pathlib.Path(f"auto_{file_basename}_total.svg")
+    make_plot(metric_name + " (total)", file_path, None, None, per_backend, False)
 
-    filename = build_dir / pathlib.Path(f"auto_total_{file_basename}.svg")
-    make_plot(f"Total {plot_title}", filename, None, None, totals, False)
-    print(f"{plot_title}: ", ', '.join((f"{key}: {val[0]}" for key, val in totals.items())))
+def plot_total_metric(metric_name: str, sharded_metric_by_backend: dict, build_dir: pathlib.Path):
+    """Plot a sharded metric as total values per backend.
 
-def auto_generate(backends_data: dict, build_dir: pathlib.Path):
-    for data_point in auto_generate_data_points(backends_data):
-        plot_data_point(data_point, backends_data, build_dir)
+    Produces a single bar chart.
+    """
+    file_basename = sanitize_filename(metric_name)
 
-def generate_graphs(backends_data_raw: dict, build_dir: pathlib.Path):
-    backends_data = dict()
-    for backend, data_raw in backends_data_raw.items():
-        backends_data[backend] = load_data(data_raw)
+    per_backend = {}
+    for backend, result_by_shard in sharded_metric_by_backend.items():
+        total = 0
+        for _, value in result_by_shard.items():
+            total += value
+        per_backend[backend] = [total]
 
-    auto_generate(backends_data, build_dir)
+    file_path = build_dir / pathlib.Path(f"auto_total_{file_basename}.svg")
+    make_plot("Total " + metric_name, file_path, None, None, per_backend, False)
+
+def sanitize_filename(name: str) -> str:
+    return name.replace('/', '_')
+
+def generate_graphs(sharded_metrics: dict[dict[dict]], shardless_metrics: dict[dict], build_dir: pathlib.Path):
+    """Generate plots from a metrics mapping (metric_name -> backend -> value-or-dict).
+
+    This function expects the output of `stats.join_metrics` as input.
+    """
+
+    for metric_name, metric_by_backend in sharded_metrics.items():
+        plot_sharded_metric(metric_name, metric_by_backend, build_dir)
+        plot_total_metric(metric_name, metric_by_backend, build_dir)
+
+    for metric_name, metric_by_backend in shardless_metrics.items():
+        plot_shardless_metric(metric_name, metric_by_backend, build_dir)

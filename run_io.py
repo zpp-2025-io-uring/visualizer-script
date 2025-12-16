@@ -2,7 +2,6 @@ import argparse
 from os import cpu_count
 import subprocess
 from pathlib import Path
-from generate import generate_graphs
 
 class io_test_runner:
     def __init__(self, tester_path: Path, config_path: Path, output_dir: Path, storage_dir: Path, asymmetric_cpuset: str, symmetric_cpuset: str, backends):
@@ -43,17 +42,16 @@ class io_test_runner:
 
         return result.stdout
 
-    def run(self):
+    def run(self) -> dict:
         backends_data_raw = dict()
 
         for backend in self.backends:
             backends_data_raw[backend] = self.__run_test(backend, backend, self.asymmetric_cpuset if backend=='asymmetric_io_uring' else self.symmetric_cpuset)
 
-        print("Generating graphs")
-        generate_graphs(backends_data_raw, self.output_dir)
+        return backends_data_raw
 
-def run_io_test(tester_path, config_path, output_dir, storage_dir, asymmetric_cpuset, symmetric_cpuset, backends):
-    io_test_runner(Path(tester_path), Path(config_path), Path(output_dir), Path(storage_dir), asymmetric_cpuset, symmetric_cpuset, backends).run()
+def run_io_test(tester_path, config_path, output_dir, storage_dir, asymmetric_cpuset, symmetric_cpuset, backends) -> dict:
+    return io_test_runner(Path(tester_path), Path(config_path), Path(output_dir), Path(storage_dir), asymmetric_cpuset, symmetric_cpuset, backends).run()
 
 def run_io_test_args(args):
     run_io_test(args.tester, args.config, args.output_dir, args.storage, args.asymmetric_cpuset, args.symmetric_cpuset, args.backends)
