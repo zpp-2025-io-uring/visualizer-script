@@ -35,7 +35,7 @@ def make_plot(title: str, filename: str, xlabel: str, ylabel: str, per_backend_d
                 title=title,
     )
 
-    fig.update_layout(bargap=0.5, bargroupgap=0.1)
+    fig.update_layout(bargap=0.5, bargroupgap=0.1, autosize=True)
 
     if xticks:
         fig.update_xaxes(tickmode="linear", dtick=1)
