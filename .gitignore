@@ -4,3 +4,9 @@ out/*
 .temp/*
 results/*
 .configs/*
+
+# Python vnenv
+venv/
+env/
+.venv/
+.env/
