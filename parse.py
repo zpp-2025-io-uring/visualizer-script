@@ -95,6 +95,28 @@ def save_results_for_benchmark(benchmark_output_dir: Path, sharded_metrics: dict
                   <backend>:
                     properties: {}
                     value: <value>
+      summary:
+        sharded_metrics:
+          <metric>:
+            <backend>:
+              <shard>:
+                max: <value>
+                mean: <value>
+                median: <value>
+                min: <value>
+                range: <value>
+                stdev: <value>
+                variance: <value>
+        shardless_metrics:
+        <metric>:
+            <backend>:
+              max: <value>
+              mean: <value>
+              median: <value>
+              min: <value>
+              range: <value>
+              stdev: <value>
+              variance: <value>
 
     This function consumes the shape produced by `join_stats`:
       sharded_metrics: metric -> backend -> [ {run_id, shard, value}, ... ]
