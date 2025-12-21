@@ -6,7 +6,7 @@ from yaml import safe_load, safe_dump
 from run_io import run_io_test
 from run_rpc import run_rpc_test
 from generate import generate_graphs
-from parse import load_data, auto_generate_data_points, save_results_for_benchmark
+from parse import parse_metrics_from_raw_map, save_results_for_benchmark
 from stats import join_stats, join_metrics
 
 class benchmark_suite_runner:
@@ -55,12 +55,7 @@ class benchmark_suite_runner:
                 else:
                     raise Exception(f"Unknown benchmark type {benchmark['type']}")
 
-                backends_parsed = {}
-                for backend, raw in result.items():
-                    parsed = load_data(raw)
-                    backends_parsed[backend] = auto_generate_data_points(parsed)
-
-                [shardless_metrics, sharded_metrics] = join_metrics(backends_parsed)
+                [shardless_metrics, sharded_metrics] = parse_metrics_from_raw_map(result)
                 metrics_runs.append({'run_id': i, 'sharded': sharded_metrics, 'shardless': shardless_metrics})
 
                 if self.generate_graphs:

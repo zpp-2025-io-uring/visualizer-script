@@ -1,6 +1,6 @@
 from yaml import safe_load, safe_dump
 from pathlib import Path
-from stats import summarize_stats
+from stats import join_metrics, summarize_stats
 
 def load_data(raw_output: str):
         """Extract embedded YAML from a client output text and parse it.
@@ -162,3 +162,15 @@ def save_results_for_benchmark(benchmark_output_dir: Path, sharded_metrics: dict
     benchmark_output_dir.mkdir(parents=True, exist_ok=True)
     with open(benchmark_output_dir / 'metrics_summary.yaml', 'w') as f:
         f.write(safe_dump(summary))
+
+def parse_metrics_from_raw_map(raw_backend_map: dict) -> tuple[dict, dict]:
+    """Parse raw output strings from each backend into metrics mappings.
+    Each raw output string is expected to contain an embedded YAML document.
+
+    Returns shardless and sharded metrics mappings suitable for graph generation.
+    """
+    backends_parsed = {}
+    for backend, raw in raw_backend_map.items():
+        parsed = load_data(raw)
+        backends_parsed[backend] = auto_generate_data_points(parsed)
+    return join_metrics(backends_parsed)
