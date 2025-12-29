@@ -17,7 +17,8 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v6
+      - name: Set up Python
+        uses: actions/setup-python@v6
         with:
             python-version: ${{ env.PYTHON_VERSION }}
             cache: 'pip' # caching pip dependencies
@@ -33,12 +34,16 @@ jobs:
     runs-on: ubuntu-latest
     name: Lint with Ruff
     steps:
-    - uses: actions/checkout@v4
+    - name: Check out code
+      uses: actions/checkout@v5
+
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ env.PYTHON_VERSION }}
+
     - name: Install Ruff
       run: pip install ruff
+
     - name: Run Ruff
-      run: ruff check --output-format=github src/
+      run: ruff check --output-format=github ./
