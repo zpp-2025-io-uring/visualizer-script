@@ -44,7 +44,11 @@ jobs:
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mypy --disallow-untyped-defs --namespace-packages --explicit-package-bases --check-untyped-defs ${{ env.CODE_DIRECTORY }} | \
+          mypy --disallow-untyped-defs --namespace-packages --explicit-package-bases --check-untyped-defs ${{ env.CODE_DIRECTORY }} > mypy_report.txt || true
+
+          cat mypy_report.txt
+
+          cat mypy_report.txt |
           reviewdog -f mypy \
            -reporter=github-pr-review \
            -level=info -log-level debug \ -name="mypy" -reporter=github-pr-review -level=error
