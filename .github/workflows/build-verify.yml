@@ -10,6 +10,11 @@ env:
   PYTHON_VERSION: '3.14'
   CODE_DIRECTORY: './'
 
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
 jobs:
   mypy:
     runs-on: ubuntu-latest
