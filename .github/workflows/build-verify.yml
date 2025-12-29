@@ -38,13 +38,6 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v5
 
-    - name: Set up Python
-      uses: actions/setup-python@v6
+    - uses: astral-sh/ruff-action@v3
       with:
-        python-version: ${{ env.PYTHON_VERSION }}
-
-    - name: Install Ruff
-      run: pip install ruff
-
-    - name: Run Ruff
-      run: ruff check --output-format=github ${{ env.CODE_DIRECTORY }}
+        src: ${{ env.CODE_DIRECTORY }}
