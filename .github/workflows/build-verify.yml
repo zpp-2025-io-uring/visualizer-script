@@ -51,7 +51,7 @@ jobs:
           cat mypy_report.txt |
           reviewdog -f mypy \
            -reporter=github-pr-review \
-           -level=info -log-level debug \ -name="mypy" -reporter=github-pr-review -level=error
+           -level=info -log-level debug \ -name="mypy" -reporter=github-pr-review -level=warning
   ruff:
     runs-on: ubuntu-latest
     name: Lint with Ruff
