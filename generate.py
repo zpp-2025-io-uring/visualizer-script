@@ -12,7 +12,7 @@ def make_plot(title: str, filename: str, xlabel: str, ylabel: str, per_backend_d
     size = len(next(iter(per_backend_data_vec.values())))
     for val in per_backend_data_vec.values():
         if len(val) != size:
-            raise ValueError(f"Plotted data must have the same length")
+            raise ValueError("Plotted data must have the same length")
 
     per_backend_data_with_shardnum = per_backend_data_vec.copy()
     per_backend_data_with_shardnum['Shard'] = list(range(0,size))
