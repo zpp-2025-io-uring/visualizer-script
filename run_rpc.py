@@ -20,7 +20,7 @@ class rpc_test_runner:
 
 
     def __run_test(self, backend: str, output_filename: str, server_cpuset: str, server_async_worker_cpuset: str | None, client_cpuset: str, client_async_worker_cpuset: str | None):
-        print(f"Running rpc_tester with backend {backend}")
+        print(f"Running rpc_tester with backend {backend}, server cpuset: {server_cpuset}, server async worker cpuset: {server_async_worker_cpuset}, client cpuset: {client_cpuset}, client async worker cpuset: {client_async_worker_cpuset}")
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
         argv = [self.tester_path, "--conf", self.config_path, "--listen", self.ip_address, "--reactor-backend", backend, "--cpuset", server_cpuset]
