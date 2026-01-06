@@ -39,7 +39,7 @@ def proportional_splitter(cpuset: set[int], cores_per_worker: int) -> tuple[set[
     return set(app_cpuset), set(async_worker_cpuset)
 
 
-def upgrade_version1_to_version2(config: dict, splitter: Callable[[set[int]], (set[int], set[int])]) -> dict:
+def upgrade_version1_to_version2(config: dict, splitter: Callable[[set[int]], tuple[set[int], set[int]]]) -> dict:
     if get_config_version(config) != 1:
         raise ValueError("Expected version 1 config")
 
