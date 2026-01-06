@@ -26,7 +26,7 @@ def proportional_splitter(cpuset: set[int], cores_per_worker: int) -> tuple[set[
     if cores_per_worker == 0:
         raise ValueError("Cores per worker must be more than 0")
 
-    num_workers = len(cpuset) / (cores_per_worker + 1)
+    num_workers = len(cpuset) // (cores_per_worker + 1)
 
     if len(cpuset) <= num_workers:
         raise RuntimeError("Not enough cores in the cpuset for the reuested number of async workers")
