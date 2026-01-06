@@ -15,7 +15,7 @@ class io_test_runner:
         self.backends = backends
 
     def __run_test(self, backend: str, output_filename: str, cpuset: str, async_worker_cpuset: str | None):
-        print(f"Running io_tester with backend {backend}")
+        print(f"Running io_tester with backend {backend}, cpuset: {cpuset}, async worker cpuset: {async_worker_cpuset}")
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.storage_dir.mkdir(parents=True, exist_ok=True)
 
