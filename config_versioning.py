@@ -55,6 +55,6 @@ def upgrade_version1_to_version2(config: dict, splitter: Callable[[set[int]], tu
         config[key_basename + '_app_cpuset'] = cpuset_to_string(app_cpuset)
         config[key_basename + '_async_worker_cpuset'] = cpuset_to_string(async_workers_cpuset)
 
-    config['version'] = 2
+    config['config_version'] = 2
 
     return config
