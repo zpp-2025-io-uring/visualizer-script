@@ -13,7 +13,7 @@ class rpc_test_runner:
         self.asymmetric_server_app_cpuset = asymmetric_server_app_cpuset
         self.asymmetric_server_async_worker_cpuset = asymmetric_server_async_worker_cpuset
         self.symmetric_server_cpuset = symmetric_server_cpuset
-        self.asymmetric_client_cpuset = asymmetric_client_app_cpuset 
+        self.asymmetric_client_app_cpuset = asymmetric_client_app_cpuset 
         self.asymmetric_client_async_worker_cpuset = asymmetric_client_async_worker_cpuset 
         self.symmetric_client_cpuset = symmetric_client_cpuset 
         self.backends = backends
@@ -102,9 +102,9 @@ class rpc_test_runner:
 
         for backend in self.backends:
             if backend == 'asymmetric_io_uring':
-                backends_data_raw[backend] = self.__run_test(backend, backend, self.asymmetric_server_cpuset, self.asymmetric_client_cpuset)
+                backends_data_raw[backend] = self.__run_test(backend, backend, self.asymmetric_server_app_cpuset, self.asymmetric_server_async_worker_cpuset, self.asymmetric_client_app_cpuset, self.asymmetric_client_async_worker_cpuset)
             else:
-                backends_data_raw[backend] = self.__run_test(backend, backend, self.symmetric_server_cpuset, self.symmetric_client_cpuset)
+                backends_data_raw[backend] = self.__run_test(backend, backend, self.symmetric_server_cpuset, None, self.symmetric_client_cpuset, None)
 
         return backends_data_raw
 
