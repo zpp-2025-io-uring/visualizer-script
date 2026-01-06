@@ -9,9 +9,9 @@ def get_config_version(config: dict) -> int:
 def parse_cpuset(cpuset: str) -> set[int]:
     result = set()
     for element in cpuset.split(','):
-        if '_' in element:
-            begin, end = element.split('_')
-            result.update(range(begin, end+1))
+        if '-' in element:
+            begin, end = element.split('-')
+            result.update(range(int(begin), int(end)+1))
         else:
             result.add(int(element))
     return result
