@@ -8,6 +8,7 @@ from run_rpc import run_rpc_test
 from generate import generate_graphs
 from parse import load_data, auto_generate_data_points, save_results_for_benchmark
 from stats import join_stats, join_metrics
+from config_versioning import get_config_version, upgrade_version1_to_version2, make_proportional_splitter
 
 class benchmark_suite_runner:
     def __init__(self, benchmarks, config: dict, generate_graphs: bool):
@@ -141,6 +142,20 @@ def run_benchmark_suite_args(args):
         config_yaml = f.read()
 
     config = safe_load(config_yaml)
+
+    match get_config_version(config):
+        case 1:
+            if "legacy_cores_per_worker" not in args:
+                raise RuntimeError("Missing legacy_cores_per_worker value")
+            
+            print(f"Warning: automatically calculating async worker cpused based on cores_per_worker value {args.legacy_cores_per_worker}")
+
+            config = upgrade_version1_to_version2(config, make_proportional_splitter(args.legacy_cores_per_worker))
+        case 2:
+            pass
+        case other:
+            raise ValueError(f"Unknown config version: {other}")
+
     output_dir = Path(config['output_dir']).resolve()
 
     timestamped_output_dir: Path = output_dir / datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
@@ -171,4 +186,5 @@ def configure_run_benchmark_suite_parser(parser: argparse.ArgumentParser):
     parser.add_argument("--benchmark", help="path to .yaml file with the benchmark suite", required=True)
     parser.add_argument("--config", help="path to .yaml file with configuration for the test suite", required=True)
     parser.add_argument("--generate-graphs", help="generate graphs for each run metric", action='store_true')
+    parser.add_argument("--legacy-cores-per-worker", help="used to calculate async worker cpuset when using a version 1 config")
     parser.set_defaults(func=run_benchmark_suite_args)
