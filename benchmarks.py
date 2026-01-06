@@ -169,7 +169,7 @@ def run_benchmark_suite_args(args):
         print(benchmark_yaml, end='', file=f)
 
     with open(timestamped_output_dir / 'config.yaml', 'w') as f:
-        print(config_yaml, end='', file=f)
+        print(safe_dump(config), end='', file=f)
 
     dump_environment(timestamped_output_dir, Path(config['io_tester_path']).expanduser().resolve().parent)
 
