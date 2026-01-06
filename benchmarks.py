@@ -163,7 +163,6 @@ def run_benchmark_suite_args(args):
 
     timestamped_output_dir: Path = output_dir / datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
     timestamped_output_dir.mkdir(exist_ok=True, parents=True)
-    config['output_dir'] = timestamped_output_dir
 
     with open(timestamped_output_dir / 'suite.yaml', 'w') as f:
         print(benchmark_yaml, end='', file=f)
@@ -171,6 +170,8 @@ def run_benchmark_suite_args(args):
     with open(timestamped_output_dir / 'config.yaml', 'w') as f:
         print(safe_dump(config), end='', file=f)
 
+    config['output_dir'] = timestamped_output_dir
+    
     dump_environment(timestamped_output_dir, Path(config['io_tester_path']).expanduser().resolve().parent)
 
     if 'backends' not in config:
