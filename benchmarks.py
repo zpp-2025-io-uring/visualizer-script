@@ -150,7 +150,7 @@ def run_benchmark_suite_args(args):
             
             print(f"Warning: automatically calculating async worker cpused based on cores_per_worker value {args.legacy_cores_per_worker}")
 
-            config = upgrade_version1_to_version2(config, make_proportional_splitter(args.legacy_cores_per_worker))
+            config = upgrade_version1_to_version2(config, make_proportional_splitter(int(args.legacy_cores_per_worker)))
         case 2:
             pass
         case other:
