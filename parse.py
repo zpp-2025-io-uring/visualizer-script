@@ -69,7 +69,7 @@ def auto_generate_data_points(backend_data: dict) -> tuple[dict, dict]:
 
     return (shardless_data_points, sharded_data_points)
 
-def save_results_for_benchmark(benchmark_output_dir: Path, sharded_metrics: dict, shardless_metrics: dict, benchmark_info: dict):
+def compute_benchmark_summary(sharded_metrics: dict, shardless_metrics: dict, benchmark_info: dict):
     """Write a single, non-duplicated metrics summary organized by runs.
 
     Output structure:
@@ -158,7 +158,4 @@ def save_results_for_benchmark(benchmark_output_dir: Path, sharded_metrics: dict
 
     summary_stats = summarize_stats(sharded_metrics, shardless_metrics)
     summary['summary'] = summary_stats
-
-    benchmark_output_dir.mkdir(parents=True, exist_ok=True)
-    with open(benchmark_output_dir / 'metrics_summary.yaml', 'w') as f:
-        f.write(safe_dump(summary))
+    return summary

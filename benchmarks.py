@@ -5,8 +5,8 @@ import subprocess
 from yaml import safe_load, safe_dump
 from run_io import run_io_test
 from run_rpc import run_rpc_test
-from generate import generate_graphs
-from parse import load_data, auto_generate_data_points, save_results_for_benchmark
+from generate import generate_graphs, generate_graphs_for_summary
+from parse import load_data, auto_generate_data_points, compute_benchmark_summary
 from stats import join_stats, join_metrics
 from config_versioning import get_config_version, upgrade_version1_to_version2, make_proportional_splitter
 
@@ -74,7 +74,18 @@ class benchmark_suite_runner:
 
             (combined_sharded, combined_shardless) = join_stats(metrics_runs)
             benchmark_info = {'id': test_name, 'properties': {'iterations': iterations}}
-            save_results_for_benchmark(test_output_dir, combined_sharded, combined_shardless, benchmark_info)
+            summary = compute_benchmark_summary(combined_sharded, combined_shardless, benchmark_info)
+            if self.generate_summary_graph:
+                generate_graphs_for_summary(summary['runs'], summary['summary'], test_output_dir)
+            dump_summary(test_output_dir, summary)
+
+def dump_summary(benchmark_output_dir: Path, summary: dict):
+    """
+    Dumps the benchmark summary into benchmark_output_dir/metrics_summary.yaml
+    """
+    benchmark_output_dir.mkdir(parents=True, exist_ok=True)
+    with open(benchmark_output_dir / 'metrics_summary.yaml', 'w') as f:
+        f.write(safe_dump(summary))
 
 def dump_environment(dir_for_config: Path, dir_to_seastar: Path):
     """
