@@ -6,7 +6,8 @@ from yaml import safe_load, safe_dump
 from run_io import run_io_test
 from run_rpc import run_rpc_test
 from generate import generate_graphs, generate_graphs_for_summary
-from parse import load_data, auto_generate_data_points, compute_benchmark_summary
+from parse import load_data, auto_generate_data_points
+from benchmark import compute_benchmark_summary, benchmark
 from stats import join_stats, join_metrics
 from config_versioning import get_config_version, upgrade_version1_to_version2, make_proportional_splitter
 
@@ -76,7 +77,7 @@ class benchmark_suite_runner:
             benchmark_info = {'id': test_name, 'properties': {'iterations': iterations}}
             summary = compute_benchmark_summary(combined_sharded, combined_shardless, benchmark_info)
             if self.generate_summary_graph:
-                generate_graphs_for_summary(summary['runs'], summary['summary'], test_output_dir)
+                generate_graphs_for_summary(summary.get_runs(), summary.get_stats(), test_output_dir)
             dump_summary(test_output_dir, summary)
 
 def dump_summary(benchmark_output_dir: Path, summary: dict):

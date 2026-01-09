@@ -174,7 +174,7 @@ def generate_graphs(sharded_metrics: dict[dict[dict]], shardless_metrics: dict[d
     for metric_name, metric_by_backend in shardless_metrics.items():
         plot_shardless_metric(metric_name, metric_by_backend, build_dir)
 
-def generate_graphs_for_summary(runs, stats, build_dir: pathlib.Path):
+def generate_graphs_for_summary(runs, stats: stats, build_dir: pathlib.Path):
     """
     runs:
     - id: i
@@ -206,14 +206,14 @@ def generate_graphs_for_summary(runs, stats, build_dir: pathlib.Path):
     stat_to_plot = 'mean'
     stat_as_error = 'stdev'
 
-    for metric in stats['sharded_metrics']:
+    for metric in stats.get_sharded_metrics():
         metric_name = metric
         metric_by_backend = {}
-        for backend in stats['sharded_metrics'][metric]:
+        for backend in stats.get_sharded_metrics()[metric]:
             shard_dict = {}
-            for shard in stats['sharded_metrics'][metric][backend]:
+            for shard in stats.get_sharded_metrics()[metric][backend]:
                 shard_idx = int(shard)
-                shard_stats = stats['sharded_metrics'][metric][backend][shard]
+                shard_stats = stats.get_sharded_metrics()[metric][backend][shard]
                 shard_dict[shard_idx] = (shard_stats[stat_to_plot], shard_stats[stat_as_error])
             metric_by_backend[backend] = shard_dict
 
@@ -227,11 +227,11 @@ def generate_graphs_for_summary(runs, stats, build_dir: pathlib.Path):
         file_path = build_dir / pathlib.Path(f"auto_{sanitize_filename(metric_name)}_with_error_bars.svg")
         make_plot_from_df(metric_name, file_path, df_long, x="shard", y=stat_to_plot, color="backend", error_y=stat_as_error, xlabel="Shard", ylabel=f"{stat_to_plot} value", xticks=True)
 
-    for metric in stats.get('shardless_metrics', {}):
+    for metric in stats.get_shardless_metrics():
         metric_name = metric
         rows = []
-        for backend in stats['shardless_metrics'][metric]:
-            backend_stats = stats['shardless_metrics'][metric][backend]
+        for backend in stats.get_shardless_metrics()[metric]:
+            backend_stats = stats.get_shardless_metrics()[metric][backend]
             value = backend_stats.get(stat_to_plot, backend_stats.get('value'))
             error = backend_stats.get(stat_as_error, 0)
             if value is None:

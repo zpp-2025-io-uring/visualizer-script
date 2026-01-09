@@ -1,6 +1,5 @@
 from yaml import safe_load, safe_dump
 from pathlib import Path
-from stats import summarize_stats
 
 def load_data(raw_output: str):
         """Extract embedded YAML from a client output text and parse it.

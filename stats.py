@@ -1,5 +1,6 @@
 import statistics
 from typing import Iterable
+from yamlable import YamlAble, yaml_info
 
 def join_sharded_metrics(sharded_data_points: dict):
     """Aggregate sharded data points into metric -> backend -> {shard: value}.
@@ -56,15 +57,15 @@ def join_shardless_metrics(shardless_data_points: dict):
 def generate_metric_name_from_path(path: tuple) -> str:
     return '_'.join(str(p) for p in path)
 
-def join_metrics(backends_parsed: dict):
+
+def join_metrics(backends_parsed: dict) -> tuple[dict, dict]:
     """Merge sharded and shardless metrics produced per-backend.
 
     Expects `backends_parsed` to be a mapping: backend -> (shardless_dict, sharded_dict)
     where each of those dicts maps path-tuples (or path tuples with shard as first
     element for sharded) to values.
 
-    Returns: A tuple (shardless_metrics, sharded_metrics) where each value is a mapping:
-        metric_name -> backend -> value-or-dict
+    Returns: stats object with sharded_metrics and shardless_metrics populated.
     """
 
     shardless_all = {backend: parsed[0] for backend, parsed in backends_parsed.items()}
@@ -75,7 +76,7 @@ def join_metrics(backends_parsed: dict):
 
     return (shardless_metrics, sharded_metrics)
 
-def join_stats(metrics_runs: list[dict]):
+def join_stats(metrics_runs: list[dict]) -> tuple[dict, dict]:
     """Aggregate per-run metrics into a run-oriented structure.
 
     Expected input: list of dicts with keys:
@@ -150,39 +151,51 @@ def compute_stats(samples: Iterable[object]):
 
     return stats
 
-def summarize_stats(sharded_metrics: dict, shardless_metrics: dict):
-    summary_stats = {'sharded_metrics': {}, 'shardless_metrics': {}}
+@yaml_info('stats')
+class stats(YamlAble):
+    def __init__(self, sharded_metrics: dict = None, shardless_metrics: dict = None):
+        self.sharded_metrics = sharded_metrics or {}
+        self.shardless_metrics = shardless_metrics or {}
 
+    def get_sharded_metrics(self) -> dict:
+        return self.sharded_metrics
+
+    def get_shardless_metrics(self) -> dict:
+        return self.shardless_metrics
+
+def summarize_stats(sharded_metrics: dict, shardless_metrics: dict) -> stats:
     # gather sharded values: metric -> backend -> shard -> [values]
+    sharded_stats = {}
     for metric_name, backends in (sharded_metrics or {}).items():
-        summary_stats['sharded_metrics'].setdefault(metric_name, {})
+        sharded_stats.setdefault(metric_name, {})
         for backend_name, items in backends.items():
-            summary_stats['sharded_metrics'][metric_name].setdefault(backend_name, {})
+            sharded_stats[metric_name].setdefault(backend_name, {})
             for item in items:
                 shard = item.get('shard')
                 value = item.get('value')
-                b = summary_stats['sharded_metrics'][metric_name][backend_name]
+                b = sharded_stats[metric_name][backend_name]
                 b.setdefault(shard, [])
                 b[shard].append(value)
 
     # compute stats for sharded
-    for metric_name, backends in summary_stats['sharded_metrics'].items():
+    for metric_name, backends in sharded_stats.items():
         for backend_name, shards in backends.items():
             for shard, samples in shards.items():
                 shards[shard] = compute_stats(samples)
 
     # gather shardless values: metric -> backend -> [values]
+    shardless_stats = {}
     for metric_name, backends in (shardless_metrics or {}).items():
-        summary_stats['shardless_metrics'].setdefault(metric_name, {})
+        shardless_stats.setdefault(metric_name, {})
         for backend_name, items in backends.items():
-            summary_stats['shardless_metrics'][metric_name].setdefault(backend_name, [])
+            shardless_stats[metric_name].setdefault(backend_name, [])
             for item in items:
                 value = item.get('value')
-                summary_stats['shardless_metrics'][metric_name][backend_name].append(value)
+                shardless_stats[metric_name][backend_name].append(value)
 
     # compute stats for shardless
-    for metric_name, backends in summary_stats['shardless_metrics'].items():
+    for metric_name, backends in shardless_stats.items():
         for backend_name, samples in backends.items():
             backends[backend_name] = compute_stats(samples)
 
-    return summary_stats
+    return stats(sharded_metrics=sharded_stats, shardless_metrics=shardless_stats)
