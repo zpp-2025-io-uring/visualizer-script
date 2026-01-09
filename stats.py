@@ -65,7 +65,7 @@ def join_metrics(backends_parsed: dict) -> tuple[dict, dict]:
     where each of those dicts maps path-tuples (or path tuples with shard as first
     element for sharded) to values.
 
-    Returns: stats object with sharded_metrics and shardless_metrics populated.
+    Returns: (tuple) of (shardless_metrics, sharded_metrics)
     """
 
     shardless_all = {backend: parsed[0] for backend, parsed in backends_parsed.items()}
