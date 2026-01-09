@@ -175,31 +175,6 @@ def generate_graphs(sharded_metrics: dict[dict[dict]], shardless_metrics: dict[d
         plot_shardless_metric(metric_name, metric_by_backend, build_dir)
 
 def generate_graphs_for_summary(runs, stats: stats, build_dir: pathlib.Path):
-    """
-    runs:
-    - id: i
-    results:
-        sharded_metrics:
-        metric_name:
-            backends:
-            backend_name:
-                shards:
-                - shard: shard_id
-                value: value
-
-    summary:
-        sharded_metrics:
-            metric_name:
-            backend_name:
-                shard_id:
-                    max: value_max
-                    mean: value_mean
-                    median: value_median
-                    min: value_min
-                    range: value_range
-                    stdev: value_stdev
-                    variance: value_variance
-    """
     build_dir = pathlib.Path(build_dir)
     build_dir.mkdir(parents=True, exist_ok=True)
 
