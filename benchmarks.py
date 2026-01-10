@@ -8,21 +8,26 @@ from run_rpc import run_rpc_test
 from generate import generate_graphs
 from parse import load_data, auto_generate_data_points, save_results_for_benchmark
 from stats import join_stats, join_metrics
+from config_versioning import get_config_version, upgrade_version1_to_version2, make_proportional_splitter
 
 class benchmark_suite_runner:
     def __init__(self, benchmarks, config: dict, generate_graphs: bool):
-        self.io_tester_path: Path = Path(config['io_tester_path']).expanduser().resolve()
-        self.rpc_tester_path: Path = Path(config['rpc_tester_path']).expanduser().resolve()
+        self.io_tester_path: Path = Path(config['io']['tester_path']).expanduser().resolve()
+        self.rpc_tester_path: Path = Path(config['rpc']['tester_path']).expanduser().resolve()
         self.output_dir: Path = Path(config['output_dir']).resolve()
-        self.storage_dir: Path = Path(config['storage_dir']).resolve()
-        self.ip_address = config['ip_address']
-        self.io_asymmetric_cpuset = config['io_asymmetric_cpuset']
-        self.io_symmetric_cpuset = config['io_symmetric_cpuset']
-        self.rpc_asymmetric_server_cpuset = config['rpc_asymmetric_server_cpuset']
-        self.rpc_symmetric_server_cpuset = config['rpc_symmetric_server_cpuset']
-        self.rpc_asymmetric_client_cpuset = config['rpc_asymmetric_client_cpuset'] 
-        self.rpc_symmetric_client_cpuset = config['rpc_symmetric_client_cpuset'] 
+        self.storage_dir: Path = Path(config['io']['storage_dir']).resolve()
+        self.ip_address = config['rpc']['ip_address']
+        self.io_asymmetric_app_cpuset = config['io']['asymmetric_app_cpuset']
+        self.io_asymmetric_async_worker_cpuset = config['io']['asymmetric_async_worker_cpuset']
+        self.io_symmetric_cpuset = config['io']['symmetric_cpuset']
+        self.rpc_asymmetric_server_app_cpuset = config['rpc']['asymmetric_server_app_cpuset']
+        self.rpc_asymmetric_server_async_worker_cpuset = config['rpc']['asymmetric_server_async_worker_cpuset']
+        self.rpc_symmetric_server_cpuset = config['rpc']['symmetric_server_cpuset']
+        self.rpc_asymmetric_client_app_cpuset = config['rpc']['asymmetric_client_app_cpuset'] 
+        self.rpc_asymmetric_client_async_worker_cpuset = config['rpc']['asymmetric_client_async_worker_cpuset'] 
+        self.rpc_symmetric_client_cpuset = config['rpc']['symmetric_client_cpuset'] 
         self.backends = config['backends']
+        self.params = config['params']
 
         self.benchmarks = benchmarks
         self.generate_graphs = generate_graphs
@@ -49,9 +54,9 @@ class benchmark_suite_runner:
                 result: dict = None    
 
                 if benchmark['type'] == "io":
-                    result = run_io_test(self.io_tester_path, config_path, run_output_dir, self.storage_dir, self.io_asymmetric_cpuset, self.io_symmetric_cpuset, self.backends)
+                    result = run_io_test(self.io_tester_path, config_path, run_output_dir, self.storage_dir, self.io_asymmetric_app_cpuset, self.io_asymmetric_async_worker_cpuset, self.io_symmetric_cpuset, self.backends, self.params['skip_async_workers_cpuset'])
                 elif benchmark['type'] == "rpc":
-                    result = run_rpc_test(self.rpc_tester_path, config_path, run_output_dir, self.ip_address, self.rpc_asymmetric_server_cpuset, self.rpc_symmetric_server_cpuset, self.rpc_asymmetric_client_cpuset, self.rpc_symmetric_client_cpuset, self.backends)
+                    result = run_rpc_test(self.rpc_tester_path, config_path, run_output_dir, self.ip_address, self.rpc_asymmetric_server_app_cpuset, self.rpc_asymmetric_server_async_worker_cpuset, self.rpc_symmetric_server_cpuset, self.rpc_asymmetric_client_app_cpuset, self.rpc_asymmetric_client_async_worker_cpuset, self.rpc_symmetric_client_cpuset, self.backends, self.params['skip_async_workers_cpuset'])
                 else:
                     raise Exception(f"Unknown benchmark type {benchmark['type']}")
 
@@ -141,19 +146,34 @@ def run_benchmark_suite_args(args):
         config_yaml = f.read()
 
     config = safe_load(config_yaml)
+
+    match get_config_version(config):
+        case 1:
+            if "legacy_cores_per_worker" not in args:
+                raise RuntimeError("Missing legacy_cores_per_worker value")
+            
+            print(f"Warning: automatically calculating async worker cpused based on cores_per_worker value {args.legacy_cores_per_worker}")
+
+            config = upgrade_version1_to_version2(config, make_proportional_splitter(int(args.legacy_cores_per_worker)))
+        case 2:
+            pass
+        case other:
+            raise ValueError(f"Unknown config version: {other}")
+
     output_dir = Path(config['output_dir']).resolve()
 
     timestamped_output_dir: Path = output_dir / datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
     timestamped_output_dir.mkdir(exist_ok=True, parents=True)
-    config['output_dir'] = timestamped_output_dir
 
     with open(timestamped_output_dir / 'suite.yaml', 'w') as f:
         print(benchmark_yaml, end='', file=f)
 
     with open(timestamped_output_dir / 'config.yaml', 'w') as f:
-        print(config_yaml, end='', file=f)
+        print(safe_dump(config), end='', file=f)
 
-    dump_environment(timestamped_output_dir, Path(config['io_tester_path']).expanduser().resolve().parent)
+    config['output_dir'] = timestamped_output_dir
+    
+    dump_environment(timestamped_output_dir, Path(config['io']['tester_path']).expanduser().resolve().parent)
 
     if 'backends' not in config:
         config['backends'] = ['asymmetric_io_uring', 'io_uring']
@@ -171,4 +191,5 @@ def configure_run_benchmark_suite_parser(parser: argparse.ArgumentParser):
     parser.add_argument("--benchmark", help="path to .yaml file with the benchmark suite", required=True)
     parser.add_argument("--config", help="path to .yaml file with configuration for the test suite", required=True)
     parser.add_argument("--generate-graphs", help="generate graphs for each run metric", action='store_true')
+    parser.add_argument("--legacy-cores-per-worker", help="used to calculate async worker cpuset when using a version 1 config")
     parser.set_defaults(func=run_benchmark_suite_args)
