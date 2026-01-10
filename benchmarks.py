@@ -12,20 +12,20 @@ from config_versioning import get_config_version, upgrade_version1_to_version2, 
 
 class benchmark_suite_runner:
     def __init__(self, benchmarks, config: dict, generate_graphs: bool):
-        self.io_tester_path: Path = Path(config['io_tester_path']).expanduser().resolve()
-        self.rpc_tester_path: Path = Path(config['rpc_tester_path']).expanduser().resolve()
+        self.io_tester_path: Path = Path(config['io']['tester_path']).expanduser().resolve()
+        self.rpc_tester_path: Path = Path(config['rpc']['tester_path']).expanduser().resolve()
         self.output_dir: Path = Path(config['output_dir']).resolve()
-        self.storage_dir: Path = Path(config['storage_dir']).resolve()
-        self.ip_address = config['ip_address']
-        self.io_asymmetric_app_cpuset = config['io_asymmetric_app_cpuset']
-        self.io_asymmetric_async_worker_cpuset = config['io_asymmetric_async_worker_cpuset']
-        self.io_symmetric_cpuset = config['io_symmetric_cpuset']
-        self.rpc_asymmetric_server_app_cpuset = config['rpc_asymmetric_server_app_cpuset']
-        self.rpc_asymmetric_server_async_worker_cpuset = config['rpc_asymmetric_server_async_worker_cpuset']
-        self.rpc_symmetric_server_cpuset = config['rpc_symmetric_server_cpuset']
-        self.rpc_asymmetric_client_app_cpuset = config['rpc_asymmetric_client_app_cpuset'] 
-        self.rpc_asymmetric_client_async_worker_cpuset = config['rpc_asymmetric_client_async_worker_cpuset'] 
-        self.rpc_symmetric_client_cpuset = config['rpc_symmetric_client_cpuset'] 
+        self.storage_dir: Path = Path(config['io']['storage_dir']).resolve()
+        self.ip_address = config['rpc']['ip_address']
+        self.io_asymmetric_app_cpuset = config['io']['asymmetric_app_cpuset']
+        self.io_asymmetric_async_worker_cpuset = config['io']['asymmetric_async_worker_cpuset']
+        self.io_symmetric_cpuset = config['io']['symmetric_cpuset']
+        self.rpc_asymmetric_server_app_cpuset = config['rpc']['asymmetric_server_app_cpuset']
+        self.rpc_asymmetric_server_async_worker_cpuset = config['rpc']['asymmetric_server_async_worker_cpuset']
+        self.rpc_symmetric_server_cpuset = config['rpc']['symmetric_server_cpuset']
+        self.rpc_asymmetric_client_app_cpuset = config['rpc']['asymmetric_client_app_cpuset'] 
+        self.rpc_asymmetric_client_async_worker_cpuset = config['rpc']['asymmetric_client_async_worker_cpuset'] 
+        self.rpc_symmetric_client_cpuset = config['rpc']['symmetric_client_cpuset'] 
         self.backends = config['backends']
 
         self.benchmarks = benchmarks
@@ -172,7 +172,7 @@ def run_benchmark_suite_args(args):
 
     config['output_dir'] = timestamped_output_dir
     
-    dump_environment(timestamped_output_dir, Path(config['io_tester_path']).expanduser().resolve().parent)
+    dump_environment(timestamped_output_dir, Path(config['io']['tester_path']).expanduser().resolve().parent)
 
     if 'backends' not in config:
         config['backends'] = ['asymmetric_io_uring', 'io_uring']
