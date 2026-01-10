@@ -73,6 +73,8 @@ def upgrade_version1_to_version2(config: dict, splitter: Callable[[set[int]], tu
 
     config['io'] = io_params
     config['rpc'] = rpc_params
+    config['params'] = dict()
+    config['params']['skip_async_workers_cpuset'] = False
 
     config['config_version'] = 2
 

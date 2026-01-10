@@ -27,6 +27,7 @@ class benchmark_suite_runner:
         self.rpc_asymmetric_client_async_worker_cpuset = config['rpc']['asymmetric_client_async_worker_cpuset'] 
         self.rpc_symmetric_client_cpuset = config['rpc']['symmetric_client_cpuset'] 
         self.backends = config['backends']
+        self.params = config['params']
 
         self.benchmarks = benchmarks
         self.generate_graphs = generate_graphs
@@ -53,9 +54,9 @@ class benchmark_suite_runner:
                 result: dict = None    
 
                 if benchmark['type'] == "io":
-                    result = run_io_test(self.io_tester_path, config_path, run_output_dir, self.storage_dir, self.io_asymmetric_app_cpuset, self.io_asymmetric_async_worker_cpuset, self.io_symmetric_cpuset, self.backends)
+                    result = run_io_test(self.io_tester_path, config_path, run_output_dir, self.storage_dir, self.io_asymmetric_app_cpuset, self.io_asymmetric_async_worker_cpuset, self.io_symmetric_cpuset, self.backends, self.params['skip_async_workers_cpuset'])
                 elif benchmark['type'] == "rpc":
-                    result = run_rpc_test(self.rpc_tester_path, config_path, run_output_dir, self.ip_address, self.rpc_asymmetric_server_app_cpuset, self.rpc_asymmetric_server_async_worker_cpuset, self.rpc_symmetric_server_cpuset, self.rpc_asymmetric_client_app_cpuset, self.rpc_asymmetric_client_async_worker_cpuset, self.rpc_symmetric_client_cpuset, self.backends)
+                    result = run_rpc_test(self.rpc_tester_path, config_path, run_output_dir, self.ip_address, self.rpc_asymmetric_server_app_cpuset, self.rpc_asymmetric_server_async_worker_cpuset, self.rpc_symmetric_server_cpuset, self.rpc_asymmetric_client_app_cpuset, self.rpc_asymmetric_client_async_worker_cpuset, self.rpc_symmetric_client_cpuset, self.backends, self.params['skip_async_workers_cpuset'])
                 else:
                     raise Exception(f"Unknown benchmark type {benchmark['type']}")
 
