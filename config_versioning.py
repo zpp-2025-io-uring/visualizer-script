@@ -55,6 +55,25 @@ def upgrade_version1_to_version2(config: dict, splitter: Callable[[set[int]], tu
         config[key_basename + '_app_cpuset'] = cpuset_to_string(app_cpuset)
         config[key_basename + '_async_worker_cpuset'] = cpuset_to_string(async_workers_cpuset)
 
+
+    io_params = dict()
+    rpc_params = dict()
+    to_delete = []
+
+    for key, val in config.items():
+        if key.startswith('io') or key == 'storage_dir':
+            io_params[key.removeprefix('io_')] = val
+            to_delete.append(key)
+        elif key.startswith('rpc') or key == 'ip_address':
+            rpc_params[key.removeprefix('rpc_')] = val
+            to_delete.append(key)
+
+    for key in to_delete:
+        config.pop(key)
+
+    config['io'] = io_params
+    config['rpc'] = rpc_params
+
     config['config_version'] = 2
 
     return config
