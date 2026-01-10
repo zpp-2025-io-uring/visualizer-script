@@ -1,9 +1,10 @@
 name: Lint
 
 on:
+  push:
+    branches: [ main ]
   pull_request:
-    paths:
-      - '**.py'
+    branches: [ main ]
 
 permissions:
   contents: read
