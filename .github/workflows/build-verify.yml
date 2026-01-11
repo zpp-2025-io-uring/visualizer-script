@@ -43,7 +43,7 @@ jobs:
       - name: Run mypy (print and save to file)
         shell: bash
         run: |
-          python -m mypy --show-column-numbers --show-error-codes --disallow-untyped-defs --namespace-packages --explicit-package-bases > mypy.txt || true
+          python -m mypy --show-column-numbers --show-error-codes --disallow-untyped-defs --namespace-packages --explicit-package-bases ${{ env.CODE_DIRECTORY }} > mypy.txt || true
           cat mypy.txt
 
       - name: Post mypy results with reviewdog
