@@ -1,5 +1,6 @@
 from stats import summarize_stats, stats
 from yamlable import YamlAble, yaml_info
+from yaml import safe_load
 
 @yaml_info('benchmark')
 class benchmark(YamlAble):
@@ -36,7 +37,6 @@ class benchmark(YamlAble):
         (no `!yamlable/...` tag). It prefers the yamlable loading path when possible,
         otherwise it normalizes the mapping and constructs the object.
         """
-        from yaml import safe_load
         data = safe_load(file)
 
         if isinstance(data, cls):
