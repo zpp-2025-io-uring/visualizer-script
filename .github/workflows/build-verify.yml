@@ -11,7 +11,7 @@ env:
   CODE_DIRECTORY: './'
   REVIEWDOG_REPORTER: 'github-pr-review'
   REVIEWDOG_LEVEL: 'info'
-  REVIEWDOG_FILTER_MODE: 'nofilter'
+  REVIEWDOG_FILTER_MODE: 'added'
   REVIEWDOG_LOG_LEVEL: 'debug'
 
 permissions:
