@@ -5,10 +5,10 @@ from os import cpu_count
 from time import sleep
 
 class rpc_test_runner:
-    def __init__(self, rpc_runner_config: dict, backends, skip_async_workers_cpuset):
+    def __init__(self, rpc_runner_config: dict, config_path: Path, run_output_dir: Path, backends, skip_async_workers_cpuset):
         self.tester_path: Path = Path(rpc_runner_config['tester_path']).expanduser().resolve()
-        self.config_path: Path = Path(rpc_runner_config['config_path']).resolve()
-        self.output_dir: Path = Path(rpc_runner_config['output_dir']).resolve()
+        self.config_path: Path = config_path.resolve()
+        self.output_dir: Path = run_output_dir.resolve()
         self.ip_address = rpc_runner_config['ip_address']
         self.asymmetric_server_app_cpuset = rpc_runner_config['asymmetric_server_app_cpuset']
         self.asymmetric_server_async_worker_cpuset = rpc_runner_config['asymmetric_server_async_worker_cpuset']

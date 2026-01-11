@@ -45,9 +45,9 @@ class benchmark_suite_runner:
                 result: dict = None    
 
                 if benchmark['type'] == "io":
-                    result = run_io_test(self.io_config, config_path, self.backends, self.params['skip_async_workers_cpuset'])
+                    result = run_io_test(self.io_config, config_path, run_output_dir, self.backends, self.params['skip_async_workers_cpuset'])
                 elif benchmark['type'] == "rpc":
-                    result = run_rpc_test(self.rpc_config, config_path, self.backends, self.params['skip_async_workers_cpuset'])
+                    result = run_rpc_test(self.rpc_config, config_path, run_output_dir, self.backends, self.params['skip_async_workers_cpuset'])
                 else:
                     raise Exception(f"Unknown benchmark type {benchmark['type']}")
 
