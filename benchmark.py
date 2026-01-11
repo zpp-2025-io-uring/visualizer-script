@@ -25,7 +25,7 @@ class benchmark(YamlAble):
         # convert it into a `stats` instance so the `benchmark` object always
         # exposes a `stats` object for `.summary`.
         if isinstance(dct, dict) and 'summary' in dct and isinstance(dct['summary'], dict):
-            dct['summary'] = stats_class(**dct['summary'])
+            dct['summary'] = stats(**dct['summary'])
 
         return cls(**dct)
 
