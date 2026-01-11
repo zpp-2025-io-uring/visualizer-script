@@ -52,7 +52,7 @@ jobs:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          cat mypy.txt | reviewdog -f=mypy -name="mypy" -reporter=github-pr-review -level=warning -filter-mode=nofilter || true
+          cat mypy.txt | reviewdog -f=mypy -name="mypy" -reporter=github-pr-review -level=warning -filter-mode=nofilter
   ruff:
     runs-on: ubuntu-latest
     name: Lint with Ruff
