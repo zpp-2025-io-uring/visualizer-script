@@ -5,7 +5,7 @@ from pathlib import Path
 
 class io_test_runner:
     def __init__(self, io_config: dict, config_path: Path, backends: list[str], skip_async_workers_cpuset: bool):
-        self.tester_path: Path = Path(io_config['tester_path']).resolve()
+        self.tester_path: Path = Path(io_config['tester_path']).expanduser().resolve()
         self.config_path: Path = config_path.resolve()
         self.output_dir: Path = Path(io_config['output_dir']).resolve()
         self.storage_dir: Path = Path(io_config['storage_dir']).resolve()

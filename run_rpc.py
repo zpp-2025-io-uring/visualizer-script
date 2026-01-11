@@ -6,7 +6,7 @@ from time import sleep
 
 class rpc_test_runner:
     def __init__(self, rpc_config: dict, backends, skip_async_workers_cpuset):
-        self.tester_path: Path = Path(rpc_config['tester_path']).resolve()
+        self.tester_path: Path = Path(rpc_config['tester_path']).expanduser().resolve()
         self.config_path: Path = Path(rpc_config['config_path']).resolve()
         self.output_dir: Path = Path(rpc_config['output_dir']).resolve()
         self.ip_address = rpc_config['ip_address']
