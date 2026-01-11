@@ -53,7 +53,7 @@ jobs:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          cat ${{ env.OUTPUT_FILE }} | reviewdog -f=mypy -name="mypy" -reporter=github-pr-review -level=warning -filter-mode=nofilter
+          cat ${{ env.OUTPUT_FILE }} | reviewdog -f=mypy -name="mypy" -reporter=github-pr-review -level=warning
   ruff:
     runs-on: ubuntu-latest
     name: Lint with Ruff
@@ -88,6 +88,6 @@ jobs:
         REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       shell: bash
       run: |
-        cat ${{ env.OUTPUT_FILE }} | reviewdog -f=rdjson -name="ruff" -reporter=github-pr-review -level=warning -filter-mode=nofilter
+        cat ${{ env.OUTPUT_FILE }} | reviewdog -f=rdjson -name="ruff" -reporter=github-pr-review -level=warning
         
     
