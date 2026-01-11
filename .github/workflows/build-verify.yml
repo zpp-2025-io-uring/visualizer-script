@@ -49,7 +49,6 @@ jobs:
       - name: Run mypy (print and save to file)
         shell: bash
         run: |
-          set -o pipefail
           python -m mypy --show-column-numbers --show-error-codes --disallow-untyped-defs --check-untyped-defs --namespace-packages --explicit-package-bases ${{ env.CODE_DIRECTORY }} > ${{ env.OUTPUT_FILE }} || true
 
       - name: Post mypy results with reviewdog
