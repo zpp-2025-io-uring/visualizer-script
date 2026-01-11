@@ -56,4 +56,3 @@ jobs:
     - uses: astral-sh/ruff-action@v3
       with:
         src: ${{ env.CODE_DIRECTORY }}
-        args: 
