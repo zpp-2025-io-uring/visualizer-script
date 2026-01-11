@@ -5,13 +5,14 @@ import subprocess
 from yaml import safe_load, safe_dump
 from run_io import run_io_test
 from run_rpc import run_rpc_test
-from generate import generate_graphs
-from parse import load_data, auto_generate_data_points, save_results_for_benchmark
-from stats import join_stats, join_metrics
+from generate import generate_graphs, generate_graphs_for_summary
+from parse import load_data, auto_generate_data_points
+from benchmark import compute_benchmark_summary, benchmark
+from stats import join_stats, join_metrics, stats
 from config_versioning import get_config_version, upgrade_version1_to_version2, make_proportional_splitter
 
 class benchmark_suite_runner:
-    def __init__(self, benchmarks, config: dict, generate_graphs: bool):
+    def __init__(self, benchmarks, config: dict, generate_graphs: bool, generate_summary_graphs: bool):
         self.io_tester_path: Path = Path(config['io']['tester_path']).expanduser().resolve()
         self.rpc_tester_path: Path = Path(config['rpc']['tester_path']).expanduser().resolve()
         self.output_dir: Path = Path(config['output_dir']).resolve()
@@ -31,6 +32,7 @@ class benchmark_suite_runner:
 
         self.benchmarks = benchmarks
         self.generate_graphs = generate_graphs
+        self.generate_summary_graph= generate_summary_graphs
 
     def run(self):
         for benchmark in self.benchmarks:
@@ -73,7 +75,20 @@ class benchmark_suite_runner:
 
             (combined_sharded, combined_shardless) = join_stats(metrics_runs)
             benchmark_info = {'id': test_name, 'properties': {'iterations': iterations}}
-            save_results_for_benchmark(test_output_dir, combined_sharded, combined_shardless, benchmark_info)
+            summary = compute_benchmark_summary(combined_sharded, combined_shardless, benchmark_info)
+            if self.generate_summary_graph:
+                generate_graphs_for_summary(summary.get_runs(), summary.get_stats(), test_output_dir)
+            dump_summary(test_output_dir, summary)
+
+BENCHMARK_SUMMARY_FILENAME = "metrics_summary.yaml"
+
+def dump_summary(benchmark_output_dir: Path, summary: dict):
+    """
+    Dumps the benchmark summary into benchmark_output_dir/metrics_summary.yaml
+    """
+    benchmark_output_dir.mkdir(parents=True, exist_ok=True)
+    with open(benchmark_output_dir / BENCHMARK_SUMMARY_FILENAME, 'w') as f:
+        f.write(safe_dump(summary))
 
 def dump_environment(dir_for_config: Path, dir_to_seastar: Path):
     """
@@ -182,7 +197,8 @@ def run_benchmark_suite_args(args):
     runner = benchmark_suite_runner(
         safe_load(benchmark_yaml),
         config,
-        args.generate_graphs
+        args.generate_graphs,
+        args.generate_summary_graphs
     )
 
     runner.run()
@@ -192,4 +208,5 @@ def configure_run_benchmark_suite_parser(parser: argparse.ArgumentParser):
     parser.add_argument("--config", help="path to .yaml file with configuration for the test suite", required=True)
     parser.add_argument("--generate-graphs", help="generate graphs for each run metric", action='store_true')
     parser.add_argument("--legacy-cores-per-worker", help="used to calculate async worker cpuset when using a version 1 config")
+    parser.add_argument("--generate-summary-graphs", help="generate summary graphs for each benchmark", action='store_true')
     parser.set_defaults(func=run_benchmark_suite_args)

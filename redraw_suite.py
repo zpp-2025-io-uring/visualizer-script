@@ -4,14 +4,14 @@ from pathlib import Path
 from generate import generate_graphs
 from parse import load_data, auto_generate_data_points
 from stats import join_metrics
+from benchmarks import BENCHMARK_SUMMARY_FILENAME, benchmark
+from generate import generate_graphs_for_summary
 
 def redraw_run(run_dir: Path):
     print(f"Redrawing {run_dir}")
     backend_names = ['asymmetric_io_uring', 'io_uring', 'linux-aio', 'epoll']
 
     regexes = [rf'({backend}.out|{backend}.client.out)' for backend in backend_names]
-
-
     backend_data_raw: dict[str, str] = dict()
     for file in run_dir.iterdir():
         for backend, regex in zip(backend_names, regexes):
@@ -28,16 +28,25 @@ def redraw_run(run_dir: Path):
     [shardless_metrics, sharded_metrics] = join_metrics(backends_parsed)
     generate_graphs(sharded_metrics, shardless_metrics, run_dir)
 
-    
-
 def run_redraw_suite(dir):
     dir = Path(dir)
 
     for benchmark_dir in dir.iterdir():
         if benchmark_dir.is_dir():
+            summary_file = benchmark_dir / BENCHMARK_SUMMARY_FILENAME
+            if summary_file.is_file():
+                redraw_summary(Path(summary_file), Path(benchmark_dir))
+
             for run_dir in benchmark_dir.iterdir():
                 if run_dir.is_dir():
                     redraw_run(run_dir)
+
+def redraw_summary(summary_file: Path, output_dir: Path):
+    print(f"Redrawing summary from {summary_file}")
+    
+    with open(summary_file, 'r') as file:
+        summary = benchmark.load_from_file(file)
+    generate_graphs_for_summary(summary.get_runs(), summary.get_stats(), output_dir)
 
 def run_redraw_suite_args(args):
     run_redraw_suite(args.dir)

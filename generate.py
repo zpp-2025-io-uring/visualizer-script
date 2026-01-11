@@ -3,6 +3,7 @@
 import pathlib
 import pandas as pd
 import plotly.express as px
+from stats import stats
 
 def make_plot(title: str, filename: str, xlabel: str, ylabel: str, per_backend_data_vec: dict, xticks: bool):
     """Draw a grouped bar chart from a mapping backend -> list-of-values.
@@ -45,7 +46,50 @@ def make_plot(title: str, filename: str, xlabel: str, ylabel: str, per_backend_d
     # Optional: show values on top of bars
     fig.update_traces(texttemplate="%{y}", textposition="outside")
 
+    # Ensure output directory exists before writing the image
+    pathlib.Path(filename).parent.mkdir(parents=True, exist_ok=True)
     fig.write_image(filename)
+
+def make_plot_from_df(title: str, filename: str, df: pd.DataFrame, x: str, y: str, color: str | None = None, error_y: str | None = None, xlabel: str | None = None, ylabel: str | None = None, xticks: bool = False):
+    """Draw a grouped bar chart from a DataFrame.
+
+    Parameters mirror the usage in this module: `x`, `y` are column names in `df`, `color`
+    is an optional column name for series, and `error_y` is an optional column name
+    providing error bar values.
+    """
+    labels = {}
+    if xlabel is not None:
+        labels[x] = xlabel
+    if ylabel is not None:
+        labels[y] = ylabel
+
+    plot_kwargs = dict(x=y, y=x, orientation='h', barmode="group", title=title, labels=labels)
+    if color is not None:
+        plot_kwargs["color"] = color
+    if error_y is not None:
+        plot_kwargs["error_x"] = error_y
+
+    fig = px.bar(df, **plot_kwargs)
+
+    fig.update_layout(height=find_height_for_min_bar(len(df[x].unique()), len(df[color].unique()) if color else 1))
+    fig.update_layout(bargap=0.2, bargroupgap=0.1)
+    fig.update_layout(margin_autoexpand=True)
+
+    if xticks:
+        fig.update_yaxes(tickmode="linear", dtick=1)
+    else:
+        fig.update_yaxes(showticklabels=False)
+
+    pathlib.Path(filename).parent.mkdir(parents=True, exist_ok=True)
+    fig.write_image(filename)
+
+def find_height_for_min_bar(number_of_groups: int, number_of_bars_per_group: int) -> int:
+    default_height = 400
+    if number_of_groups * number_of_bars_per_group == 0:
+        return default_height
+    height_per_bar = 20
+    calculated_height = number_of_groups * number_of_bars_per_group * height_per_bar
+    return max(default_height, calculated_height)
 
 
 def plot_sharded_metric(metric_name: str, sharded_metric_by_backend: dict, build_dir: pathlib.Path):
@@ -130,3 +174,49 @@ def generate_graphs(sharded_metrics: dict[dict[dict]], shardless_metrics: dict[d
 
     for metric_name, metric_by_backend in shardless_metrics.items():
         plot_shardless_metric(metric_name, metric_by_backend, build_dir)
+
+def generate_graphs_for_summary(runs, stats: stats, build_dir: pathlib.Path):
+    build_dir = pathlib.Path(build_dir)
+    build_dir.mkdir(parents=True, exist_ok=True)
+
+    stat_to_plot = 'mean'
+    stat_as_error = 'stdev'
+
+    for metric in stats.get_sharded_metrics():
+        metric_name = metric
+        metric_by_backend = {}
+        for backend in stats.get_sharded_metrics()[metric]:
+            shard_dict = {}
+            for shard in stats.get_sharded_metrics()[metric][backend]:
+                shard_idx = int(shard)
+                shard_stats = stats.get_sharded_metrics()[metric][backend][shard]
+                shard_dict[shard_idx] = (shard_stats[stat_to_plot], shard_stats[stat_as_error])
+            metric_by_backend[backend] = shard_dict
+
+        rows = []
+        for backend in metric_by_backend:
+            for shard in sorted(metric_by_backend[backend].keys()):
+                value, error = metric_by_backend[backend][shard]
+                rows.append({"shard": int(shard), "backend": backend, stat_to_plot: value, stat_as_error: error})
+        df_long = pd.DataFrame(rows)
+
+        file_path = build_dir / pathlib.Path(f"auto_{sanitize_filename(metric_name)}_with_error_bars.svg")
+        make_plot_from_df(metric_name, file_path, df_long, x="shard", y=stat_to_plot, color="backend", error_y=stat_as_error, xlabel="Shard", ylabel=f"{stat_to_plot} value", xticks=True)
+
+    for metric in stats.get_shardless_metrics():
+        metric_name = metric
+        rows = []
+        for backend in stats.get_shardless_metrics()[metric]:
+            backend_stats = stats.get_shardless_metrics()[metric][backend]
+            value = backend_stats.get(stat_to_plot, backend_stats.get('value'))
+            error = backend_stats.get(stat_as_error, 0)
+            if value is None:
+                raise ValueError(f"No {stat_to_plot} found for shardless metric {metric_name} backend {backend}")
+            if error is None:
+                raise ValueError(f"No {stat_as_error} found for shardless metric {metric_name} backend {backend}")
+            rows.append({"backend": backend, stat_to_plot: value, stat_as_error: error})
+        if not rows:
+            continue
+        df = pd.DataFrame(rows)
+        file_path = build_dir / pathlib.Path(f"auto_{sanitize_filename(metric_name)}_shardless_with_error_bars.svg")
+        make_plot_from_df(metric_name, file_path, df, x="backend", y=stat_to_plot, color="backend", error_y=stat_as_error, ylabel=f"{stat_to_plot} value", xticks=False)
