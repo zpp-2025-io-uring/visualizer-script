@@ -4,7 +4,8 @@ from pathlib import Path
 from generate import generate_graphs
 from parse import load_data, auto_generate_data_points
 from stats import join_metrics
-from benchmarks import BENCHMARK_SUMMARY_FILENAME
+from benchmarks import BENCHMARK_SUMMARY_FILENAME, benchmark
+from generate import generate_graphs_for_summary
 
 def redraw_run(run_dir: Path):
     print(f"Redrawing {run_dir}")
@@ -43,11 +44,8 @@ def run_redraw_suite(dir):
 def redraw_summary(summary_file: Path, output_dir: Path):
     print(f"Redrawing summary from {summary_file}")
     
-    from benchmark import benchmark
     with open(summary_file, 'r') as file:
         summary = benchmark.load_from_file(file)
-
-    from generate import generate_graphs_for_summary
     generate_graphs_for_summary(summary.get_runs(), summary.get_stats(), output_dir)
 
 def run_redraw_suite_args(args):
