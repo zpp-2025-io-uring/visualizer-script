@@ -51,6 +51,10 @@ jobs:
         run: |
           python -m mypy --show-column-numbers --show-error-codes --disallow-untyped-defs --check-untyped-defs --namespace-packages --explicit-package-bases ${{ env.CODE_DIRECTORY }} > ${{ env.OUTPUT_FILE }} || true
 
+      - name: Debug mypy output
+        if: always()
+        run: cat ${{ env.OUTPUT_FILE }}
+
       - name: Post mypy results with reviewdog
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -85,6 +89,10 @@ jobs:
     - name: Run ruff
       run: |
         ruff check ${{ env.CODE_DIRECTORY }} --output-format rdjson > ${{ env.OUTPUT_FILE }} || true
+
+    - name: Debug ruff output
+      if: always()
+      run: cat ${{ env.OUTPUT_FILE }}
 
     - name: Post ruff results with reviewdog
       if: always()
