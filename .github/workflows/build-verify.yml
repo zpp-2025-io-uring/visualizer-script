@@ -43,7 +43,8 @@ jobs:
       - name: Run mypy (print and save to file)
         shell: bash
         run: |
-          python -m mypy --show-column-numbers --show-error-codes --disallow-untyped-defs --namespace-packages --explicit-package-bases ${{ env.CODE_DIRECTORY }} > mypy.txt || true
+          set -o pipefail
+          python -m mypy --show-column-numbers --show-error-codes --disallow-untyped-defs --namespace-packages --explicit-package-bases ${{ env.CODE_DIRECTORY }} 2>&1 | tee mypy.txt; echo ${PIPESTATUS[0]:-0} > mypy.exit || true
           cat mypy.txt
 
       - name: Post mypy results with reviewdog
@@ -51,7 +52,9 @@ jobs:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          cat mypy.txt | reviewdog -f=mypy -name="mypy" -reporter=github-pr-review -level=warning
+          # Use efm format because reviewdog's `mypy` parser can be picky with variations.
+          # mypy default lines look like: path/to/file.py:12:7: error: Message [code]
+          cat mypy.txt | reviewdog -f=efm -efm="%f:%l:%c: %m" -name="mypy" -reporter=github-pr-review -level=warning || true
   ruff:
     runs-on: ubuntu-latest
     name: Lint with Ruff
@@ -77,7 +80,9 @@ jobs:
     - name: Run ruff
       run: |
         ruff check ${{ env.CODE_DIRECTORY }} --output-format rdjson
+
     - name: Post ruff results with reviewdog
+      if: always()
       env:
         REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       shell: bash
