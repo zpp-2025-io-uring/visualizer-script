@@ -43,8 +43,8 @@ jobs:
       - name: Run mypy (print and save to file)
         shell: bash
         run: |
-          set -o pipefail
-          python -m mypy --show-column-numbers --show-error-codes --disallow-untyped-defs --namespace-packages --explicit-package-bases ./ 2>&1 | tee mypy.txt; echo ${PIPESTATUS[0]:-0} > mypy.exit || true
+          python -m mypy --show-column-numbers --show-error-codes --disallow-untyped-defs --namespace-packages --explicit-package-bases > mypy.txt || true
+          cat mypy.txt
 
       - name: Post mypy results with reviewdog
         env:
