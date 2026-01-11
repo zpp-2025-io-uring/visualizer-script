@@ -10,8 +10,6 @@ def redraw_run(run_dir: Path):
     backend_names = ['asymmetric_io_uring', 'io_uring', 'linux-aio', 'epoll']
 
     regexes = [rf'({backend}.out|{backend}.client.out)' for backend in backend_names]
-
-
     backend_data_raw: dict[str, str] = dict()
     for file in run_dir.iterdir():
         for backend, regex in zip(backend_names, regexes):
@@ -27,8 +25,6 @@ def redraw_run(run_dir: Path):
 
     [shardless_metrics, sharded_metrics] = join_metrics(backends_parsed)
     generate_graphs(sharded_metrics, shardless_metrics, run_dir)
-
-    
 
 def run_redraw_suite(dir):
     dir = Path(dir)
