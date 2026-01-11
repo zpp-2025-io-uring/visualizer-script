@@ -3,6 +3,7 @@
 import pathlib
 import pandas as pd
 import plotly.express as px
+from stats import stats
 
 def make_plot(title: str, filename: str, xlabel: str, ylabel: str, per_backend_data_vec: dict, xticks: bool):
     """Draw a grouped bar chart from a mapping backend -> list-of-values.
