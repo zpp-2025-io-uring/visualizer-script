@@ -42,11 +42,15 @@ jobs:
         with:
           reviewdog_version: latest
 
+      - name: MyPy install types
+        run: |
+          mypy --install-types
+
       - name: Run mypy (print and save to file)
         shell: bash
         run: |
           set -o pipefail
-          python -m mypy --show-column-numbers --show-error-codes --disallow-untyped-defs --namespace-packages --explicit-package-bases ${{ env.CODE_DIRECTORY }} > ${{ env.OUTPUT_FILE }} || true
+          python -m mypy --show-column-numbers --show-error-codes --disallow-untyped-defs --check-untyped-defs --namespace-packages --explicit-package-bases ${{ env.CODE_DIRECTORY }} > ${{ env.OUTPUT_FILE }} || true
 
       - name: Post mypy results with reviewdog
         env:
@@ -73,6 +77,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install ruff
+
     - name: Set up reviewdog CLI
       uses: reviewdog/action-setup@v1
       with:
