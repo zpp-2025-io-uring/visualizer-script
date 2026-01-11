@@ -8,7 +8,7 @@ from run_rpc import run_rpc_test
 from generate import generate_graphs, generate_graphs_for_summary
 from parse import load_data, auto_generate_data_points
 from benchmark import compute_benchmark_summary, benchmark
-from stats import join_stats, join_metrics
+from stats import join_stats, join_metrics, stats
 from config_versioning import get_config_version, upgrade_version1_to_version2, make_proportional_splitter
 
 class benchmark_suite_runner:
