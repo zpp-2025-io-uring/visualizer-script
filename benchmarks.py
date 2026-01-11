@@ -80,12 +80,14 @@ class benchmark_suite_runner:
                 generate_graphs_for_summary(summary.get_runs(), summary.get_stats(), test_output_dir)
             dump_summary(test_output_dir, summary)
 
+BENCHMARK_SUMMARY_FILENAME = "metrics_summary.yaml"
+
 def dump_summary(benchmark_output_dir: Path, summary: dict):
     """
     Dumps the benchmark summary into benchmark_output_dir/metrics_summary.yaml
     """
     benchmark_output_dir.mkdir(parents=True, exist_ok=True)
-    with open(benchmark_output_dir / 'metrics_summary.yaml', 'w') as f:
+    with open(benchmark_output_dir / BENCHMARK_SUMMARY_FILENAME, 'w') as f:
         f.write(safe_dump(summary))
 
 def dump_environment(dir_for_config: Path, dir_to_seastar: Path):
