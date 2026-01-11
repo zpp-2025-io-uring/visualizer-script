@@ -5,17 +5,17 @@ from os import cpu_count
 from time import sleep
 
 class rpc_test_runner:
-    def __init__(self, tester_path: Path, config_path: Path, output_dir: Path, ip_address: str, asymmetric_server_app_cpuset: str, asymmetric_server_async_worker_cpuset: str, symmetric_server_cpuset: str, asymmetric_client_app_cpuset: str, asymmetric_client_async_worker_cpuset: str, symmetric_client_cpuset: str,  backends, skip_async_workers_cpuset):
-        self.tester_path: Path = tester_path.resolve()
-        self.config_path: Path = config_path.resolve()
-        self.output_dir: Path = output_dir.resolve()
-        self.ip_address = ip_address
-        self.asymmetric_server_app_cpuset = asymmetric_server_app_cpuset
-        self.asymmetric_server_async_worker_cpuset = asymmetric_server_async_worker_cpuset
-        self.symmetric_server_cpuset = symmetric_server_cpuset
-        self.asymmetric_client_app_cpuset = asymmetric_client_app_cpuset 
-        self.asymmetric_client_async_worker_cpuset = asymmetric_client_async_worker_cpuset 
-        self.symmetric_client_cpuset = symmetric_client_cpuset 
+    def __init__(self, rpc_config: dict, backends, skip_async_workers_cpuset):
+        self.tester_path: Path = Path(rpc_config['tester_path']).resolve()
+        self.config_path: Path = Path(rpc_config['config_path']).resolve()
+        self.output_dir: Path = Path(rpc_config['output_dir']).resolve()
+        self.ip_address = rpc_config['ip_address']
+        self.asymmetric_server_app_cpuset = rpc_config['asymmetric_server_app_cpuset']
+        self.asymmetric_server_async_worker_cpuset = rpc_config['asymmetric_server_async_worker_cpuset']
+        self.symmetric_server_cpuset = rpc_config['symmetric_server_cpuset']
+        self.asymmetric_client_app_cpuset = rpc_config['asymmetric_client_app_cpuset'] 
+        self.asymmetric_client_async_worker_cpuset = rpc_config['asymmetric_client_async_worker_cpuset'] 
+        self.symmetric_client_cpuset = rpc_config['symmetric_client_cpuset'] 
         self.backends = backends
         self.skip_async_workers_cpuset = skip_async_workers_cpuset
 
@@ -112,27 +112,5 @@ class rpc_test_runner:
 
         return backends_data_raw
 
-def run_rpc_test(tester_path, config_path, output_dir, ip_address, asymmetric_server_app_cpuset, asymmetric_server_async_worker_cpuset, symmetric_server_cpuset, asymmetric_client_app_cpuset, asymmetric_client_async_worker_cpuset, symmetric_client_cpuset, backends, skip_async_workers_cpuset) -> dict:
-    return rpc_test_runner(Path(tester_path), Path(config_path), Path(output_dir), ip_address, asymmetric_server_app_cpuset, asymmetric_server_async_worker_cpuset, symmetric_server_cpuset, asymmetric_client_app_cpuset, asymmetric_client_async_worker_cpuset, symmetric_client_cpuset, backends, skip_async_workers_cpuset).run()
-
-def run_rpc_test_args(args):
-    run_rpc_test(args.tester, args.config, args.output_dir, args.ip, args.asymmetric_server_app_cpuset, args.asymmetric_server_async_worker_cpuset, args.symmetric_server_cpuset, args.asymmetric_client_app_cpuset, args.asymmetric_client_async_worker_cpuset, args.symmetric_client_cpuset, args.backends, args.skip_async_workers_cpuset)
-
-def configure_run_rpc_parser(parser: argparse.ArgumentParser):
-    cpus = cpu_count()
-    server_cpus = f"0-{int(cpus/2)-1}"
-    client_cpus = f"{int(cpus/2)}-{cpus-1}"
-
-    parser.add_argument("--tester", help="path to rpc_tester", required=True)
-    parser.add_argument("--config", help="path to configuration .yaml file", required=True)
-    parser.add_argument("--output-dir", help="directory to save the output to", required=True)
-    parser.add_argument("--ip", help="ip address to connect on", default="127.0.0.5")
-    parser.add_argument("--asymmetric-server-app-cpuset", help="cpuset for the asymmetric server", default=server_cpus)
-    parser.add_argument("--asymmetric-server-async-worker-cpuset", help="cpuset for the asymmetric server async workers", default=server_cpus)
-    parser.add_argument("--symmetric-server-cpuset", help="cpuset for the symmetric server", default=server_cpus)
-    parser.add_argument("--asymmetric-client-app-cpuset", help="cpuset for the asymmetric client", default=client_cpus)
-    parser.add_argument("--asymmetric-client-async-worker-cpuset", help="cpuset for the asymmetric client async workers", default=client_cpus)
-    parser.add_argument("--symmetric-client-cpuset", help="cpuset for the symmetric client", default=client_cpus)
-    parser.add_argument("--backends", help="list of backends to compare", nargs='+', default=['asymmetric_io_uring', 'io_uring'])
-    parser.set_defaults(func=run_rpc_test_args)
-    parser.formatter_class = argparse.ArgumentDefaultsHelpFormatter
+def run_rpc_test(rpc_config: dict, backends, skip_async_workers_cpuset) -> dict:
+    return rpc_test_runner(rpc_config, backends, skip_async_workers_cpuset).run()
