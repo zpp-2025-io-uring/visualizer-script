@@ -4,14 +4,14 @@ import subprocess
 from pathlib import Path
 
 class io_test_runner:
-    def __init__(self, io_config: dict, config_path: Path, backends: list[str], skip_async_workers_cpuset: bool):
-        self.tester_path: Path = Path(io_config['tester_path']).expanduser().resolve()
+    def __init__(self, io_runner_config: dict, config_path: Path, backends: list[str], skip_async_workers_cpuset: bool):
+        self.tester_path: Path = Path(io_runner_config['tester_path']).expanduser().resolve()
         self.config_path: Path = config_path.resolve()
-        self.output_dir: Path = Path(io_config['output_dir']).resolve()
-        self.storage_dir: Path = Path(io_config['storage_dir']).resolve()
-        self.asymmetric_app_cpuset = io_config['asymmetric_app_cpuset']
-        self.asymmetric_async_worker_cpuset = io_config['asymmetric_async_worker_cpuset']
-        self.symmetric_cpuset = io_config['symmetric_cpuset']
+        self.output_dir: Path = Path(io_runner_config['output_dir']).resolve()
+        self.storage_dir: Path = Path(io_runner_config['storage_dir']).resolve()
+        self.asymmetric_app_cpuset = io_runner_config['asymmetric_app_cpuset']
+        self.asymmetric_async_worker_cpuset = io_runner_config['asymmetric_async_worker_cpuset']
+        self.symmetric_cpuset = io_runner_config['symmetric_cpuset']
         self.backends = backends
         self.skip_async_workers_cpuset = skip_async_workers_cpuset
 
@@ -62,5 +62,5 @@ class io_test_runner:
 
         return backends_data_raw
 
-def run_io_test(io_config: dict, config_path, backends, skip_async_workers_cpuset: bool) -> dict:
-    return io_test_runner(io_config, Path(config_path), backends, skip_async_workers_cpuset).run()
+def run_io_test(io_runner_config: dict, config_path, backends, skip_async_workers_cpuset: bool) -> dict:
+    return io_test_runner(io_runner_config, Path(config_path), backends, skip_async_workers_cpuset).run()

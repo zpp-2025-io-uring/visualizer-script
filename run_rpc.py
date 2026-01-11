@@ -5,17 +5,17 @@ from os import cpu_count
 from time import sleep
 
 class rpc_test_runner:
-    def __init__(self, rpc_config: dict, backends, skip_async_workers_cpuset):
-        self.tester_path: Path = Path(rpc_config['tester_path']).expanduser().resolve()
-        self.config_path: Path = Path(rpc_config['config_path']).resolve()
-        self.output_dir: Path = Path(rpc_config['output_dir']).resolve()
-        self.ip_address = rpc_config['ip_address']
-        self.asymmetric_server_app_cpuset = rpc_config['asymmetric_server_app_cpuset']
-        self.asymmetric_server_async_worker_cpuset = rpc_config['asymmetric_server_async_worker_cpuset']
-        self.symmetric_server_cpuset = rpc_config['symmetric_server_cpuset']
-        self.asymmetric_client_app_cpuset = rpc_config['asymmetric_client_app_cpuset'] 
-        self.asymmetric_client_async_worker_cpuset = rpc_config['asymmetric_client_async_worker_cpuset'] 
-        self.symmetric_client_cpuset = rpc_config['symmetric_client_cpuset'] 
+    def __init__(self, rpc_runner_config: dict, backends, skip_async_workers_cpuset):
+        self.tester_path: Path = Path(rpc_runner_config['tester_path']).expanduser().resolve()
+        self.config_path: Path = Path(rpc_runner_config['config_path']).resolve()
+        self.output_dir: Path = Path(rpc_runner_config['output_dir']).resolve()
+        self.ip_address = rpc_runner_config['ip_address']
+        self.asymmetric_server_app_cpuset = rpc_runner_config['asymmetric_server_app_cpuset']
+        self.asymmetric_server_async_worker_cpuset = rpc_runner_config['asymmetric_server_async_worker_cpuset']
+        self.symmetric_server_cpuset = rpc_runner_config['symmetric_server_cpuset']
+        self.asymmetric_client_app_cpuset = rpc_runner_config['asymmetric_client_app_cpuset'] 
+        self.asymmetric_client_async_worker_cpuset = rpc_runner_config['asymmetric_client_async_worker_cpuset'] 
+        self.symmetric_client_cpuset = rpc_runner_config['symmetric_client_cpuset'] 
         self.backends = backends
         self.skip_async_workers_cpuset = skip_async_workers_cpuset
 
@@ -112,5 +112,5 @@ class rpc_test_runner:
 
         return backends_data_raw
 
-def run_rpc_test(rpc_config: dict, backends, skip_async_workers_cpuset) -> dict:
-    return rpc_test_runner(rpc_config, backends, skip_async_workers_cpuset).run()
+def run_rpc_test(rpc_runner_config: dict, config_path, backends, skip_async_workers_cpuset) -> dict:
+    return rpc_test_runner(rpc_runner_config, backends, skip_async_workers_cpuset).run()
