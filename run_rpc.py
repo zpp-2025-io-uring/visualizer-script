@@ -112,5 +112,5 @@ class rpc_test_runner:
 
         return backends_data_raw
 
-def run_rpc_test(rpc_runner_config: dict, config_path, backends, skip_async_workers_cpuset) -> dict:
-    return rpc_test_runner(rpc_runner_config, backends, skip_async_workers_cpuset).run()
+def run_rpc_test(rpc_runner_config: dict, config_path, run_output_dir, backends, skip_async_workers_cpuset) -> dict:
+    return rpc_test_runner(rpc_runner_config, Path(config_path), Path(run_output_dir), backends, skip_async_workers_cpuset).run()
