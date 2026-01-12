@@ -13,6 +13,7 @@ env:
   REVIEWDOG_LEVEL: 'info'
   REVIEWDOG_FILTER_MODE: 'file'
   REVIEWDOG_LOG_LEVEL: 'warning'
+  CONFIG_FILE: './pyproject.toml'
 
 permissions:
   contents: read
@@ -46,14 +47,14 @@ jobs:
         with:
           reviewdog_version: latest
 
-      - name: MyPy install types
-        run: |
-          mypy --install-types
-
       - name: Run mypy (print and save to file)
         shell: bash
         run: |
-          python -m mypy --show-column-numbers --show-error-codes --disallow-untyped-defs --check-untyped-defs --namespace-packages --explicit-package-bases ${{ env.CODE_DIRECTORY }} > ${{ env.OUTPUT_FILE }} || true
+          python -m mypy \
+           --config-file ${{ env.CONFIG_FILE }} \
+           --show-column-numbers --show-error-codes --disallow-untyped-defs \
+           --check-untyped-defs --namespace-packages --non-interactive --install-types \
+           --explicit-package-bases ${{ env.CODE_DIRECTORY }} > ${{ env.OUTPUT_FILE }} || true
 
       - name: Debug mypy output
         if: always()
@@ -95,7 +96,8 @@ jobs:
 
     - name: Run ruff
       run: |
-        ruff check ${{ env.CODE_DIRECTORY }} --output-format rdjson > ${{ env.OUTPUT_FILE }} || true
+        ruff check ${{ env.CODE_DIRECTORY }} \
+         --config ${{ env.CONFIG_FILE }} --output-format rdjson > ${{ env.OUTPUT_FILE }} || true
 
     - name: Debug ruff output
       if: always()
@@ -108,6 +110,6 @@ jobs:
       shell: bash
       run: |
         cat ${{ env.OUTPUT_FILE }} | reviewdog -f=rdjson -name="ruff" \
-        -reporter=${{ env.REVIEWDOG_REPORTER }} -level=${{ env.REVIEWDOG_LEVEL }} \
-        -filter-mode=${{ env.REVIEWDOG_FILTER_MODE }} -log-level=${{ env.REVIEWDOG_LOG_LEVEL }} \
-        -log-level=${{ env.REVIEWDOG_LOG_LEVEL }} -tee
+         -reporter=${{ env.REVIEWDOG_REPORTER }} -level=${{ env.REVIEWDOG_LEVEL }} \
+         -filter-mode=${{ env.REVIEWDOG_FILTER_MODE }} -log-level=${{ env.REVIEWDOG_LOG_LEVEL }} \
+         -log-level=${{ env.REVIEWDOG_LOG_LEVEL }} -tee
