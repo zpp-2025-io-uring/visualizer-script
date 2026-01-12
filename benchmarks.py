@@ -152,60 +152,72 @@ def dump_environment(dir_for_config: Path, dir_to_seastar: Path):
         raise Exception("git_log failed")
 
 def run_benchmark_suite_args(args):
+    timestamp_for_suite : str = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
+    
     benchmark_path = Path(args.benchmark).resolve()
     with open(benchmark_path, "r") as f:
         benchmark_yaml = f.read()
 
-    config_path = Path(args.config).resolve()
-    with open(config_path, "r") as f:
-        config_yaml = f.read()
-
-    config = safe_load(config_yaml)
-
-    match get_config_version(config):
-        case 1:
-            if "legacy_cores_per_worker" not in args:
-                raise RuntimeError("Missing legacy_cores_per_worker value")
-            
-            print(f"Warning: automatically calculating async worker cpused based on cores_per_worker value {args.legacy_cores_per_worker}")
-
-            config = upgrade_version1_to_version2(config, make_proportional_splitter(int(args.legacy_cores_per_worker)))
-        case 2:
-            pass
-        case other:
-            raise ValueError(f"Unknown config version: {other}")
-
-    output_dir = Path(config['output_dir']).resolve()
-
-    timestamped_output_dir: Path = output_dir / datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
-    timestamped_output_dir.mkdir(exist_ok=True, parents=True)
-
-    with open(timestamped_output_dir / 'suite.yaml', 'w') as f:
-        print(benchmark_yaml, end='', file=f)
-
-    with open(timestamped_output_dir / 'config.yaml', 'w') as f:
-        print(safe_dump(config), end='', file=f)
-
-    config['output_dir'] = timestamped_output_dir
+    config_paths : list[Path] = []
+    for config_arg in args.config:
+        config_path = Path(args.config).resolve()
+        if config_path.is_dir():
+            for config_file in config_path.glob('*.yaml'):
+                config_paths.append(config_file)
+        else:
+            config_paths.append(config_path)
+        config_paths.append(Path(config_arg).resolve())
     
-    dump_environment(timestamped_output_dir, Path(config['io']['tester_path']).expanduser().resolve().parent)
+    for config_path in config_paths:
+        with open(config_path, "r") as f:
+            config_yaml = f.read()
 
-    if 'backends' not in config:
-        config['backends'] = ['asymmetric_io_uring', 'io_uring']
-        print(f"Warning: backends selecton not detected, assuming {config['backends']}")
+        config = safe_load(config_yaml)
 
-    runner = benchmark_suite_runner(
-        safe_load(benchmark_yaml),
-        config,
-        args.generate_graphs,
-        args.generate_summary_graphs
-    )
+        match get_config_version(config):
+            case 1:
+                if "legacy_cores_per_worker" not in args:
+                    raise RuntimeError("Missing legacy_cores_per_worker value")
+                
+                print(f"Warning: automatically calculating async worker cpused based on cores_per_worker value {args.legacy_cores_per_worker}")
 
-    runner.run()
+                config = upgrade_version1_to_version2(config, make_proportional_splitter(int(args.legacy_cores_per_worker)))
+            case 2:
+                pass
+            case other:
+                raise ValueError(f"Unknown config version: {other}")
+
+        output_dir = Path(config['output_dir']).resolve()
+
+        timestamped_output_dir: Path = output_dir / timestamp_for_suite / config_path.name
+        timestamped_output_dir.mkdir(exist_ok=True, parents=True)
+
+        with open(timestamped_output_dir / 'suite.yaml', 'w') as f:
+            print(benchmark_yaml, end='', file=f)
+
+        with open(timestamped_output_dir / 'config' / config_path.name, 'w') as f:
+            print(safe_dump(config), end='', file=f)
+
+        config['output_dir'] = timestamped_output_dir
+        
+        dump_environment(timestamped_output_dir, Path(config['io']['tester_path']).expanduser().resolve().parent)
+
+        if 'backends' not in config:
+            config['backends'] = ['asymmetric_io_uring', 'io_uring']
+            print(f"Warning: backends selecton not detected, assuming {config['backends']}")
+
+        runner = benchmark_suite_runner(
+            safe_load(benchmark_yaml),
+            config,
+            args.generate_graphs,
+            args.generate_summary_graphs
+        )
+
+        runner.run()
 
 def configure_run_benchmark_suite_parser(parser: argparse.ArgumentParser):
     parser.add_argument("--benchmark", help="path to .yaml file with the benchmark suite", required=True)
-    parser.add_argument("--config", help="path to .yaml file with configuration for the test suite", required=True)
+    parser.add_argument("--config", help="path to .yaml file with configuration for the test suite", required=True, nargs='+')
     parser.add_argument("--generate-graphs", help="generate graphs for each run metric", action='store_true')
     parser.add_argument("--legacy-cores-per-worker", help="used to calculate async worker cpuset when using a version 1 config")
     parser.add_argument("--generate-summary-graphs", help="generate summary graphs for each benchmark", action='store_true')
