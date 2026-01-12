@@ -4,6 +4,9 @@ from run_rpc import configure_run_rpc_parser
 from redraw import configure_redraw_parser
 from benchmarks import configure_run_benchmark_suite_parser
 
+def test():
+    return "test"
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Utility for running seastar performance tests")
 
@@ -16,7 +19,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    args.func(args)
+    test_var = test()
 
-def test():
-    return []
+    args.func(args)
