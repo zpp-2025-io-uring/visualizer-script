@@ -12,7 +12,7 @@ env:
   REVIEWDOG_REPORTER: 'github-pr-review'
   REVIEWDOG_LEVEL: 'info'
   REVIEWDOG_FILTER_MODE: 'added'
-  REVIEWDOG_LOG_LEVEL: 'debug'
+  REVIEWDOG_LOG_LEVEL: 'warning'
 
 permissions:
   contents: read
