@@ -7,7 +7,7 @@ class io_test_runner:
     def __init__(self, io_runner_config: dict, config_path: Path, run_output_dir: Path, backends: list[str], skip_async_workers_cpuset: bool):
         self.tester_path: Path = Path(io_runner_config['tester_path']).expanduser().resolve()
         self.config_path: Path = config_path.resolve()
-        self.output_dir = run_output_dir.resolve()
+        self.run_output_dir = run_output_dir.resolve()
         self.storage_dir: Path = Path(io_runner_config['storage_dir']).resolve()
         self.asymmetric_app_cpuset = io_runner_config['asymmetric_app_cpuset']
         self.asymmetric_async_worker_cpuset = io_runner_config['asymmetric_async_worker_cpuset']
@@ -17,7 +17,7 @@ class io_test_runner:
 
     def __run_test(self, backend: str, output_filename: str, cpuset: str, async_worker_cpuset: str | None):
         print(f"Running io_tester with backend {backend}, cpuset: {cpuset}, async worker cpuset: {async_worker_cpuset}")
-        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.run_output_dir.mkdir(parents=True, exist_ok=True)
         self.storage_dir.mkdir(parents=True, exist_ok=True)
 
         argv = [self.tester_path, "--conf", self.config_path, "--storage", self.storage_dir, "--reactor-backend", backend, "--cpuset", cpuset]
@@ -30,12 +30,12 @@ class io_test_runner:
             text=True,
         )
 
-        stdout_output_path: Path = self.output_dir / (output_filename + ".out")
+        stdout_output_path: Path = self.run_output_dir / (output_filename + ".out")
 
         with open(stdout_output_path, "w") as f:
             print(result.stdout, file=f)
 
-        stderr_output_path: Path = self.output_dir / (output_filename + ".err")
+        stderr_output_path: Path = self.run_output_dir / (output_filename + ".err")
 
         with open(stderr_output_path, "w") as f:
             print(result.stderr, file=f)
