@@ -160,13 +160,12 @@ def run_benchmark_suite_args(args):
 
     config_paths : list[Path] = []
     for config_arg in args.config:
-        config_path = Path(args.config).resolve()
+        config_path = Path(config_arg).resolve()
         if config_path.is_dir():
             for config_file in config_path.glob('*.yaml'):
                 config_paths.append(config_file)
         else:
             config_paths.append(config_path)
-        config_paths.append(Path(config_arg).resolve())
     
     for config_path in config_paths:
         with open(config_path, "r") as f:
@@ -189,13 +188,13 @@ def run_benchmark_suite_args(args):
 
         output_dir = Path(config['output_dir']).resolve()
 
-        timestamped_output_dir: Path = output_dir / timestamp_for_suite / config_path.name
+        timestamped_output_dir: Path = output_dir / timestamp_for_suite / config_path.stem
         timestamped_output_dir.mkdir(exist_ok=True, parents=True)
 
         with open(timestamped_output_dir / 'suite.yaml', 'w') as f:
             print(benchmark_yaml, end='', file=f)
 
-        with open(timestamped_output_dir / 'config' / config_path.name, 'w') as f:
+        with open(timestamped_output_dir / f'config_{config_path.name}', 'w') as f:
             print(safe_dump(config), end='', file=f)
 
         config['output_dir'] = timestamped_output_dir
