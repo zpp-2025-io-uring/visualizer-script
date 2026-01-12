@@ -67,7 +67,7 @@ jobs:
           cat ${{ env.OUTPUT_FILE }} | reviewdog -f=mypy -name="mypy" \
           -reporter=${{ env.REVIEWDOG_REPORTER }} -level=${{ env.REVIEWDOG_LEVEL }} \
           -filter-mode=${{ env.REVIEWDOG_FILTER_MODE }} -log-level=${{ env.REVIEWDOG_LOG_LEVEL }} \
-          -log-level=${{ env.REVIEWDOG_LOG_LEVEL }}
+          -log-level=${{ env.REVIEWDOG_LOG_LEVEL }} -tee
   ruff:
     runs-on: ubuntu-latest
     name: Lint with Ruff
@@ -110,6 +110,6 @@ jobs:
         cat ${{ env.OUTPUT_FILE }} | reviewdog -f=rdjson -name="ruff" \
         -reporter=${{ env.REVIEWDOG_REPORTER }} -level=${{ env.REVIEWDOG_LEVEL }} \
         -filter-mode=${{ env.REVIEWDOG_FILTER_MODE }} -log-level=${{ env.REVIEWDOG_LOG_LEVEL }} \
-        -log-level=${{ env.REVIEWDOG_LOG_LEVEL }}
+        -log-level=${{ env.REVIEWDOG_LOG_LEVEL }} -tee
         
     
