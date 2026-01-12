@@ -11,3 +11,7 @@ pypdf==5.1.0
 
 # logging
 colorama==0.4.6
+
+# testing
+pytest>=9.0.0
+
