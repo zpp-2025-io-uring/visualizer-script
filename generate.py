@@ -175,9 +175,13 @@ def generate_graphs(sharded_metrics: dict[dict[dict]], shardless_metrics: dict[d
     for metric_name, metric_by_backend in shardless_metrics.items():
         plot_shardless_metric(metric_name, metric_by_backend, build_dir)
 
-def generate_graphs_for_summary(runs, stats: stats, build_dir: pathlib.Path):
+def generate_graphs_for_summary(runs, stats: stats, build_dir: pathlib.Path, image_format: str = "svg"):
     build_dir = pathlib.Path(build_dir)
     build_dir.mkdir(parents=True, exist_ok=True)
+
+    image_format = image_format.lstrip('.').lower()
+    if image_format not in {"svg", "png", "jpg", "jpeg", "pdf"}:
+        raise ValueError(f"Unsupported image format: {image_format}")
 
     stat_to_plot = 'mean'
     stat_as_error = 'stdev'
@@ -200,7 +204,9 @@ def generate_graphs_for_summary(runs, stats: stats, build_dir: pathlib.Path):
                 rows.append({"shard": int(shard), "backend": backend, stat_to_plot: value, stat_as_error: error})
         df_long = pd.DataFrame(rows)
 
-        file_path = build_dir / pathlib.Path(f"auto_{sanitize_filename(metric_name)}_with_error_bars.svg")
+        file_path = build_dir / pathlib.Path(
+            f"auto_{sanitize_filename(metric_name)}_with_error_bars.{image_format}"
+        )
         make_plot_from_df(metric_name, file_path, df_long, x="shard", y=stat_to_plot, color="backend", error_y=stat_as_error, xlabel="Shard", ylabel=f"{stat_to_plot} value", xticks=True)
 
     for metric in stats.get_shardless_metrics():
@@ -218,5 +224,7 @@ def generate_graphs_for_summary(runs, stats: stats, build_dir: pathlib.Path):
         if not rows:
             continue
         df = pd.DataFrame(rows)
-        file_path = build_dir / pathlib.Path(f"auto_{sanitize_filename(metric_name)}_shardless_with_error_bars.svg")
+        file_path = build_dir / pathlib.Path(
+            f"auto_{sanitize_filename(metric_name)}_shardless_with_error_bars.{image_format}"
+        )
         make_plot_from_df(metric_name, file_path, df, x="backend", y=stat_to_plot, color="backend", error_y=stat_as_error, ylabel=f"{stat_to_plot} value", xticks=False)
