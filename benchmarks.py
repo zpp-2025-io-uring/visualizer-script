@@ -12,6 +12,9 @@ from stats import join_stats, join_metrics, stats
 from config_versioning import get_config_version, upgrade_version1_to_version2, make_proportional_splitter
 from pdf_summary import generate_benchmark_summary_pdf, merge_pdfs
 
+SUITE_SUMMARY_PDF_FILENAME = "suite_summary.pdf"
+BENCHMARK_SUMMARY_FILENAME = "metrics_summary.yaml"
+
 class benchmark_suite_runner:
     def __init__(self, benchmarks, config: dict, generate_graphs: bool, generate_summary_graphs: bool, generate_pdf: bool):
         self.output_dir: Path = Path(config['output_dir']).resolve()
@@ -86,9 +89,7 @@ class benchmark_suite_runner:
             dump_summary(test_output_dir, summary)
 
         if self.generate_pdf and per_benchmark_pdfs:
-            merge_pdfs(input_pdfs=per_benchmark_pdfs, output_pdf=self.output_dir / "suite_summary.pdf")
-
-BENCHMARK_SUMMARY_FILENAME = "metrics_summary.yaml"
+            merge_pdfs(input_pdfs=per_benchmark_pdfs, output_pdf=self.output_dir / SUITE_SUMMARY_PDF_FILENAME)
 
 def dump_summary(benchmark_output_dir: Path, summary: dict):
     """

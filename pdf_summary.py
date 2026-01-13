@@ -38,6 +38,38 @@ def _read_png_size(path: Path) -> tuple[int, int]:
         return int(width), int(height)
 
 
+def _add_image_page(pdf: FPDF, image_path: Path, options: PdfRenderOptions) -> None:
+    """Add a single page to `pdf` containing `image_path`, centered and scaled.
+
+    If the image can't be read or has non-positive dimensions, the function
+    will leave the PDF unchanged.
+    """
+    pdf.add_page()
+
+    margin = float(options.page_margin_mm)
+    available_w = pdf.w - 2 * margin
+    available_h = pdf.h - 2 * margin
+
+    px_w = px_h = 0
+    if image_path.suffix.lower() == ".png":
+        px_w, px_h = _read_png_size(image_path)
+
+    if px_w <= 0 or px_h <= 0:
+        return
+
+    aspect = px_h / px_w
+    target_w = available_w
+    target_h = target_w * aspect
+
+    if target_h > available_h:
+        target_h = available_h
+        target_w = target_h / aspect
+
+    x = (pdf.w - target_w) / 2
+    y = (pdf.h - target_h) / 2
+    pdf.image(str(image_path), x=x, y=y, w=target_w, h=target_h)
+
+
 def generate_benchmark_summary_pdf(
     *,
     benchmark_name: str,
@@ -64,30 +96,7 @@ def generate_benchmark_summary_pdf(
 
     # Image pages
     for image_path in image_paths:
-        pdf.add_page()
-
-        margin = float(options.page_margin_mm)
-        available_w = pdf.w - 2 * margin
-        available_h = pdf.h - 2 * margin
-
-        px_w = px_h = 0
-        if image_path.suffix.lower() == ".png":
-            px_w, px_h = _read_png_size(image_path)
-
-        if px_w <= 0 or px_h <= 0:
-            continue
-
-        aspect = px_h / px_w
-        target_w = available_w
-        target_h = target_w * aspect
-
-        if target_h > available_h:
-            target_h = available_h
-            target_w = target_h / aspect
-
-        x = (pdf.w - target_w) / 2
-        y = (pdf.h - target_h) / 2
-        pdf.image(str(image_path), x=x, y=y, w=target_w, h=target_h)
+        _add_image_page(pdf, image_path, options)
 
     pdf.output(str(output_pdf))
     return output_pdf
