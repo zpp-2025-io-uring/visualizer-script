@@ -5,7 +5,15 @@
 Run
 
 ```bash
-./main --help
+python3 ./main.py suite --benchmark configuration/suite.yaml --config configuration/configs
+```
+or
+```bash
+python3 ./main.py suite --benchmark configuration/suite.yaml --config config_1.yaml
+```
+or
+```bash
+python3 ./main.py suite --benchmark configuration/suite.yaml --config config_1.yaml config_2.yaml config_3.yaml
 ```
 
 to check the required arguments
