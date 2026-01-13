@@ -1,4 +1,10 @@
 pandas==2.3.3
 plotly==6.5.0
+
+# yaml
 PyYAML==6.0.3
 yamlable==1.1.1
+
+# pdf
+fpdf2==2.8.2
+pypdf==5.1.0

@@ -10,9 +10,10 @@ from parse import load_data, auto_generate_data_points
 from benchmark import compute_benchmark_summary, benchmark
 from stats import join_stats, join_metrics, stats
 from config_versioning import get_config_version, upgrade_version1_to_version2, make_proportional_splitter
+from pdf_summary import generate_benchmark_summary_pdf, merge_pdfs
 
 class benchmark_suite_runner:
-    def __init__(self, benchmarks, config: dict, generate_graphs: bool, generate_summary_graphs: bool):
+    def __init__(self, benchmarks, config: dict, generate_graphs: bool, generate_summary_graphs: bool, generate_pdf: bool):
         self.output_dir: Path = Path(config['output_dir']).resolve()
         self.io_config = config['io']
         self.rpc_config = config['rpc']
@@ -21,9 +22,12 @@ class benchmark_suite_runner:
 
         self.benchmarks = benchmarks
         self.generate_graphs = generate_graphs
-        self.generate_summary_graph= generate_summary_graphs
+        self.generate_summary_graph = generate_summary_graphs
+        self.generate_pdf = generate_pdf
 
     def run(self):
+        per_benchmark_pdfs: list[Path] = []
+
         for benchmark in self.benchmarks:
             test_name = benchmark['name']
             iterations = benchmark.get('iterations', 1)
@@ -65,9 +69,24 @@ class benchmark_suite_runner:
             (combined_sharded, combined_shardless) = join_stats(metrics_runs)
             benchmark_info = {'id': test_name, 'properties': {'iterations': iterations}}
             summary = compute_benchmark_summary(combined_sharded, combined_shardless, benchmark_info)
+
             if self.generate_summary_graph:
-                generate_graphs_for_summary(summary.get_runs(), summary.get_stats(), test_output_dir)
+                generate_graphs_for_summary(summary.get_runs(), summary.get_stats(), test_output_dir, image_format="svg")
+
+            if self.generate_pdf:
+                generate_graphs_for_summary(summary.get_runs(), summary.get_stats(), test_output_dir, image_format="png")
+                summary_images = sorted(test_output_dir.glob("auto_*.png"))
+                pdf_path = generate_benchmark_summary_pdf(
+                    benchmark_name=test_name,
+                    images=summary_images,
+                    output_pdf=test_output_dir / "summary.pdf",
+                )
+                per_benchmark_pdfs.append(pdf_path)
+
             dump_summary(test_output_dir, summary)
+
+        if self.generate_pdf and per_benchmark_pdfs:
+            merge_pdfs(input_pdfs=per_benchmark_pdfs, output_pdf=self.output_dir / "suite_summary.pdf")
 
 BENCHMARK_SUMMARY_FILENAME = "metrics_summary.yaml"
 
@@ -198,7 +217,8 @@ def run_benchmark_suite_args(args):
             safe_load(benchmark_yaml),
             config,
             args.generate_graphs,
-            args.generate_summary_graphs
+            args.generate_summary_graphs,
+            args.pdf
         )
 
         runner.run()
@@ -209,4 +229,5 @@ def configure_run_benchmark_suite_parser(parser: argparse.ArgumentParser):
     parser.add_argument("--generate-graphs", help="generate graphs for each run metric", action='store_true')
     parser.add_argument("--legacy-cores-per-worker", help="used to calculate async worker cpuset when using a version 1 config")
     parser.add_argument("--generate-summary-graphs", help="generate summary graphs for each benchmark", action='store_true')
+    parser.add_argument("--pdf", help="generate per-benchmark summary PDFs and a merged suite PDF", action='store_true')
     parser.set_defaults(func=run_benchmark_suite_args)
