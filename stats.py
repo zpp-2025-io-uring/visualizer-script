@@ -18,7 +18,7 @@ def join_sharded_metrics(sharded_data_points: dict):
 
     metrics = {}
 
-    for (backend, data) in sharded_data_points.items():
+    for backend, data in sharded_data_points.items():
         for key, val in data.items():
             shard = key[0]
             path = generate_metric_name_from_path(key[1:])
@@ -45,7 +45,7 @@ def join_shardless_metrics(shardless_data_points: dict):
 
     metrics = {}
 
-    for (backend, data) in shardless_data_points.items():
+    for backend, data in shardless_data_points.items():
         for key, val in data.items():
             path = generate_metric_name_from_path(key)
             if path not in metrics:
@@ -128,7 +128,9 @@ def join_stats(metrics_runs: list[dict]) -> tuple[dict, dict]:
 
     return (sharded_out, shardless_out)
 
+
 _SAMPLES_FOR_STDEV_AND_VARIANCE = 2
+
 
 def compute_stats(samples: Iterable[object]):
     nums = []

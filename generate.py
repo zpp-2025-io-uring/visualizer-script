@@ -222,7 +222,7 @@ def generate_graphs_for_summary(runs, stats: Stats, build_dir: pathlib.Path, ima
             metric_by_backend[backend] = shard_dict
 
         rows = []
-        for (backend, shards) in metric_by_backend.items():
+        for backend, shards in metric_by_backend.items():
             for shard in sorted(shards.keys()):
                 value, error = shards[shard]
                 rows.append({"shard": int(shard), "backend": backend, stat_to_plot: value, stat_as_error: error})
