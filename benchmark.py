@@ -1,10 +1,12 @@
-from stats import summarize_stats, stats
-from yamlable import YamlAble, yaml_info
 from yaml import safe_load
+from yamlable import YamlAble, yaml_info
 
-@yaml_info('benchmark')
-class benchmark(YamlAble):
-    def __init__(self, runs: list, benchmark: dict, summary: stats, run_count: int = None):
+from stats import Stats, summarize_stats
+
+
+@yaml_info("benchmark")
+class Benchmark(YamlAble):
+    def __init__(self, runs: list, benchmark: dict, summary: Stats, run_count: int = None):
         self.runs = runs
         self.benchmark = benchmark
         self.summary = summary
@@ -12,10 +14,13 @@ class benchmark(YamlAble):
 
     def get_runs(self) -> dict:
         return self.runs
+
     def get_benchmark(self) -> dict:
         return self.benchmark
-    def get_stats(self) -> stats:
+
+    def get_stats(self) -> Stats:
         return self.summary
+
     def get_run_count(self) -> int:
         return self.run_count
 
@@ -24,8 +29,8 @@ class benchmark(YamlAble):
         # If a legacy (plain mapping) YAML was used and `summary` is a dict,
         # convert it into a `stats` instance so the `benchmark` object always
         # exposes a `stats` object for `.summary`.
-        if isinstance(dct, dict) and 'summary' in dct and isinstance(dct['summary'], dict):
-            dct['summary'] = stats(**dct['summary'])
+        if isinstance(dct, dict) and "summary" in dct and isinstance(dct["summary"], dict):
+            dct["summary"] = Stats(**dct["summary"])
 
         return cls(**dct)
 
@@ -48,7 +53,7 @@ class benchmark(YamlAble):
         raise TypeError(f"Cannot load benchmark: unexpected YAML document type {type(data)}")
 
 
-def compute_benchmark_summary(sharded_metrics: dict, shardless_metrics: dict, benchmark_info: dict) -> benchmark:
+def compute_benchmark_summary(sharded_metrics: dict, shardless_metrics: dict, benchmark_info: dict) -> Benchmark:
     # build map run_id -> run entry
     runs_map: dict = {}
 
@@ -56,44 +61,57 @@ def compute_benchmark_summary(sharded_metrics: dict, shardless_metrics: dict, be
     for metric_name, backends in (sharded_metrics or {}).items():
         for backend_name, items in backends.items():
             for item in items:
-                run_id = item.get('run_id')
-                shard = item.get('shard')
-                value = item.get('value')
+                run_id = item.get("run_id")
+                shard = item.get("shard")
+                value = item.get("value")
 
                 if run_id not in runs_map:
-                    runs_map[run_id] = {'id': run_id, 'properties': {}, 'results': {'sharded_metrics': {}, 'shardless_metrics': {}}}
+                    runs_map[run_id] = {
+                        "id": run_id,
+                        "properties": {},
+                        "results": {"sharded_metrics": {}, "shardless_metrics": {}},
+                    }
 
                 run_entry = runs_map[run_id]
-                sharded_metrics_for_run = run_entry['results']['sharded_metrics']
+                sharded_metrics_for_run = run_entry["results"]["sharded_metrics"]
                 if metric_name not in sharded_metrics_for_run:
-                    sharded_metrics_for_run[metric_name] = {'properties': {}, 'backends': {}}
+                    sharded_metrics_for_run[metric_name] = {"properties": {}, "backends": {}}
 
-                backends_for_metric = sharded_metrics_for_run[metric_name]['backends']
+                backends_for_metric = sharded_metrics_for_run[metric_name]["backends"]
                 if backend_name not in backends_for_metric:
-                    backends_for_metric[backend_name] = {'properties': {}, 'shards': []}
+                    backends_for_metric[backend_name] = {"properties": {}, "shards": []}
 
-                backends_for_metric[backend_name]['shards'].append({'shard': shard, 'value': value})
+                backends_for_metric[backend_name]["shards"].append({"shard": shard, "value": value})
 
     # process shardless metrics
     for metric_name, backends in (shardless_metrics or {}).items():
         for backend_name, items in backends.items():
             for item in items:
-                run_id = item.get('run_id')
-                value = item.get('value')
+                run_id = item.get("run_id")
+                value = item.get("value")
 
                 if run_id not in runs_map:
-                    runs_map[run_id] = {'id': run_id, 'properties': {}, 'results': {'sharded_metrics': {}, 'shardless_metrics': {}}}
+                    runs_map[run_id] = {
+                        "id": run_id,
+                        "properties": {},
+                        "results": {"sharded_metrics": {}, "shardless_metrics": {}},
+                    }
 
                 run_entry = runs_map[run_id]
-                shardless_metrics_for_run = run_entry['results']['shardless_metrics']
+                shardless_metrics_for_run = run_entry["results"]["shardless_metrics"]
                 if metric_name not in shardless_metrics_for_run:
-                    shardless_metrics_for_run[metric_name] = {'properties': {}, 'backends': {}}
+                    shardless_metrics_for_run[metric_name] = {"properties": {}, "backends": {}}
 
-                backends_for_metric = shardless_metrics_for_run[metric_name]['backends']
+                backends_for_metric = shardless_metrics_for_run[metric_name]["backends"]
                 # for shardless, we store a single value per backend per run
-                backends_for_metric[backend_name] = {'properties': {}, 'value': value}
+                backends_for_metric[backend_name] = {"properties": {}, "value": value}
 
     # prepare final summary
-    runs_list = [runs_map[k] for k in sorted(runs_map.keys(), key=lambda x: (int(x) if isinstance(x, (int, str)) and str(x).isdigit() else str(x)))]
+    runs_list = [
+        runs_map[k]
+        for k in sorted(
+            runs_map.keys(), key=lambda x: (int(x) if isinstance(x, (int, str)) and str(x).isdigit() else str(x))
+        )
+    ]
     summary_stats = summarize_stats(sharded_metrics, shardless_metrics)
-    return benchmark(runs=runs_list, benchmark=benchmark_info, summary=summary_stats)
+    return Benchmark(runs=runs_list, benchmark=benchmark_info, summary=summary_stats)

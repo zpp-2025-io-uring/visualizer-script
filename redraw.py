@@ -1,15 +1,17 @@
 import argparse
 from pathlib import Path
+
 from generate import generate_graphs
-from parse import load_data, auto_generate_data_points
+from parse import auto_generate_data_points, load_data
 from stats import join_metrics
+
 
 def run_redraw(backend_paths: dict, output_dir):
     output_dir = Path(output_dir)
 
-    backends_data_raw = dict()
+    backends_data_raw = {}
     for backend, path in backend_paths.items():
-        with open(Path(path), "r") as f:
+        with open(Path(path)) as f:
             backends_data_raw[backend] = f.read()
 
     # Convert raw outputs to metrics mapping expected by generate_graphs
@@ -21,10 +23,11 @@ def run_redraw(backend_paths: dict, output_dir):
     (shardless_metrics, sharded_metrics) = join_metrics(backends_parsed)
     generate_graphs(sharded_metrics, shardless_metrics, output_dir)
 
-def run_redraw_args(args):
-    backend_names = ['asymmetric_io_uring', 'io_uring', 'linux-aio', 'epoll']
 
-    backend_paths = dict()
+def run_redraw_args(args):
+    backend_names = ["asymmetric_io_uring", "io_uring", "linux-aio", "epoll"]
+
+    backend_paths = {}
 
     args_dict = vars(args)
     for backend in backend_names:
@@ -32,6 +35,7 @@ def run_redraw_args(args):
             backend_paths[backend] = args_dict[backend]
 
     run_redraw(backend_paths, args.output_dir)
+
 
 def configure_redraw_parser(parser: argparse.ArgumentParser):
     parser.add_argument("--asymmetric_io_uring", help="path to asymmetric_io_uring results", default=None)
