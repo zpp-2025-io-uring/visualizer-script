@@ -2,7 +2,8 @@ import argparse
 import re
 from pathlib import Path
 
-from benchmarks import BENCHMARK_SUMMARY_FILENAME, benchmark
+from benchmark import Benchmark
+from benchmarks import BENCHMARK_SUMMARY_FILENAME
 from generate import generate_graphs, generate_graphs_for_summary
 from parse import auto_generate_data_points, load_data
 from stats import join_metrics
@@ -48,7 +49,7 @@ def redraw_summary(summary_file: Path, output_dir: Path):
     print(f"Redrawing summary from {summary_file}")
 
     with open(summary_file) as file:
-        summary = benchmark.load_from_file(file)
+        summary = Benchmark.load_from_file(file)
     generate_graphs_for_summary(summary.get_runs(), summary.get_stats(), output_dir)
 
 
