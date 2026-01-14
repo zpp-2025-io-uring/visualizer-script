@@ -2,6 +2,7 @@ import statistics
 from typing import Iterable
 from yamlable import YamlAble, yaml_info
 
+
 def join_sharded_metrics(sharded_data_points: dict):
     """Aggregate sharded data points into metric -> backend -> {shard: value}.
 
@@ -25,8 +26,9 @@ def join_sharded_metrics(sharded_data_points: dict):
             if backend not in metrics[path]:
                 metrics[path][backend] = dict()
             metrics[path][backend][shard] = val
-    
+
     return metrics
+
 
 def join_shardless_metrics(shardless_data_points: dict):
     """Aggregate shardless data points into metric -> backend -> value.
@@ -51,11 +53,12 @@ def join_shardless_metrics(shardless_data_points: dict):
                 metrics[path][backend] = dict()
             # store raw (non-sharded) value directly for the backend
             metrics[path][backend] = val
-    
+
     return metrics
 
+
 def generate_metric_name_from_path(path: tuple) -> str:
-    return '_'.join(str(p) for p in path)
+    return "_".join(str(p) for p in path)
 
 
 def join_metrics(backends_parsed: dict) -> tuple[dict, dict]:
@@ -75,6 +78,7 @@ def join_metrics(backends_parsed: dict) -> tuple[dict, dict]:
     sharded_metrics = join_sharded_metrics(sharded_all)
 
     return (shardless_metrics, sharded_metrics)
+
 
 def join_stats(metrics_runs: list[dict]) -> tuple[dict, dict]:
     """Aggregate per-run metrics into a run-oriented structure.
@@ -96,10 +100,10 @@ def join_stats(metrics_runs: list[dict]) -> tuple[dict, dict]:
     shardless_out: dict = {}
 
     for run in metrics_runs:
-        run_id = run.get('run_id')
+        run_id = run.get("run_id")
 
         # sharded metrics: iterate over metrics and backends and record each shard as a run entry
-        for metric_name, backend_map in (run.get('sharded') or {}).items():
+        for metric_name, backend_map in (run.get("sharded") or {}).items():
             if metric_name not in sharded_out:
                 sharded_out[metric_name] = {}
 
@@ -108,10 +112,10 @@ def join_stats(metrics_runs: list[dict]) -> tuple[dict, dict]:
                     sharded_out[metric_name][backend] = []
 
                 for shard, value in shard_map.items():
-                    sharded_out[metric_name][backend].append({'run_id': run_id, 'shard': shard, 'value': value})
+                    sharded_out[metric_name][backend].append({"run_id": run_id, "shard": shard, "value": value})
 
         # shardless metrics: record single value per run per backend
-        for metric_name, backend_map in (run.get('shardless') or {}).items():
+        for metric_name, backend_map in (run.get("shardless") or {}).items():
             if metric_name not in shardless_out:
                 shardless_out[metric_name] = {}
 
@@ -119,7 +123,7 @@ def join_stats(metrics_runs: list[dict]) -> tuple[dict, dict]:
                 if backend not in shardless_out[metric_name]:
                     shardless_out[metric_name][backend] = []
 
-                shardless_out[metric_name][backend].append({'run_id': run_id, 'value': value})
+                shardless_out[metric_name][backend].append({"run_id": run_id, "value": value})
 
     return (sharded_out, shardless_out)
 
@@ -137,21 +141,22 @@ def compute_stats(samples: Iterable[object]):
         return None
 
     stats = {}
-    stats['min'] = min(nums)
-    stats['max'] = max(nums)
-    stats['mean'] = statistics.mean(nums)
-    stats['median'] = statistics.median(nums)
-    stats['range'] = stats['max'] - stats['min']
+    stats["min"] = min(nums)
+    stats["max"] = max(nums)
+    stats["mean"] = statistics.mean(nums)
+    stats["median"] = statistics.median(nums)
+    stats["range"] = stats["max"] - stats["min"]
     if len(nums) >= 2:
-        stats['stdev'] = statistics.stdev(nums)
-        stats['variance'] = statistics.variance(nums)
+        stats["stdev"] = statistics.stdev(nums)
+        stats["variance"] = statistics.variance(nums)
     else:
-        stats['stdev'] = 0.0
-        stats['variance'] = 0.0
+        stats["stdev"] = 0.0
+        stats["variance"] = 0.0
 
     return stats
 
-@yaml_info('stats')
+
+@yaml_info("stats")
 class stats(YamlAble):
     def __init__(self, sharded_metrics: dict = None, shardless_metrics: dict = None):
         self.sharded_metrics = sharded_metrics or {}
@@ -163,6 +168,7 @@ class stats(YamlAble):
     def get_shardless_metrics(self) -> dict:
         return self.shardless_metrics
 
+
 def summarize_stats(sharded_metrics: dict, shardless_metrics: dict) -> stats:
     # gather sharded values: metric -> backend -> shard -> [values]
     sharded_stats = {}
@@ -171,8 +177,8 @@ def summarize_stats(sharded_metrics: dict, shardless_metrics: dict) -> stats:
         for backend_name, items in backends.items():
             sharded_stats[metric_name].setdefault(backend_name, {})
             for item in items:
-                shard = item.get('shard')
-                value = item.get('value')
+                shard = item.get("shard")
+                value = item.get("value")
                 b = sharded_stats[metric_name][backend_name]
                 b.setdefault(shard, [])
                 b[shard].append(value)
@@ -190,7 +196,7 @@ def summarize_stats(sharded_metrics: dict, shardless_metrics: dict) -> stats:
         for backend_name, items in backends.items():
             shardless_stats[metric_name].setdefault(backend_name, [])
             for item in items:
-                value = item.get('value')
+                value = item.get("value")
                 shardless_stats[metric_name][backend_name].append(value)
 
     # compute stats for shardless

@@ -3,15 +3,23 @@ from os import cpu_count
 import subprocess
 from pathlib import Path
 
+
 class io_test_runner:
-    def __init__(self, io_runner_config: dict, config_path: Path, run_output_dir: Path, backends: list[str], skip_async_workers_cpuset: bool):
-        self.tester_path: Path = Path(io_runner_config['tester_path']).expanduser().resolve()
+    def __init__(
+        self,
+        io_runner_config: dict,
+        config_path: Path,
+        run_output_dir: Path,
+        backends: list[str],
+        skip_async_workers_cpuset: bool,
+    ):
+        self.tester_path: Path = Path(io_runner_config["tester_path"]).expanduser().resolve()
         self.config_path: Path = config_path.resolve()
         self.run_output_dir = run_output_dir.resolve()
-        self.storage_dir: Path = Path(io_runner_config['storage_dir']).resolve()
-        self.asymmetric_app_cpuset = io_runner_config['asymmetric_app_cpuset']
-        self.asymmetric_async_worker_cpuset = io_runner_config['asymmetric_async_worker_cpuset']
-        self.symmetric_cpuset = io_runner_config['symmetric_cpuset']
+        self.storage_dir: Path = Path(io_runner_config["storage_dir"]).resolve()
+        self.asymmetric_app_cpuset = io_runner_config["asymmetric_app_cpuset"]
+        self.asymmetric_async_worker_cpuset = io_runner_config["asymmetric_async_worker_cpuset"]
+        self.symmetric_cpuset = io_runner_config["symmetric_cpuset"]
         self.backends = backends
         self.skip_async_workers_cpuset = skip_async_workers_cpuset
 
@@ -20,9 +28,19 @@ class io_test_runner:
         self.run_output_dir.mkdir(parents=True, exist_ok=True)
         self.storage_dir.mkdir(parents=True, exist_ok=True)
 
-        argv = [self.tester_path, "--conf", self.config_path, "--storage", self.storage_dir, "--reactor-backend", backend, "--cpuset", cpuset]
+        argv = [
+            self.tester_path,
+            "--conf",
+            self.config_path,
+            "--storage",
+            self.storage_dir,
+            "--reactor-backend",
+            backend,
+            "--cpuset",
+            cpuset,
+        ]
         if async_worker_cpuset is not None:
-            argv.extend(['--async-workers-cpuset', async_worker_cpuset])
+            argv.extend(["--async-workers-cpuset", async_worker_cpuset])
 
         result = subprocess.run(
             argv,
@@ -42,9 +60,8 @@ class io_test_runner:
 
         self.storage_dir.rmdir()
 
-        if (err := result.returncode != 0):
+        if err := result.returncode != 0:
             raise RuntimeError(f"Tester failed with exit code {err}")
-
 
         return result.stdout
 
@@ -52,15 +69,20 @@ class io_test_runner:
         backends_data_raw = dict()
 
         for backend in self.backends:
-            if backend == 'asymmetric_io_uring':
+            if backend == "asymmetric_io_uring":
                 if self.skip_async_workers_cpuset:
                     backends_data_raw[backend] = self.__run_test(backend, backend, self.asymmetric_app_cpuset, None)
                 else:
-                    backends_data_raw[backend] = self.__run_test(backend, backend, self.asymmetric_app_cpuset, self.asymmetric_async_worker_cpuset)
+                    backends_data_raw[backend] = self.__run_test(
+                        backend, backend, self.asymmetric_app_cpuset, self.asymmetric_async_worker_cpuset
+                    )
             else:
                 backends_data_raw[backend] = self.__run_test(backend, backend, self.asymmetric_app_cpuset, None)
 
         return backends_data_raw
 
+
 def run_io_test(io_runner_config: dict, config_path, run_output_dir, backends, skip_async_workers_cpuset: bool) -> dict:
-    return io_test_runner(io_runner_config, Path(config_path), Path(run_output_dir), backends, skip_async_workers_cpuset).run()
+    return io_test_runner(
+        io_runner_config, Path(config_path), Path(run_output_dir), backends, skip_async_workers_cpuset
+    ).run()

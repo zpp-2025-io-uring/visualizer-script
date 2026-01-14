@@ -5,6 +5,7 @@ import pandas as pd
 import plotly.express as px
 from stats import stats
 
+
 def make_plot(title: str, filename: str, xlabel: str, ylabel: str, per_backend_data_vec: dict, xticks: bool):
     """Draw a grouped bar chart from a mapping backend -> list-of-values.
 
@@ -16,24 +17,28 @@ def make_plot(title: str, filename: str, xlabel: str, ylabel: str, per_backend_d
             raise ValueError(f"Plotted data must have the same length")
 
     per_backend_data_with_shardnum = per_backend_data_vec.copy()
-    per_backend_data_with_shardnum['Shard'] = list(range(0,size))
+    per_backend_data_with_shardnum["Shard"] = list(range(0, size))
 
     df = pd.DataFrame(per_backend_data_with_shardnum)
 
     # Convert to long form
-    df_long = df.melt(id_vars="Shard", value_vars=per_backend_data_vec.keys(),
-                    var_name="Backend", value_name="Value")
+    df_long = df.melt(id_vars="Shard", value_vars=per_backend_data_vec.keys(), var_name="Backend", value_name="Value")
 
-    labels = {"Shard": xlabel if xlabel is not None else "", "Value": ylabel if ylabel is not None else "", "Backend": "Backend"}
+    labels = {
+        "Shard": xlabel if xlabel is not None else "",
+        "Value": ylabel if ylabel is not None else "",
+        "Backend": "Backend",
+    }
 
     # Plot grouped bar chart
-    fig = px.bar(df_long,
-                x="Shard",
-                y="Value",
-                color="Backend",
-                labels=labels,
-                barmode="group",
-                title=title,
+    fig = px.bar(
+        df_long,
+        x="Shard",
+        y="Value",
+        color="Backend",
+        labels=labels,
+        barmode="group",
+        title=title,
     )
 
     fig.update_layout(bargap=0.5, bargroupgap=0.1)
@@ -50,7 +55,19 @@ def make_plot(title: str, filename: str, xlabel: str, ylabel: str, per_backend_d
     pathlib.Path(filename).parent.mkdir(parents=True, exist_ok=True)
     fig.write_image(filename)
 
-def make_plot_from_df(title: str, filename: str, df: pd.DataFrame, x: str, y: str, color: str | None = None, error_y: str | None = None, xlabel: str | None = None, ylabel: str | None = None, xticks: bool = False):
+
+def make_plot_from_df(
+    title: str,
+    filename: str,
+    df: pd.DataFrame,
+    x: str,
+    y: str,
+    color: str | None = None,
+    error_y: str | None = None,
+    xlabel: str | None = None,
+    ylabel: str | None = None,
+    xticks: bool = False,
+):
     """Draw a grouped bar chart from a DataFrame.
 
     Parameters mirror the usage in this module: `x`, `y` are column names in `df`, `color`
@@ -63,7 +80,7 @@ def make_plot_from_df(title: str, filename: str, df: pd.DataFrame, x: str, y: st
     if ylabel is not None:
         labels[y] = ylabel
 
-    plot_kwargs = dict(x=y, y=x, orientation='h', barmode="group", title=title, labels=labels)
+    plot_kwargs = dict(x=y, y=x, orientation="h", barmode="group", title=title, labels=labels)
     if color is not None:
         plot_kwargs["color"] = color
     if error_y is not None:
@@ -82,6 +99,7 @@ def make_plot_from_df(title: str, filename: str, df: pd.DataFrame, x: str, y: st
 
     pathlib.Path(filename).parent.mkdir(parents=True, exist_ok=True)
     fig.write_image(filename)
+
 
 def find_height_for_min_bar(number_of_groups: int, number_of_bars_per_group: int) -> int:
     default_height = 400
@@ -124,9 +142,10 @@ def plot_sharded_metric(metric_name: str, sharded_metric_by_backend: dict, build
             else:
                 values.append(0)
         per_backend[backend] = values
-    
+
     file_path = build_dir / pathlib.Path(f"auto_{file_basename}.svg")
     make_plot(metric_name, file_path, "shard", None, per_backend, True)
+
 
 def plot_shardless_metric(metric_name: str, shardless_metric_by_backend: dict, build_dir: pathlib.Path):
     """Plot a single shardless metric described by `metric_map` (backend -> value).
@@ -141,6 +160,7 @@ def plot_shardless_metric(metric_name: str, shardless_metric_by_backend: dict, b
 
     file_path = build_dir / pathlib.Path(f"auto_{file_basename}_total.svg")
     make_plot(metric_name + " (total)", file_path, None, None, per_backend, False)
+
 
 def plot_total_metric(metric_name: str, sharded_metric_by_backend: dict, build_dir: pathlib.Path):
     """Plot a sharded metric as total values per backend.
@@ -159,8 +179,10 @@ def plot_total_metric(metric_name: str, sharded_metric_by_backend: dict, build_d
     file_path = build_dir / pathlib.Path(f"auto_total_{file_basename}.svg")
     make_plot("Total " + metric_name, file_path, None, None, per_backend, False)
 
+
 def sanitize_filename(name: str) -> str:
-    return name.replace('/', '_')
+    return name.replace("/", "_")
+
 
 def generate_graphs(sharded_metrics: dict[dict[dict]], shardless_metrics: dict[dict], build_dir: pathlib.Path):
     """Generate plots from a metrics mapping (metric_name -> backend -> value-or-dict).
@@ -175,16 +197,17 @@ def generate_graphs(sharded_metrics: dict[dict[dict]], shardless_metrics: dict[d
     for metric_name, metric_by_backend in shardless_metrics.items():
         plot_shardless_metric(metric_name, metric_by_backend, build_dir)
 
+
 def generate_graphs_for_summary(runs, stats: stats, build_dir: pathlib.Path, image_format: str = "svg"):
     build_dir = pathlib.Path(build_dir)
     build_dir.mkdir(parents=True, exist_ok=True)
 
-    image_format = image_format.lstrip('.').lower()
+    image_format = image_format.lstrip(".").lower()
     if image_format not in {"svg", "png", "jpg", "jpeg", "pdf"}:
         raise ValueError(f"Unsupported image format: {image_format}")
 
-    stat_to_plot = 'mean'
-    stat_as_error = 'stdev'
+    stat_to_plot = "mean"
+    stat_as_error = "stdev"
 
     for metric in stats.get_sharded_metrics():
         metric_name = metric
@@ -204,17 +227,26 @@ def generate_graphs_for_summary(runs, stats: stats, build_dir: pathlib.Path, ima
                 rows.append({"shard": int(shard), "backend": backend, stat_to_plot: value, stat_as_error: error})
         df_long = pd.DataFrame(rows)
 
-        file_path = build_dir / pathlib.Path(
-            f"auto_{sanitize_filename(metric_name)}_with_error_bars.{image_format}"
+        file_path = build_dir / pathlib.Path(f"auto_{sanitize_filename(metric_name)}_with_error_bars.{image_format}")
+        make_plot_from_df(
+            metric_name,
+            file_path,
+            df_long,
+            x="shard",
+            y=stat_to_plot,
+            color="backend",
+            error_y=stat_as_error,
+            xlabel="Shard",
+            ylabel=f"{stat_to_plot} value",
+            xticks=True,
         )
-        make_plot_from_df(metric_name, file_path, df_long, x="shard", y=stat_to_plot, color="backend", error_y=stat_as_error, xlabel="Shard", ylabel=f"{stat_to_plot} value", xticks=True)
 
     for metric in stats.get_shardless_metrics():
         metric_name = metric
         rows = []
         for backend in stats.get_shardless_metrics()[metric]:
             backend_stats = stats.get_shardless_metrics()[metric][backend]
-            value = backend_stats.get(stat_to_plot, backend_stats.get('value'))
+            value = backend_stats.get(stat_to_plot, backend_stats.get("value"))
             error = backend_stats.get(stat_as_error, 0)
             if value is None:
                 raise ValueError(f"No {stat_to_plot} found for shardless metric {metric_name} backend {backend}")
@@ -227,4 +259,14 @@ def generate_graphs_for_summary(runs, stats: stats, build_dir: pathlib.Path, ima
         file_path = build_dir / pathlib.Path(
             f"auto_{sanitize_filename(metric_name)}_shardless_with_error_bars.{image_format}"
         )
-        make_plot_from_df(metric_name, file_path, df, x="backend", y=stat_to_plot, color="backend", error_y=stat_as_error, ylabel=f"{stat_to_plot} value", xticks=False)
+        make_plot_from_df(
+            metric_name,
+            file_path,
+            df,
+            x="backend",
+            y=stat_to_plot,
+            color="backend",
+            error_y=stat_as_error,
+            ylabel=f"{stat_to_plot} value",
+            xticks=False,
+        )
