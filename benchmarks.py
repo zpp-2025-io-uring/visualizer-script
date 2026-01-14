@@ -18,7 +18,7 @@ SUITE_SUMMARY_PDF_FILENAME = "suite_summary.pdf"
 BENCHMARK_SUMMARY_FILENAME = "metrics_summary.yaml"
 
 
-class benchmark_suite_runner:
+class BenchmarkSuiteRunner:
     def __init__(
         self, benchmarks, config: dict, generate_graphs: bool, generate_summary_graphs: bool, generate_pdf: bool
     ):
@@ -242,7 +242,7 @@ def run_benchmark_suite_args(args):
             config["backends"] = ["asymmetric_io_uring", "io_uring"]
             print(f"Warning: backends selecton not detected, assuming {config['backends']}")
 
-        runner = benchmark_suite_runner(
+        runner = BenchmarkSuiteRunner(
             safe_load(benchmark_yaml), config, args.generate_graphs, args.generate_summary_graphs, args.pdf
         )
 
