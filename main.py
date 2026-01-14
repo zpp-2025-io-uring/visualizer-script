@@ -1,6 +1,7 @@
 import argparse
-from redraw import configure_redraw_parser
+
 from benchmarks import configure_run_benchmark_suite_parser
+from redraw import configure_redraw_parser
 from redraw_suite import configure_redraw_suite_parser
 
 if __name__ == "__main__":

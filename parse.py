@@ -1,5 +1,4 @@
-from yaml import safe_load, safe_dump
-from pathlib import Path
+from yaml import safe_load
 
 
 def load_data(raw_output: str):

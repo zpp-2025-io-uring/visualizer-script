@@ -1,7 +1,8 @@
 import argparse
 from pathlib import Path
+
 from generate import generate_graphs
-from parse import load_data, auto_generate_data_points
+from parse import auto_generate_data_points, load_data
 from stats import join_metrics
 
 
@@ -10,7 +11,7 @@ def run_redraw(backend_paths: dict, output_dir):
 
     backends_data_raw = dict()
     for backend, path in backend_paths.items():
-        with open(Path(path), "r") as f:
+        with open(Path(path)) as f:
             backends_data_raw[backend] = f.read()
 
     # Convert raw outputs to metrics mapping expected by generate_graphs

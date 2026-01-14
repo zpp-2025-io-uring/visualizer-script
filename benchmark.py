@@ -1,6 +1,7 @@
-from stats import summarize_stats, stats
-from yamlable import YamlAble, yaml_info
 from yaml import safe_load
+from yamlable import YamlAble, yaml_info
+
+from stats import stats, summarize_stats
 
 
 @yaml_info("benchmark")

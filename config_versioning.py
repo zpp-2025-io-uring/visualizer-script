@@ -1,4 +1,4 @@
-from typing import Callable
+from collections.abc import Callable
 
 
 def get_config_version(config: dict) -> int:
@@ -20,7 +20,7 @@ def parse_cpuset(cpuset: str) -> set[int]:
 
 
 def cpuset_to_string(cpuset: set[int]) -> str:
-    return ",".join((str(el) for el in cpuset))
+    return ",".join(str(el) for el in cpuset)
 
 
 def make_proportional_splitter(cores_per_worker: int) -> Callable[[set[int]], tuple[set[int], set[int]]]:

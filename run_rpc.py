@@ -1,7 +1,5 @@
-import argparse
 import subprocess
 from pathlib import Path
-from os import cpu_count
 from time import sleep
 
 

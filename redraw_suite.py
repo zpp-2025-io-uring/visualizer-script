@@ -1,11 +1,11 @@
 import argparse
 import re
 from pathlib import Path
-from generate import generate_graphs
-from parse import load_data, auto_generate_data_points
-from stats import join_metrics
+
 from benchmarks import BENCHMARK_SUMMARY_FILENAME, benchmark
-from generate import generate_graphs_for_summary
+from generate import generate_graphs, generate_graphs_for_summary
+from parse import auto_generate_data_points, load_data
+from stats import join_metrics
 
 
 def redraw_run(run_dir: Path):
@@ -18,7 +18,7 @@ def redraw_run(run_dir: Path):
         for backend, regex in zip(backend_names, regexes):
             if re.fullmatch(regex, str(file.name)):
                 print(f"Found data for backend {backend} in {file.name}")
-                with open(file, "r") as f:
+                with open(file) as f:
                     backend_data_raw[backend] = f.read()
 
     backends_parsed = {}
@@ -47,7 +47,7 @@ def run_redraw_suite(dir):
 def redraw_summary(summary_file: Path, output_dir: Path):
     print(f"Redrawing summary from {summary_file}")
 
-    with open(summary_file, "r") as file:
+    with open(summary_file) as file:
         summary = benchmark.load_from_file(file)
     generate_graphs_for_summary(summary.get_runs(), summary.get_stats(), output_dir)
 

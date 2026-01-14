@@ -1,5 +1,6 @@
 import statistics
-from typing import Iterable
+from collections.abc import Iterable
+
 from yamlable import YamlAble, yaml_info
 
 

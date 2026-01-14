@@ -1,16 +1,18 @@
 import argparse
-from pathlib import Path
-from datetime import datetime
 import subprocess
-from yaml import safe_load, safe_dump
+from datetime import datetime
+from pathlib import Path
+
+from yaml import safe_dump, safe_load
+
+from benchmark import compute_benchmark_summary
+from config_versioning import get_config_version, make_proportional_splitter, upgrade_version1_to_version2
+from generate import generate_graphs, generate_graphs_for_summary
+from parse import auto_generate_data_points, load_data
+from pdf_summary import generate_benchmark_summary_pdf, merge_pdfs
 from run_io import run_io_test
 from run_rpc import run_rpc_test
-from generate import generate_graphs, generate_graphs_for_summary
-from parse import load_data, auto_generate_data_points
-from benchmark import compute_benchmark_summary, benchmark
-from stats import join_stats, join_metrics, stats
-from config_versioning import get_config_version, upgrade_version1_to_version2, make_proportional_splitter
-from pdf_summary import generate_benchmark_summary_pdf, merge_pdfs
+from stats import join_metrics, join_stats
 
 SUITE_SUMMARY_PDF_FILENAME = "suite_summary.pdf"
 BENCHMARK_SUMMARY_FILENAME = "metrics_summary.yaml"
@@ -186,7 +188,7 @@ def run_benchmark_suite_args(args):
     timestamp_for_suite: str = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
 
     benchmark_path = Path(args.benchmark).resolve()
-    with open(benchmark_path, "r") as f:
+    with open(benchmark_path) as f:
         benchmark_yaml = f.read()
 
     config_paths: list[Path] = []
@@ -199,7 +201,7 @@ def run_benchmark_suite_args(args):
             config_paths.append(config_path)
 
     for config_path in config_paths:
-        with open(config_path, "r") as f:
+        with open(config_path) as f:
             config_yaml = f.read()
 
         config = safe_load(config_yaml)
