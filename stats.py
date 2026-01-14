@@ -18,8 +18,8 @@ def join_sharded_metrics(sharded_data_points: dict):
 
     metrics = {}
 
-    for backend in sharded_data_points:
-        for key, val in sharded_data_points[backend].items():
+    for (backend, data) in sharded_data_points.items():
+        for key, val in data.items():
             shard = key[0]
             path = generate_metric_name_from_path(key[1:])
             if path not in metrics:
@@ -45,8 +45,8 @@ def join_shardless_metrics(shardless_data_points: dict):
 
     metrics = {}
 
-    for backend in shardless_data_points:
-        for key, val in shardless_data_points[backend].items():
+    for (backend, data) in shardless_data_points.items():
+        for key, val in data.items():
             path = generate_metric_name_from_path(key)
             if path not in metrics:
                 metrics[path] = {}
