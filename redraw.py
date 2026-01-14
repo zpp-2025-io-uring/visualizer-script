@@ -9,7 +9,7 @@ from stats import join_metrics
 def run_redraw(backend_paths: dict, output_dir):
     output_dir = Path(output_dir)
 
-    backends_data_raw = dict()
+    backends_data_raw = {}
     for backend, path in backend_paths.items():
         with open(Path(path)) as f:
             backends_data_raw[backend] = f.read()
@@ -27,7 +27,7 @@ def run_redraw(backend_paths: dict, output_dir):
 def run_redraw_args(args):
     backend_names = ["asymmetric_io_uring", "io_uring", "linux-aio", "epoll"]
 
-    backend_paths = dict()
+    backend_paths = {}
 
     args_dict = vars(args)
     for backend in backend_names:

@@ -34,8 +34,8 @@ def auto_generate_data_points(backend_data: dict) -> tuple[dict, dict]:
     value is a dict mapping tuple keys -> value.
     """
 
-    shardless_data_points: dict[tuple, object] = dict()
-    sharded_data_points: dict[tuple, object] = dict()
+    shardless_data_points: dict[tuple, object] = {}
+    sharded_data_points: dict[tuple, object] = {}
 
     def walk_tree(prefix, data):
         """Return list of (path_tuple, value) pairs for leaves under data.

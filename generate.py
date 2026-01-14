@@ -5,7 +5,7 @@ import pathlib
 import pandas as pd
 import plotly.express as px
 
-from stats import stats
+from stats import Stats
 
 
 def make_plot(title: str, filename: str, xlabel: str, ylabel: str, per_backend_data_vec: dict, xticks: bool):
@@ -82,7 +82,7 @@ def make_plot_from_df(
     if ylabel is not None:
         labels[y] = ylabel
 
-    plot_kwargs = dict(x=y, y=x, orientation="h", barmode="group", title=title, labels=labels)
+    plot_kwargs = {"x": y, "y": x, "orientation": "h", "barmode": "group", "title": title, "labels": labels}
     if color is not None:
         plot_kwargs["color"] = color
     if error_y is not None:
@@ -199,7 +199,7 @@ def generate_graphs(sharded_metrics: dict[dict[dict]], shardless_metrics: dict[d
         plot_shardless_metric(metric_name, metric_by_backend, build_dir)
 
 
-def generate_graphs_for_summary(runs, stats: stats, build_dir: pathlib.Path, image_format: str = "svg"):
+def generate_graphs_for_summary(runs, stats: Stats, build_dir: pathlib.Path, image_format: str = "svg"):
     build_dir = pathlib.Path(build_dir)
     build_dir.mkdir(parents=True, exist_ok=True)
 

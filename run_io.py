@@ -2,7 +2,7 @@ import subprocess
 from pathlib import Path
 
 
-class io_test_runner:
+class IOTestRunner:
     def __init__(
         self,
         io_runner_config: dict,
@@ -64,7 +64,7 @@ class io_test_runner:
         return result.stdout
 
     def run(self) -> dict:
-        backends_data_raw = dict()
+        backends_data_raw = {}
 
         for backend in self.backends:
             if backend == "asymmetric_io_uring":
@@ -81,6 +81,6 @@ class io_test_runner:
 
 
 def run_io_test(io_runner_config: dict, config_path, run_output_dir, backends, skip_async_workers_cpuset: bool) -> dict:
-    return io_test_runner(
+    return IOTestRunner(
         io_runner_config, Path(config_path), Path(run_output_dir), backends, skip_async_workers_cpuset
     ).run()

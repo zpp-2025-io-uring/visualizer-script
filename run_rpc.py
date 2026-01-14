@@ -3,7 +3,7 @@ from pathlib import Path
 from time import sleep
 
 
-class rpc_test_runner:
+class RpcTestRunner:
     def __init__(
         self, rpc_runner_config: dict, config_path: Path, run_output_dir: Path, backends, skip_async_workers_cpuset
     ):
@@ -129,7 +129,7 @@ class rpc_test_runner:
         return client.stdout
 
     def run(self) -> dict:
-        backends_data_raw = dict()
+        backends_data_raw = {}
 
         for backend in self.backends:
             if backend == "asymmetric_io_uring":
@@ -160,6 +160,6 @@ class rpc_test_runner:
 
 
 def run_rpc_test(rpc_runner_config: dict, config_path, run_output_dir, backends, skip_async_workers_cpuset) -> dict:
-    return rpc_test_runner(
+    return RpcTestRunner(
         rpc_runner_config, Path(config_path), Path(run_output_dir), backends, skip_async_workers_cpuset
     ).run()

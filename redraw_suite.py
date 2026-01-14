@@ -13,7 +13,7 @@ def redraw_run(run_dir: Path):
     backend_names = ["asymmetric_io_uring", "io_uring", "linux-aio", "epoll"]
 
     regexes = [rf"({backend}.out|{backend}.client.out)" for backend in backend_names]
-    backend_data_raw: dict[str, str] = dict()
+    backend_data_raw: dict[str, str] = {}
     for file in run_dir.iterdir():
         for backend, regex in zip(backend_names, regexes):
             if re.fullmatch(regex, str(file.name)):

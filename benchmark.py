@@ -1,12 +1,12 @@
 from yaml import safe_load
 from yamlable import YamlAble, yaml_info
 
-from stats import stats, summarize_stats
+from stats import Stats, summarize_stats
 
 
 @yaml_info("benchmark")
-class benchmark(YamlAble):
-    def __init__(self, runs: list, benchmark: dict, summary: stats, run_count: int = None):
+class Benchmark(YamlAble):
+    def __init__(self, runs: list, benchmark: dict, summary: Stats, run_count: int = None):
         self.runs = runs
         self.benchmark = benchmark
         self.summary = summary
@@ -18,7 +18,7 @@ class benchmark(YamlAble):
     def get_benchmark(self) -> dict:
         return self.benchmark
 
-    def get_stats(self) -> stats:
+    def get_stats(self) -> Stats:
         return self.summary
 
     def get_run_count(self) -> int:
@@ -30,7 +30,7 @@ class benchmark(YamlAble):
         # convert it into a `stats` instance so the `benchmark` object always
         # exposes a `stats` object for `.summary`.
         if isinstance(dct, dict) and "summary" in dct and isinstance(dct["summary"], dict):
-            dct["summary"] = stats(**dct["summary"])
+            dct["summary"] = Stats(**dct["summary"])
 
         return cls(**dct)
 
@@ -53,7 +53,7 @@ class benchmark(YamlAble):
         raise TypeError(f"Cannot load benchmark: unexpected YAML document type {type(data)}")
 
 
-def compute_benchmark_summary(sharded_metrics: dict, shardless_metrics: dict, benchmark_info: dict) -> benchmark:
+def compute_benchmark_summary(sharded_metrics: dict, shardless_metrics: dict, benchmark_info: dict) -> Benchmark:
     # build map run_id -> run entry
     runs_map: dict = {}
 
@@ -114,4 +114,4 @@ def compute_benchmark_summary(sharded_metrics: dict, shardless_metrics: dict, be
         )
     ]
     summary_stats = summarize_stats(sharded_metrics, shardless_metrics)
-    return benchmark(runs=runs_list, benchmark=benchmark_info, summary=summary_stats)
+    return Benchmark(runs=runs_list, benchmark=benchmark_info, summary=summary_stats)
