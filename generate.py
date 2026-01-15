@@ -71,26 +71,13 @@ class PlotGenerator:
             self.file_paths.append(file_path)
 
         for metric in stats.get_shardless_metrics():
-            metric_name = metric
-            rows = []
-            for backend in stats.get_shardless_metrics()[metric]:
-                backend_stats = stats.get_shardless_metrics()[metric][backend]
-                value = backend_stats.get(stat_to_plot, backend_stats.get("value"))
-                error = backend_stats.get(stat_as_error, 0)
-                if value is None:
-                    raise ValueError(f"No {stat_to_plot} found for shardless metric {metric_name} backend {backend}")
-                if error is None:
-                    raise ValueError(f"No {stat_as_error} found for shardless metric {metric_name} backend {backend}")
-                rows.append({"backend": backend, stat_to_plot: value, stat_as_error: error})
-            if not rows:
-                continue
-            df = pd.DataFrame(rows)
-            file_path = build_dir / pathlib.Path(
-                f"auto_{sanitize_filename(metric_name)}_with_error_bars.{image_format}"
+            rows = summarize_shardless_metrics_by_backend(
+                metric, stats.get_shardless_metrics()[metric], stat_to_plot, stat_as_error
             )
+            df = pd.DataFrame(rows)
+            file_path = build_dir / pathlib.Path(f"auto_{sanitize_filename(metric)}_with_error_bars.{image_format}")
             fig = make_plot_from_df(
-                metric_name,
-                file_path,
+                metric,
                 df,
                 x="backend",
                 y=stat_to_plot,
@@ -128,6 +115,24 @@ def summarize_sharded_metrics_by_backend(
         for shard in sorted(shards.keys()):
             value, error = shards[shard]
             rows.append({"shard": int(shard), "backend": backend, stat_to_plot: value, stat_as_error: error})
+
+    return rows
+
+
+def summarize_shardless_metrics_by_backend(
+    metric: str, per_backend_shardless_metrics: dict, stat_to_plot: str, stat_as_error: str
+) -> dict:
+    """Summarize shardless metrics into a list of rows for plotting."""
+
+    # Create mapping backend -> (stat_to_plot, stat_as_error)
+    metric_by_backend = {}
+    for backend, stats in per_backend_shardless_metrics.items():
+        metric_by_backend[backend] = (stats[stat_to_plot], stats[stat_as_error])
+
+    # Convert to list of rows for plotting
+    rows = []
+    for backend, (value, error) in metric_by_backend.items():
+        rows.append({"backend": backend, stat_to_plot: value, stat_as_error: error})
 
     return rows
 
