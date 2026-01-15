@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 
-from generate import generate_graphs
+from generate import PlotGenerator
 from parse import auto_generate_data_points, load_data
 from stats import join_metrics
 
@@ -21,7 +21,10 @@ def run_redraw(backend_paths: dict, output_dir):
         backends_parsed[backend] = auto_generate_data_points(parsed)
 
     (shardless_metrics, sharded_metrics) = join_metrics(backends_parsed)
-    generate_graphs(sharded_metrics, shardless_metrics, output_dir)
+
+    plot_generator = PlotGenerator()
+    plot_generator.schedule_generate_graphs(sharded_metrics, shardless_metrics, output_dir)
+    plot_generator.plot()
 
 
 def run_redraw_args(args):

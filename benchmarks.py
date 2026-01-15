@@ -7,7 +7,7 @@ from yaml import safe_dump, safe_load
 
 from benchmark import compute_benchmark_summary
 from config_versioning import get_config_version, make_proportional_splitter, upgrade_version1_to_version2
-from generate import generate_graphs, generate_graphs_for_summary
+from generate import PlotGenerator
 from parse import auto_generate_data_points, load_data
 from pdf_summary import generate_benchmark_summary_pdf, merge_pdfs
 from run_io import run_io_test
@@ -32,6 +32,7 @@ class BenchmarkSuiteRunner:
         self.generate_graphs = generate_graphs
         self.generate_summary_graph = generate_summary_graphs
         self.generate_pdf = generate_pdf
+        self.plot_generator = PlotGenerator()
 
     def run(self):
         per_benchmark_pdfs: list[Path] = []
@@ -84,21 +85,24 @@ class BenchmarkSuiteRunner:
                 metrics_runs.append({"run_id": i, "sharded": sharded_metrics, "shardless": shardless_metrics})
 
                 if self.generate_graphs:
-                    generate_graphs(sharded_metrics, shardless_metrics, run_output_dir)
+                    self.plot_generator.schedule_generate_graphs(sharded_metrics, shardless_metrics, run_output_dir)
 
             (combined_sharded, combined_shardless) = join_stats(metrics_runs)
             benchmark_info = {"id": test_name, "properties": {"iterations": iterations}}
             summary = compute_benchmark_summary(combined_sharded, combined_shardless, benchmark_info)
 
             if self.generate_summary_graph:
-                generate_graphs_for_summary(
+                self.plot_generator.schedule_graphs_for_summary(
                     summary.get_runs(), summary.get_stats(), test_output_dir, image_format="svg"
                 )
 
+            self.plot_generator.plot()
+
             if self.generate_pdf:
-                generate_graphs_for_summary(
+                self.plot_generator.schedule_graphs_for_summary(
                     summary.get_runs(), summary.get_stats(), test_output_dir, image_format="png"
                 )
+            if self.generate_pdf:
                 summary_images = sorted(test_output_dir.glob("auto_*.png"))
                 pdf_path = generate_benchmark_summary_pdf(
                     benchmark_name=test_name,
