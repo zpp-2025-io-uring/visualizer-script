@@ -47,6 +47,8 @@ class RedrawSuiteRunner:
                     if run_dir.is_dir():
                         self.redraw_run(run_dir)
 
+        self.plot_generator.plot()
+
     def redraw_summary(self, summary_file: Path, output_dir: Path):
         print(f"Redrawing summary from {summary_file}")
 
