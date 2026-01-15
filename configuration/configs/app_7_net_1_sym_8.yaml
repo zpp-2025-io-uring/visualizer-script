@@ -1,0 +1,24 @@
+config_version: 2
+output_dir: ./results
+params:
+  skip_async_workers_cpuset: false
+backends:
+  - asymmetric_io_uring
+  - io_uring
+  - linux-aio
+  - epoll
+io:
+  tester_path: .../build/release/apps/io_tester/io_tester
+  storage_dir: ./storage
+  asymmetric_app_cpuset: '0-6'
+  asymmetric_async_worker_cpuset: '7'
+  symmetric_cpuset: '0-7'
+rpc:
+  tester_path: .../build/release/apps/rpc_tester/rpc_tester
+  ip_address: 127.0.0.67
+  asymmetric_server_app_cpuset: '8-14'
+  asymmetric_server_async_worker_cpuset: '15'
+  symmetric_server_cpuset: '8-15'
+  asymmetric_client_app_cpuset: '0-6'
+  asymmetric_client_async_worker_cpuset: '7'
+  symmetric_client_cpuset: '0-7'
