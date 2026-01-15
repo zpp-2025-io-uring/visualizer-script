@@ -4,57 +4,60 @@ from pathlib import Path
 
 from benchmark import Benchmark
 from benchmarks import BENCHMARK_SUMMARY_FILENAME
-from generate import generate_graphs, generate_graphs_for_summary
+from generate import PlotGenerator
 from parse import auto_generate_data_points, load_data
 from stats import join_metrics
 
 
-def redraw_run(run_dir: Path):
-    print(f"Redrawing {run_dir}")
-    backend_names = ["asymmetric_io_uring", "io_uring", "linux-aio", "epoll"]
+class RedrawSuiteRunner:
+    def __init__(self):
+        self.plot_generator = PlotGenerator()
 
-    regexes = [rf"({backend}.out|{backend}.client.out)" for backend in backend_names]
-    backend_data_raw: dict[str, str] = {}
-    for file in run_dir.iterdir():
-        for backend, regex in zip(backend_names, regexes):
-            if re.fullmatch(regex, str(file.name)):
-                print(f"Found data for backend {backend} in {file.name}")
-                with open(file) as f:
-                    backend_data_raw[backend] = f.read()
+    def redraw_run(self, run_dir: Path):
+        print(f"Redrawing {run_dir}")
+        backend_names = ["asymmetric_io_uring", "io_uring", "linux-aio", "epoll"]
 
-    backends_parsed = {}
-    for backend, raw in backend_data_raw.items():
-        parsed = load_data(raw)
-        backends_parsed[backend] = auto_generate_data_points(parsed)
+        regexes = [rf"({backend}.out|{backend}.client.out)" for backend in backend_names]
+        backend_data_raw: dict[str, str] = {}
+        for file in run_dir.iterdir():
+            for backend, regex in zip(backend_names, regexes):
+                if re.fullmatch(regex, str(file.name)):
+                    print(f"Found data for backend {backend} in {file.name}")
+                    with open(file) as f:
+                        backend_data_raw[backend] = f.read()
 
-    [shardless_metrics, sharded_metrics] = join_metrics(backends_parsed)
-    generate_graphs(sharded_metrics, shardless_metrics, run_dir)
+        backends_parsed = {}
+        for backend, raw in backend_data_raw.items():
+            parsed = load_data(raw)
+            backends_parsed[backend] = auto_generate_data_points(parsed)
 
+        [shardless_metrics, sharded_metrics] = join_metrics(backends_parsed)
+        self.plot_generator.schedule_generate_graphs(sharded_metrics, shardless_metrics, run_dir)
 
-def run_redraw_suite(dir):
-    dir = Path(dir)
+    def run_redraw_suite(self, dir):
+        dir = Path(dir)
 
-    for benchmark_dir in dir.iterdir():
-        if benchmark_dir.is_dir():
-            summary_file = benchmark_dir / BENCHMARK_SUMMARY_FILENAME
-            if summary_file.is_file():
-                redraw_summary(Path(summary_file), Path(benchmark_dir))
+        for benchmark_dir in dir.iterdir():
+            if benchmark_dir.is_dir():
+                summary_file = benchmark_dir / BENCHMARK_SUMMARY_FILENAME
+                if summary_file.is_file():
+                    self.redraw_summary(Path(summary_file), Path(benchmark_dir))
 
-            for run_dir in benchmark_dir.iterdir():
-                if run_dir.is_dir():
-                    redraw_run(run_dir)
+                for run_dir in benchmark_dir.iterdir():
+                    if run_dir.is_dir():
+                        self.redraw_run(run_dir)
 
+    def redraw_summary(self, summary_file: Path, output_dir: Path):
+        print(f"Redrawing summary from {summary_file}")
 
-def redraw_summary(summary_file: Path, output_dir: Path):
-    print(f"Redrawing summary from {summary_file}")
-
-    with open(summary_file) as file:
-        summary = Benchmark.load_from_file(file)
-    generate_graphs_for_summary(summary.get_runs(), summary.get_stats(), output_dir)
+        with open(summary_file) as file:
+            summary = Benchmark.load_from_file(file)
+        self.plot_generator.schedule_graphs_for_summary(summary.get_stats(), output_dir)
 
 
 def run_redraw_suite_args(args):
-    run_redraw_suite(args.dir)
+    runner = RedrawSuiteRunner()
+    runner.run_redraw_suite(args.dir)
 
 
 def configure_redraw_suite_parser(parser: argparse.ArgumentParser):
