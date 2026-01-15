@@ -49,29 +49,14 @@ class PlotGenerator:
         stat_as_error = "stdev"
 
         for metric in stats.get_sharded_metrics():
-            metric_name = metric
-            metric_by_backend = {}
-            for backend in stats.get_sharded_metrics()[metric]:
-                shard_dict = {}
-                for shard in stats.get_sharded_metrics()[metric][backend]:
-                    shard_idx = int(shard)
-                    shard_stats = stats.get_sharded_metrics()[metric][backend][shard]
-                    shard_dict[shard_idx] = (shard_stats[stat_to_plot], shard_stats[stat_as_error])
-                metric_by_backend[backend] = shard_dict
-
-            rows = []
-            for backend, shards in metric_by_backend.items():
-                for shard in sorted(shards.keys()):
-                    value, error = shards[shard]
-                    rows.append({"shard": int(shard), "backend": backend, stat_to_plot: value, stat_as_error: error})
+            rows = summarize_sharded_metrics_by_backend(
+                metric, stats.get_sharded_metrics()[metric], stat_to_plot, stat_as_error
+            )
             df_long = pd.DataFrame(rows)
 
-            file_path = build_dir / pathlib.Path(
-                f"auto_{sanitize_filename(metric_name)}_with_error_bars.{image_format}"
-            )
+            file_path = build_dir / pathlib.Path(f"auto_{sanitize_filename(metric)}_with_error_bars.{image_format}")
             fig = make_plot_from_df(
-                metric_name,
-                file_path,
+                metric,
                 df_long,
                 x="shard",
                 y=stat_to_plot,
@@ -121,6 +106,30 @@ class PlotGenerator:
         pio.write_images(fig=self.figs, file=self.file_paths)
         self.figs = []
         self.file_paths = []
+
+
+def summarize_sharded_metrics_by_backend(
+    metric: str, per_backend_sharded_metrics: dict, stat_to_plot: str, stat_as_error: str
+) -> dict:
+    """Summarize sharded metrics into a list of rows for plotting."""
+
+    # Create mapping backend -> shard -> (stat_to_plot, stat_as_error)
+    metric_by_backend = {}
+    for backend, shards in per_backend_sharded_metrics.items():
+        shard_dict = {}
+        for shard, stats in shards.items():
+            shard_idx = int(shard)
+            shard_dict[shard_idx] = (stats[stat_to_plot], stats[stat_as_error])
+        metric_by_backend[backend] = shard_dict
+
+    # Convert to list of rows for plotting
+    rows = []
+    for backend, shards in metric_by_backend.items():
+        for shard in sorted(shards.keys()):
+            value, error = shards[shard]
+            rows.append({"shard": int(shard), "backend": backend, stat_to_plot: value, stat_as_error: error})
+
+    return rows
 
 
 def make_plot(title: str, xlabel: str, ylabel: str, per_backend_data_vec: dict, xticks: bool):
