@@ -1,0 +1,56 @@
+- type: io
+  name: io_read_256kb
+  config:
+  - name: io_read_256kb
+    type: seqread
+    shards: all
+    shard_info:
+      parallelism: 10
+      reqsize: 256kB
+      shares: 10
+      think_time: 0
+
+- type: rpc
+  name: rpc_64kB_stream_unidirectional
+  config:
+    client:
+      nodelay: true
+    server:
+      nodelay: true
+    jobs:
+      - name: rpc_64kB_stream_unidirectional
+        type: rpc_streaming
+        verb: unidirectional
+        parallelism: 1
+        shares: 100
+        payload: 64kB
+
+- type: rpc
+  name: rpc_64kB_stream_bidirectional
+  config:
+    client:
+      nodelay: true
+    server:
+      nodelay: true
+    jobs:
+      - name: rpc_64kB_stream_bidirectional
+        type: rpc_streaming
+        verb: bidirectional
+        parallelism: 1
+        shares: 100
+        payload: 64kB
+
+- type: rpc
+  name: rpc_64kB_write
+  config:
+    client:
+      nodelay: true
+    server:
+      nodelay: true
+    jobs:
+      - name: rpc_64kB_write
+        type: rpc
+        verb: write
+        parallelism: 10
+        shares: 100
+        payload: 64kB
