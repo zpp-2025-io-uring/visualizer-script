@@ -1,5 +1,8 @@
 # io_tester_visualizer
 
+[![Test](https://github.com/zpp-2025-io-uring/visualizer-script/actions/workflows/test.yaml/badge.svg)](https://github.com/zpp-2025-io-uring/visualizer-script/actions/workflows/test.yaml)
+[![Lint](https://github.com/zpp-2025-io-uring/visualizer-script/actions/workflows/lint.yaml/badge.svg)](https://github.com/zpp-2025-io-uring/visualizer-script/actions/workflows/lint.yaml)
+
 ## Running
 
 The main functionality is provided by the `suite` subcommand of the `main.py` script - running a benchmark suite based on provided configuration and benchmark files.
