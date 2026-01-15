@@ -3,7 +3,6 @@ build/*
 out/*
 .temp/*
 results/*
-.configs/*
 
 # Python vnenv
 venv/
