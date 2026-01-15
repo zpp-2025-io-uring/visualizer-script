@@ -93,14 +93,14 @@ class BenchmarkSuiteRunner:
 
             if self.generate_summary_graph:
                 self.plot_generator.schedule_graphs_for_summary(
-                    summary.get_runs(), summary.get_stats(), test_output_dir, image_format="svg"
+                    summary.get_stats(), test_output_dir, image_format="svg"
                 )
 
             self.plot_generator.plot()
 
             if self.generate_pdf:
                 self.plot_generator.schedule_graphs_for_summary(
-                    summary.get_runs(), summary.get_stats(), test_output_dir, image_format="png"
+                    summary.get_stats(), test_output_dir, image_format="png"
                 )
             if self.generate_pdf:
                 summary_images = sorted(test_output_dir.glob("auto_*.png"))
