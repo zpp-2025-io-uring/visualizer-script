@@ -94,6 +94,12 @@ class PlotGenerator:
         self.figs = []
         self.file_paths = []
 
+    def __del__(self):
+        # If there are any pending plots, generate them
+        # No need for giving possibility to skip it for now
+        if self.figs or self.file_paths:
+            self.plot()
+
 
 def summarize_sharded_metrics_by_backend(
     metric: str, per_backend_sharded_metrics: dict, stat_to_plot: str, stat_as_error: str
