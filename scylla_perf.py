@@ -43,6 +43,7 @@ class OneExecutableTestRunner(ABC):
         if async_worker_cpuset is not None:
             argv.extend(["--async-workers-cpuset", async_worker_cpuset])
 
+        print(argv)
         result = subprocess.run(
             argv,
             check=False,
@@ -93,8 +94,13 @@ class PerfSimpleQueryTestRunner(OneExecutableTestRunner):
 
         args = ["perf-simple-query", "--json-result", str(json_output_path)]
 
+        flags = config.pop('flags')
+
         for key, val in config.items():
             args.extend([f"--{key}", str(val)])
+
+        for flag in flags:
+            args.append(f"--{flag}")
 
         result = self.run_tester_with_additional_args(backend, cpuset, async_worker_cpuset, args)
 
