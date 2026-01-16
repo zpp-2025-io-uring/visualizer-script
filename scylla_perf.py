@@ -1,11 +1,12 @@
+import json
+import subprocess
 from abc import ABC, abstractmethod
 from pathlib import Path
 from subprocess import CompletedProcess
-import subprocess
 from typing import override
-import json
 
 from yaml import safe_dump, safe_load
+
 
 class OneExecutableTestRunner(ABC):
     def __init__(self, test_config: dict, config_path: Path, run_output_dir: Path, backends, skip_async_workers_cpuset):
@@ -36,7 +37,7 @@ class OneExecutableTestRunner(ABC):
 
         result = subprocess.run(
             argv,
-            capture_output=True,
+            check=False, capture_output=True,
             text=True,
         )
 
@@ -71,13 +72,12 @@ class OneExecutableTestRunner(ABC):
                 backends_data_parsed[backend] = self._run_test(backend, self.asymmetric_app_cpuset, None)
 
         return backends_data_parsed
-    
 class PerfSimpleQueryTestRunner(OneExecutableTestRunner):
     @override
     def _run_test(self, backend, cpuset, async_worker_cpuset):
         json_output_path = self.run_output_dir / "result.json"
 
-        with open(self.config_path, 'r') as f:
+        with open(self.config_path) as f:
             config = safe_load(f.read())
 
         args = ["perf-simple-query", "--json-result", str(json_output_path)]
@@ -89,8 +89,7 @@ class PerfSimpleQueryTestRunner(OneExecutableTestRunner):
 
         if result.returncode != 0:
             raise RuntimeError(f"Simple query test failed with error code {result.returncode}")
-        
-        with open(json_output_path, 'r') as f:
+        with open(json_output_path) as f:
             metrics = json.loads(f.read())
 
         metrics['parameters'].pop("concurrency,partitions,cpus,duration")
