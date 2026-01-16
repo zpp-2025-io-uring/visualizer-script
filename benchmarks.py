@@ -96,12 +96,14 @@ class BenchmarkSuiteRunner:
                     summary.get_stats(), test_output_dir, image_format="svg"
                 )
 
-            self.plot_generator.plot()
-
             if self.generate_pdf:
                 self.plot_generator.schedule_graphs_for_summary(
                     summary.get_stats(), test_output_dir, image_format="png"
                 )
+
+            # We need to plot now, to have at least the plots for the .pdfs
+            self.plot_generator.plot()
+
             if self.generate_pdf:
                 summary_images = sorted(test_output_dir.glob("auto_*.png"))
                 pdf_path = generate_benchmark_summary_pdf(
