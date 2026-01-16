@@ -56,7 +56,7 @@ class OneExecutableTestRunner(ABC):
         return result
 
     @abstractmethod
-    def __run_test(self, backend: str, cpuset: str, async_worker_cpuset: str | None):
+    def _run_test(self, backend: str, cpuset: str, async_worker_cpuset: str | None):
         pass
 
     def run(self) -> dict[str, str]:
@@ -65,19 +65,19 @@ class OneExecutableTestRunner(ABC):
         for backend in self.backends:
             if backend == "asymmetric_io_uring":
                 if self.skip_async_workers_cpuset:
-                    backends_data_raw[backend] = self.__run_test(backend, backend, self.asymmetric_app_cpuset, None)
+                    backends_data_raw[backend] = self._run_test(backend, backend, self.asymmetric_app_cpuset, None)
                 else:
-                    backends_data_raw[backend] = self.__run_test(
+                    backends_data_raw[backend] = self._run_test(
                         backend, backend, self.asymmetric_app_cpuset, self.asymmetric_async_worker_cpuset
                     )
             else:
-                backends_data_raw[backend] = self.__run_test(backend, backend, self.asymmetric_app_cpuset, None)
+                backends_data_raw[backend] = self._run_test(backend, backend, self.asymmetric_app_cpuset, None)
 
         return backends_data_raw
     
 class PerfSimpleQueryTestRunner(OneExecutableTestRunner):
     @override
-    def __run_test(self, backend, cpuset, async_worker_cpuset):
+    def _run_test(self, backend, cpuset, async_worker_cpuset):
         json_output_path = self.run_output_dir / "result.json"
 
         with open(self.config_path, 'r') as f:
