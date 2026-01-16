@@ -93,8 +93,8 @@ class PerfSimpleQueryTestRunner(OneExecutableTestRunner):
 
         args = ["perf-simple-query", "--json-result", str(json_output_path)]
 
-        for key, val in config:
-            args.extend([f"--{key}", val])
+        for key, val in config.items():
+            args.extend([f"--{key}", str(val)])
 
         result = self.run_tester_with_additional_args(backend, cpuset, async_worker_cpuset, args)
 
