@@ -12,8 +12,8 @@ from parse import auto_generate_data_points, load_data
 from pdf_summary import generate_benchmark_summary_pdf, merge_pdfs
 from run_io import run_io_test
 from run_rpc import run_rpc_test
-from stats import join_metrics, join_stats
 from scylla_perf import PerfSimpleQueryTestRunner
+from stats import join_metrics, join_stats
 
 SUITE_SUMMARY_PDF_FILENAME = "suite_summary.pdf"
 BENCHMARK_SUMMARY_FILENAME = "metrics_summary.yaml"
