@@ -41,7 +41,7 @@ class PlotGenerator:
         build_dir = pathlib.Path(build_dir)
         build_dir.mkdir(parents=True, exist_ok=True)
 
-        image_format = image_format.lstrip(".").lower()
+        image_format = image_format.removeprefix(".").lower()
         if image_format not in {"svg", "png", "jpg", "jpeg", "pdf"}:
             raise ValueError(f"Unsupported image format: {image_format}")
 
