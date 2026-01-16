@@ -105,7 +105,7 @@ class BenchmarkSuiteRunner:
             self.plot_generator.plot()
 
             if self.generate_pdf:
-                summary_images = sorted(test_output_dir.glob("auto_*.png"))
+                summary_images = sorted(test_output_dir.glob("*.png"))
                 pdf_path = generate_benchmark_summary_pdf(
                     benchmark_name=test_name,
                     images=summary_images,

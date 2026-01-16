@@ -54,7 +54,7 @@ class PlotGenerator:
             )
             df_long = pd.DataFrame(rows)
 
-            file_path = build_dir / pathlib.Path(f"auto_{sanitize_filename(metric)}_with_error_bars.{image_format}")
+            file_path = build_dir / pathlib.Path(f"{sanitize_filename(metric)}.{image_format}")
             fig = make_plot_from_df(
                 metric,
                 df_long,
