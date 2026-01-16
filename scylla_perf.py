@@ -66,7 +66,7 @@ class OneExecutableTestRunner(ABC):
     def _run_test(self, backend: str, cpuset: str, async_worker_cpuset: str | None):
         pass
 
-    def run(self) -> dict[str, dict]:
+    def run(self) -> dict[str]:
         backends_data_parsed = {}
 
         for backend in self.backends:
@@ -85,7 +85,7 @@ class OneExecutableTestRunner(ABC):
 
 class PerfSimpleQueryTestRunner(OneExecutableTestRunner):
     @override
-    def _run_test(self, backend, cpuset, async_worker_cpuset):
+    def _run_test(self, backend, cpuset, async_worker_cpuset) -> list[dict]:
         json_output_path = self.run_output_dir / "result.json"
 
         with open(self.config_path) as f:
