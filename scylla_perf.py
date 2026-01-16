@@ -5,7 +5,7 @@ import subprocess
 from typing import override
 import json
 
-from yaml import safe_dump
+from yaml import safe_dump, safe_load
 
 class OneExecutableTestRunner(ABC):
     def __init__(self, test_config: dict, config_path: Path, run_output_dir: Path, backends, skip_async_workers_cpuset):
@@ -80,7 +80,15 @@ class PerfSimpleQueryTestRunner(OneExecutableTestRunner):
     def __run_test(self, backend, cpuset, async_worker_cpuset):
         json_output_path = self.run_output_dir / "result.json"
 
-        result = self.run_tester_with_additional_args(backend, cpuset, async_worker_cpuset, ["--json-result", str(json_output_path)])
+        with open(self.config_path, 'r') as f:
+            config = safe_load(f.read())
+
+        args = ["--json-result", str(json_output_path)]
+
+        for key, val in config:
+            args.extend([f"--{key}", val])
+
+        result = self.run_tester_with_additional_args(backend, cpuset, async_worker_cpuset, args)
 
         if result.returncode != 0:
             raise RuntimeError(f"Simple query test failed with error code {result.returncode}")
