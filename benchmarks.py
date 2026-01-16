@@ -116,7 +116,7 @@ class BenchmarkSuiteRunner:
                 )
 
             # We need to plot now, to have at least the plots for the .pdfs
-            # self.plot_generator.plot()
+            self.plot_generator.plot()
 
             if self.generate_pdf:
                 summary_images = sorted(test_output_dir.glob("auto_*.png"))
