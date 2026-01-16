@@ -12,7 +12,7 @@ class OneExecutableTestRunner(ABC):
     def __init__(self, test_config: dict, config_path: Path, run_output_dir: Path, backends, skip_async_workers_cpuset):
         super().__init__()
 
-        self.tester_path: Path = Path(test_config["tester_path"]).expanduser().resolve()
+        self.tester_path: Path = Path(test_config["path"]).expanduser().resolve()
         self.config_path: Path = config_path.resolve()
         self.run_output_dir: Path = run_output_dir.resolve()
         self.asymmetric_app_cpuset = test_config["asymmetric_app_cpuset"]
