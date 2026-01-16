@@ -13,6 +13,7 @@ from pdf_summary import generate_benchmark_summary_pdf, merge_pdfs
 from run_io import run_io_test
 from run_rpc import run_rpc_test
 from stats import join_metrics, join_stats
+from scylla_perf import PerfSimpleQueryTestRunner
 
 SUITE_SUMMARY_PDF_FILENAME = "suite_summary.pdf"
 BENCHMARK_SUMMARY_FILENAME = "metrics_summary.yaml"
@@ -22,11 +23,12 @@ class BenchmarkSuiteRunner:
     def __init__(
         self, benchmarks, config: dict, generate_graphs: bool, generate_summary_graphs: bool, generate_pdf: bool
     ):
-        self.output_dir: Path = Path(config["output_dir"]).resolve()
-        self.io_config = config["io"]
-        self.rpc_config = config["rpc"]
-        self.backends = config["backends"]
-        self.params = config["params"]
+        self.output_dir: Path = Path(config.pop("output_dir")).resolve()
+        self.backends = config.pop("backends")
+        self.params = config.pop("params")
+        config.pop("config_version")
+
+        self.tests_config = config
 
         self.benchmarks = benchmarks
         self.generate_graphs = generate_graphs
@@ -59,7 +61,7 @@ class BenchmarkSuiteRunner:
 
                 if benchmark["type"] == "io":
                     result = run_io_test(
-                        self.io_config,
+                        self.tests_config['io'],
                         config_path,
                         run_output_dir,
                         self.backends,
@@ -67,7 +69,15 @@ class BenchmarkSuiteRunner:
                     )
                 elif benchmark["type"] == "rpc":
                     result = run_rpc_test(
-                        self.rpc_config,
+                        self.tests_config['rpc'],
+                        config_path,
+                        run_output_dir,
+                        self.backends,
+                        self.params["skip_async_workers_cpuset"],
+                    )
+                elif benchmark["type"] == "simple-query":
+                    result = PerfSimpleQueryTestRunner(
+                        self.tests_config['simple-query'],
                         config_path,
                         run_output_dir,
                         self.backends,
