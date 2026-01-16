@@ -1,56 +1,168 @@
+## IO TESTER
+
+# Throughput test for io sequential writes
+
 - type: io
-  name: io_read_256kb
+  iterations: 1
+  name: io_throughput_writes
   config:
-  - name: io_read_256kb
-    type: seqread
+  - name: io_throughput_writes
     shards: all
+    type: overwrite
     shard_info:
-      parallelism: 10
-      reqsize: 256kB
-      shares: 10
+      parallelism: 20
+      reqsize: 128kB
+      shares: 100
       think_time: 0
 
+# Latency test for io random reads
+
+- type: io
+  iterations: 1
+  name: io_latency_reads
+  config:
+  - name: io_latency_reads
+    shards: all
+    type: randread
+    data_size: 1GB
+    shard_info:
+      parallelism: 10
+      rps: 3500
+      reqsize: 4kB
+      shares: 1000
+
+# Combined test for both sequential writes and random reads
+
+- type: io
+  iterations: 1
+  name: io_combined
+  config:
+  - name: io_latency_reads
+    shards: all
+    type: randread
+    data_size: 1GB
+    shard_info:
+      parallelism: 10
+      rps: 3500
+      reqsize: 4kB
+      shares: 1000
+  - name: io_throughput_writes
+    shards: all
+    type: overwrite
+    shard_info:
+      parallelism: 20
+      reqsize: 128kB
+      shares: 100
+      think_time: 0
+
+
+## RPC TESTER
+
+# TODO: configure parallelism for all of the below tests
+
+# Latency tests for rpc write, payload 4/8/16kB
+
 - type: rpc
-  name: rpc_64kB_stream_unidirectional
+  iterations: 1
+  name: rpc_latency_write_4kB
   config:
     client:
       nodelay: true
     server:
       nodelay: true
     jobs:
-      - name: rpc_64kB_stream_unidirectional
+      - name: rpc_latency_write_4kB
+        type: rpc
+        verb: write
+        parallelism: 1
+        shares: 100
+        payload: 4kB
+
+- type: rpc
+  iterations: 1
+  name: rpc_latency_write_8kB
+  config:
+    client:
+      nodelay: true
+    server:
+      nodelay: true
+    jobs:
+      - name: rpc_latency_write_8kB
+        type: rpc
+        verb: write
+        parallelism: 1
+        shares: 100
+        payload: 8kB
+
+- type: rpc
+  iterations: 1
+  name: rpc_latency_write_16kB
+  config:
+    client:
+      nodelay: true
+    server:
+      nodelay: true
+    jobs:
+      - name: rpc_latency_write_16kB
+        type: rpc
+        verb: write
+        parallelism: 1
+        shares: 100
+        payload: 16kB
+
+# Throughput test for rpc write, payload 128kB
+
+- type: rpc
+  iterations: 1
+  name: rpc_throughput_write_128kB
+  config:
+    client:
+      nodelay: true
+    server:
+      nodelay: true
+    jobs:
+      - name: rpc_throughput_write_128kB
+        type: rpc
+        verb: write
+        parallelism: 1
+        shares: 100
+        payload: 128kB
+
+
+## RPC STREAMING TESTER
+
+# Throughput test for unidirectional streaming, payload 128kB
+
+- type: rpc
+  iterations: 1
+  name: rpc_throughput_uni_128kB
+  config:
+    client:
+      nodelay: true
+    server:
+      nodelay: true
+    jobs:
+      - name: rpc_throughput_uni_128kB
         type: rpc_streaming
         verb: unidirectional
         parallelism: 1
         shares: 100
-        payload: 64kB
+        payload: 128kB
+
+# Throughput test for bidirectional streaming, payload 128kB
 
 - type: rpc
-  name: rpc_64kB_stream_bidirectional
+  iterations: 1
+  name: rpc_throughput_bi_128kB
   config:
     client:
       nodelay: true
     server:
       nodelay: true
     jobs:
-      - name: rpc_64kB_stream_bidirectional
+      - name: rpc_throughput_bi_128kB
         type: rpc_streaming
         verb: bidirectional
         parallelism: 1
         shares: 100
-        payload: 64kB
-
-- type: rpc
-  name: rpc_64kB_write
-  config:
-    client:
-      nodelay: true
-    server:
-      nodelay: true
-    jobs:
-      - name: rpc_64kB_write
-        type: rpc
-        verb: write
-        parallelism: 10
-        shares: 100
-        payload: 64kB
+        payload: 128kB
