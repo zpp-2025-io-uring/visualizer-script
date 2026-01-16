@@ -21,23 +21,32 @@ class OneExecutableTestRunner(ABC):
         self.backends = backends
         self.skip_async_workers_cpuset = skip_async_workers_cpuset
 
-    def run_tester_with_additional_args(self, backend: str, cpuset: str, async_worker_cpuset: str | None, args: list[str]) -> CompletedProcess:
-        print(f"Running {self.__class__.__name__} with backend {backend}, cpuset: {cpuset}, async worker cpuset: {async_worker_cpuset}")
+    def run_tester_with_additional_args(
+        self, backend: str, cpuset: str, async_worker_cpuset: str | None, args: list[str]
+    ) -> CompletedProcess:
+        print(
+            f"Running {self.__class__.__name__} with backend {backend}, cpuset: {cpuset}, async worker cpuset: {async_worker_cpuset}"
+        )
         self.run_output_dir.mkdir(parents=True, exist_ok=True)
 
-        argv = [self.tester_path] + args + [
-            "--reactor-backend",
-            backend,
-            "--cpuset",
-            cpuset,
-        ]
+        argv = (
+            [self.tester_path]
+            + args
+            + [
+                "--reactor-backend",
+                backend,
+                "--cpuset",
+                cpuset,
+            ]
+        )
 
         if async_worker_cpuset is not None:
             argv.extend(["--async-workers-cpuset", async_worker_cpuset])
 
         result = subprocess.run(
             argv,
-            check=False, capture_output=True,
+            check=False,
+            capture_output=True,
             text=True,
         )
 
@@ -72,6 +81,8 @@ class OneExecutableTestRunner(ABC):
                 backends_data_parsed[backend] = self._run_test(backend, self.asymmetric_app_cpuset, None)
 
         return backends_data_parsed
+
+
 class PerfSimpleQueryTestRunner(OneExecutableTestRunner):
     @override
     def _run_test(self, backend, cpuset, async_worker_cpuset):
@@ -92,7 +103,7 @@ class PerfSimpleQueryTestRunner(OneExecutableTestRunner):
         with open(json_output_path) as f:
             metrics = json.loads(f.read())
 
-        metrics['parameters'].pop("concurrency,partitions,cpus,duration")
+        metrics["parameters"].pop("concurrency,partitions,cpus,duration")
         metrics.pop("test_properties")
         metrics.pop("versions")
 

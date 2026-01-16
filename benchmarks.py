@@ -27,9 +27,9 @@ class BenchmarkSuiteRunner:
         self.backends = config["backends"]
         self.params = config["params"]
 
-        self.io_config = config['io']
-        self.rpc_config = config['rpc']
-        self.scylla_config = config['scylla']
+        self.io_config = config["io"]
+        self.rpc_config = config["rpc"]
+        self.scylla_config = config["scylla"]
 
         self.benchmarks = benchmarks
         self.generate_graphs = generate_graphs
@@ -89,7 +89,7 @@ class BenchmarkSuiteRunner:
 
                 backends_parsed = {}
                 for backend, raw in result.items():
-                    if benchmark["type"] in ['rpc', 'io']:
+                    if benchmark["type"] in ["rpc", "io"]:
                         parsed = load_data(raw)
                     else:
                         parsed = raw
