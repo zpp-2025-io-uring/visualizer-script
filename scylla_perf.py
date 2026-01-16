@@ -24,8 +24,7 @@ class OneExecutableTestRunner(ABC):
         print(f"Running {self.__class__.__name__} with backend {backend}, cpuset: {cpuset}, async worker cpuset: {async_worker_cpuset}")
         self.run_output_dir.mkdir(parents=True, exist_ok=True)
 
-        argv = [
-            self.tester_path,
+        argv = [self.tester_path] + args + [
             "--reactor-backend",
             backend,
             "--cpuset",
@@ -34,8 +33,6 @@ class OneExecutableTestRunner(ABC):
 
         if async_worker_cpuset is not None:
             argv.extend(["--async-workers-cpuset", async_worker_cpuset])
-
-        argv.extend(args)
 
         result = subprocess.run(
             argv,
@@ -59,21 +56,21 @@ class OneExecutableTestRunner(ABC):
     def _run_test(self, backend: str, cpuset: str, async_worker_cpuset: str | None):
         pass
 
-    def run(self) -> dict[str, str]:
-        backends_data_raw = {}
+    def run(self) -> dict[str, dict]:
+        backends_data_parsed = {}
 
         for backend in self.backends:
             if backend == "asymmetric_io_uring":
                 if self.skip_async_workers_cpuset:
-                    backends_data_raw[backend] = self._run_test(backend, backend, self.asymmetric_app_cpuset, None)
+                    backends_data_parsed[backend] = self._run_test(backend, self.asymmetric_app_cpuset, None)
                 else:
-                    backends_data_raw[backend] = self._run_test(
-                        backend, backend, self.asymmetric_app_cpuset, self.asymmetric_async_worker_cpuset
+                    backends_data_parsed[backend] = self._run_test(
+                        backend, self.asymmetric_app_cpuset, self.asymmetric_async_worker_cpuset
                     )
             else:
-                backends_data_raw[backend] = self._run_test(backend, backend, self.asymmetric_app_cpuset, None)
+                backends_data_parsed[backend] = self._run_test(backend, self.asymmetric_app_cpuset, None)
 
-        return backends_data_raw
+        return backends_data_parsed
     
 class PerfSimpleQueryTestRunner(OneExecutableTestRunner):
     @override
@@ -83,7 +80,7 @@ class PerfSimpleQueryTestRunner(OneExecutableTestRunner):
         with open(self.config_path, 'r') as f:
             config = safe_load(f.read())
 
-        args = ["--json-result", str(json_output_path)]
+        args = ["perf-simple-query", "--json-result", str(json_output_path)]
 
         for key, val in config:
             args.extend([f"--{key}", val])
@@ -96,4 +93,8 @@ class PerfSimpleQueryTestRunner(OneExecutableTestRunner):
         with open(json_output_path, 'r') as f:
             metrics = json.loads(f.read())
 
-        return safe_dump(metrics)
+        metrics['parameters'].pop("concurrency,partitions,cpus,duration")
+        metrics.pop("test_properties")
+        metrics.pop("versions")
+
+        return [metrics]

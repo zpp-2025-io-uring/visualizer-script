@@ -23,12 +23,13 @@ class BenchmarkSuiteRunner:
     def __init__(
         self, benchmarks, config: dict, generate_graphs: bool, generate_summary_graphs: bool, generate_pdf: bool
     ):
-        self.output_dir: Path = Path(config.pop("output_dir")).resolve()
-        self.backends = config.pop("backends")
-        self.params = config.pop("params")
-        config.pop("config_version")
+        self.output_dir: Path = Path(config["output_dir"]).resolve()
+        self.backends = config["backends"]
+        self.params = config["params"]
 
-        self.tests_config = config
+        self.io_config = config['io']
+        self.rpc_config = config['rpc']
+        self.scylla_config = config['scylla']
 
         self.benchmarks = benchmarks
         self.generate_graphs = generate_graphs
@@ -61,7 +62,7 @@ class BenchmarkSuiteRunner:
 
                 if benchmark["type"] == "io":
                     result = run_io_test(
-                        self.tests_config['io'],
+                        self.io_config,
                         config_path,
                         run_output_dir,
                         self.backends,
@@ -69,7 +70,7 @@ class BenchmarkSuiteRunner:
                     )
                 elif benchmark["type"] == "rpc":
                     result = run_rpc_test(
-                        self.tests_config['rpc'],
+                        self.rpc_config,
                         config_path,
                         run_output_dir,
                         self.backends,
@@ -77,7 +78,7 @@ class BenchmarkSuiteRunner:
                     )
                 elif benchmark["type"] == "simple-query":
                     result = PerfSimpleQueryTestRunner(
-                        self.tests_config['simple-query'],
+                        self.scylla_config,
                         config_path,
                         run_output_dir,
                         self.backends,
@@ -88,7 +89,10 @@ class BenchmarkSuiteRunner:
 
                 backends_parsed = {}
                 for backend, raw in result.items():
-                    parsed = load_data(raw)
+                    if benchmark["type"] in ['rpc', 'io']:
+                        parsed = load_data(raw)
+                    else:
+                        parsed = raw
                     backends_parsed[backend] = auto_generate_data_points(parsed)
 
                 [shardless_metrics, sharded_metrics] = join_metrics(backends_parsed)
@@ -112,7 +116,7 @@ class BenchmarkSuiteRunner:
                 )
 
             # We need to plot now, to have at least the plots for the .pdfs
-            self.plot_generator.plot()
+            # self.plot_generator.plot()
 
             if self.generate_pdf:
                 summary_images = sorted(test_output_dir.glob("auto_*.png"))
