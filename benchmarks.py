@@ -82,7 +82,7 @@ class BenchmarkSuiteRunner:
                         run_output_dir,
                         self.backends,
                         self.params["skip_async_workers_cpuset"],
-                    )
+                    ).run()
                 else:
                     raise Exception(f"Unknown benchmark type {benchmark['type']}")
 
