@@ -5,7 +5,7 @@ from pathlib import Path
 from subprocess import CompletedProcess
 from typing import override
 
-from yaml import safe_dump, safe_load
+from yaml import safe_load
 
 
 class OneExecutableTestRunner(ABC):
