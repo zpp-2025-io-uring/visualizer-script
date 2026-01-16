@@ -106,5 +106,6 @@ class PerfSimpleQueryTestRunner(OneExecutableTestRunner):
         metrics["parameters"].pop("concurrency,partitions,cpus,duration")
         metrics.pop("test_properties")
         metrics.pop("versions")
+        metrics.pop("parameters")
 
         return [metrics]
