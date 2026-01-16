@@ -94,7 +94,7 @@ class PerfSimpleQueryTestRunner(OneExecutableTestRunner):
         args = ["perf-simple-query", "--json-result", str(json_output_path)]
 
         if "flags" in config:
-            flags = config.pop('flags')
+            flags = config.pop("flags")
 
             for flag in flags:
                 args.append(f"--{flag}")
