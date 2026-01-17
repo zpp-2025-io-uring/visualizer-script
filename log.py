@@ -1,4 +1,5 @@
 import logging
+
 from colorama import Fore
 
 _level = logging.NOTSET
