@@ -1,6 +1,7 @@
 import logging
 from colorama import Fore
 
+
 class ColoredLogger(logging.Formatter):
     def format(self, record):
         match record.levelno:
@@ -23,6 +24,6 @@ def get_logger(name) -> logging.Logger:
     handler = logging.StreamHandler()
     handler.setFormatter(ColoredLogger("%(levelname)s: %(message)s"))
     logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
     logger.addHandler(handler)
     return logger
