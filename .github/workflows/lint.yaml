@@ -9,7 +9,7 @@ on:
 env:
   PYTHON_VERSION: '3.14'
   CODE_DIRECTORY: './'
-  REVIEWDOG_REPORTER: 'github-pr-review'
+  REVIEWDOG_REPORTER: 'github-pr-check'
   REVIEWDOG_LEVEL: 'info'
   REVIEWDOG_FILTER_MODE: 'added'
   REVIEWDOG_LOG_LEVEL: 'warning'
