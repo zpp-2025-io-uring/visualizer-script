@@ -27,7 +27,9 @@ class OneExecutableTestRunner(ABC):
 
         if "release" not in self.tester_path:
             logger.warning(f"Tester path does not contain release: {self.tester_path}")
-        logger.debug(f"Initialized single executable test runner with tester_path={self.tester_path}, config_path={self.config_path}, run_output_dir={self.run_output_dir}, asymmetric_app_cpuset={self.asymmetric_app_cpuset}, asymmetric_async_worker_cpuset={self.asymmetric_async_worker_cpuset}, symmetric_cpuset={self.symmetric_cpuset}, backends={self.backends}, skip_async_workers_cpuset={self.skip_async_workers_cpuset}")
+        logger.debug(
+            f"Initialized single executable test runner with tester_path={self.tester_path}, config_path={self.config_path}, run_output_dir={self.run_output_dir}, asymmetric_app_cpuset={self.asymmetric_app_cpuset}, asymmetric_async_worker_cpuset={self.asymmetric_async_worker_cpuset}, symmetric_cpuset={self.symmetric_cpuset}, backends={self.backends}, skip_async_workers_cpuset={self.skip_async_workers_cpuset}"
+        )
 
     def run_tester_with_additional_args(
         self, backend: str, cpuset: str, async_worker_cpuset: str | None, args: list[str]

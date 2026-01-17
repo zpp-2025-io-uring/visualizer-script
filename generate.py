@@ -11,6 +11,7 @@ from stats import Stats
 
 logger = get_logger(__name__)
 
+
 class PlotGenerator:
     """Generates plots for sharded and shardless metrics."""
 

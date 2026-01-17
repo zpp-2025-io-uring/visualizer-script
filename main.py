@@ -16,7 +16,12 @@ if __name__ == "__main__":
     )
     configure_run_benchmark_suite_parser(subparsers.add_parser(name="suite", help="run a benchmark suite"))
 
-    parser.add_argument("--log-level", help="logger output level", choices=["debug", "info", "warning", "error", "critical"], default="info")
+    parser.add_argument(
+        "--log-level",
+        help="logger output level",
+        choices=["debug", "info", "warning", "error", "critical"],
+        default="info",
+    )
 
     args = parser.parse_args()
     set_level(args.log_level)

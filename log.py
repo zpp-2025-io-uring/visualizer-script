@@ -4,6 +4,7 @@ from colorama import Fore
 
 _level = logging.NOTSET
 
+
 class ColoredLogger(logging.Formatter):
     def format(self, record):
         match record.levelno:
@@ -20,6 +21,7 @@ class ColoredLogger(logging.Formatter):
 
         message = super().format(record)
         return f"{color}{message}{Fore.RESET}"
+
 
 def set_level(new_level: str):
     global _level
