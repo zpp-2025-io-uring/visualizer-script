@@ -7,6 +7,9 @@ from typing import override
 
 from yaml import safe_load
 
+from log import get_logger
+
+logger = get_logger(__name__)
 
 class OneExecutableTestRunner(ABC):
     def __init__(self, test_config: dict, config_path: Path, run_output_dir: Path, backends, skip_async_workers_cpuset):
@@ -24,7 +27,7 @@ class OneExecutableTestRunner(ABC):
     def run_tester_with_additional_args(
         self, backend: str, cpuset: str, async_worker_cpuset: str | None, args: list[str]
     ) -> CompletedProcess:
-        print(
+        logger.info(
             f"Running {self.__class__.__name__} with backend {backend}, cpuset: {cpuset}, async worker cpuset: {async_worker_cpuset}"
         )
         self.run_output_dir.mkdir(parents=True, exist_ok=True)
