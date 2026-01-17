@@ -24,6 +24,9 @@ class RpcTestRunner:
         self.backends = backends
         self.skip_async_workers_cpuset = skip_async_workers_cpuset
 
+        if "release" not in self.tester_path:
+            logger.warning(f"Tester path does not contain release: {self.tester_path}")
+
     def __run_test(
         self,
         backend: str,
