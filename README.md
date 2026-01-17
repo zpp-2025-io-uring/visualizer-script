@@ -27,7 +27,7 @@ The benchmark suite mode requires two .yaml files:
 Consists of a list of the following elements:
 
 ```yaml
-- type: # "io" or "rpc"
+- type: # "io", "rpc" or "simple-query"
   name: # used for the result directory name
   iterations: # number of iterations to run, optional, default: 1
   config:
