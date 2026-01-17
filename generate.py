@@ -56,7 +56,7 @@ class PlotGenerator:
             )
             df_long = pd.DataFrame(rows)
 
-            file_path = build_dir / pathlib.Path(f"auto_{sanitize_filename(metric)}_with_error_bars.{image_format}")
+            file_path = build_dir / pathlib.Path(f"{sanitize_filename(metric)}.{image_format}")
             fig = make_plot_from_df(
                 metric,
                 df_long,
@@ -77,7 +77,7 @@ class PlotGenerator:
                 metric, stats.get_shardless_metrics()[metric], stat_to_plot, stat_as_error
             )
             df = pd.DataFrame(rows)
-            file_path = build_dir / pathlib.Path(f"auto_{sanitize_filename(metric)}_with_error_bars.{image_format}")
+            file_path = build_dir / pathlib.Path(f"{sanitize_filename(metric)}.{image_format}")
             fig = make_plot_from_df(
                 metric,
                 df,
@@ -277,7 +277,7 @@ def plot_sharded_metric(metric_name: str, sharded_metric_by_backend: dict, build
                 values.append(0)
         per_backend[backend] = values
 
-    file_path = build_dir / pathlib.Path(f"auto_{file_basename}.svg")
+    file_path = build_dir / pathlib.Path(f"{file_basename}.svg")
     logger.debug(f"Plotting sharded {file_path}")
     return (file_path, make_plot(metric_name, "shard", None, per_backend, True))
 
@@ -293,7 +293,7 @@ def plot_shardless_metric(metric_name: str, shardless_metric_by_backend: dict, b
     for backend, value in shardless_metric_by_backend.items():
         per_backend[backend] = [value]
 
-    file_path = build_dir / pathlib.Path(f"auto_{file_basename}.svg")
+    file_path = build_dir / pathlib.Path(f"{file_basename}.svg")
     logger.debug(f"Plotting shardless metric {file_path}")
     return (file_path, make_plot(metric_name, None, None, per_backend, False))
 
@@ -312,7 +312,7 @@ def plot_total_metric(metric_name: str, sharded_metric_by_backend: dict, build_d
             total += value
         per_backend[backend] = [total]
 
-    file_path = build_dir / pathlib.Path(f"auto_total_{file_basename}.svg")
+    file_path = build_dir / pathlib.Path(f"total_{file_basename}.svg")
     logger.debug(f"Plotting total metric {file_path}")
     return (file_path, make_plot("Total " + metric_name, None, None, per_backend, False))
 
