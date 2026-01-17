@@ -34,7 +34,8 @@ Consists of a list of the following elements:
   ... # Configuration to be passed to the tester
 ```
 
-Config for `simple-query` is
+### Configs
+#### simple-query
 ```yaml
 random-seed: 1             # Random number generator seed
 partitions: 10000          # number of partitions
@@ -62,7 +63,8 @@ flags:
 - bypass-cache               # use bypass cache when querying
 
 ```
-where ommited keys are set to default values
+where ommited keys are set to default values.
+All values could be ommited, but this is not recommended for clarity.
 
 ### `--config`
 
@@ -92,7 +94,7 @@ rpc:
   asymmetric_client_async_worker_cpuset: ...
   symmetric_client_cpuset: ...
 scylla:
-  path: ...
+  path: ... # Path to scylla executable
   asymmetric_app_cpuset: ...
   asymmetric_async_worker_cpuset: ...
   symmetric_cpuset: ...
