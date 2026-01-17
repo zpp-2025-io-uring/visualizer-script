@@ -2,6 +2,10 @@ import subprocess
 from pathlib import Path
 from time import sleep
 
+from log import get_logger
+
+logger = get_logger(__name__)
+
 
 class RpcTestRunner:
     def __init__(
@@ -84,7 +88,7 @@ class RpcTestRunner:
                 sleep(1)
 
             if server_process.poll() is None:
-                print("WARNING: Force killing server")
+                logger.warning("Force killing server")
                 server_process.kill()
 
             raise

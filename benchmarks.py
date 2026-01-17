@@ -14,9 +14,12 @@ from run_io import run_io_test
 from run_rpc import run_rpc_test
 from scylla_perf import PerfSimpleQueryTestRunner
 from stats import join_metrics, join_stats
+from log import get_logger
 
 SUITE_SUMMARY_PDF_FILENAME = "suite_summary.pdf"
 BENCHMARK_SUMMARY_FILENAME = "metrics_summary.yaml"
+
+logger = get_logger(__name__)
 
 
 class BenchmarkSuiteRunner:
@@ -53,7 +56,7 @@ class BenchmarkSuiteRunner:
 
             metrics_runs = []
             for i in range(iterations):
-                print(f"Running benchmark {test_name}, i={i}")
+                logger.info(f"Running benchmark {test_name}, i={i}")
 
                 run_output_dir: Path = test_output_dir / f"run_{i}"
                 run_output_dir.mkdir(exist_ok=True, parents=True)
@@ -231,8 +234,8 @@ def run_benchmark_suite_args(args):
                 if "legacy_cores_per_worker" not in args:
                     raise RuntimeError("Missing legacy_cores_per_worker value")
 
-                print(
-                    f"Warning: automatically calculating async worker cpused based on cores_per_worker value {args.legacy_cores_per_worker}"
+                logger.warning(
+                    f"automatically calculating async worker cpused based on cores_per_worker value {args.legacy_cores_per_worker}"
                 )
 
                 config = upgrade_version1_to_version2(
@@ -260,7 +263,7 @@ def run_benchmark_suite_args(args):
 
         if "backends" not in config:
             config["backends"] = ["asymmetric_io_uring", "io_uring"]
-            print(f"Warning: backends selecton not detected, assuming {config['backends']}")
+            logger.warning(f"backends selecton not detected, assuming {config['backends']}")
 
         runner = BenchmarkSuiteRunner(
             safe_load(benchmark_yaml), config, args.generate_graphs, args.generate_summary_graphs, args.pdf

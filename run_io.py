@@ -1,6 +1,10 @@
 import subprocess
 from pathlib import Path
 
+from log import get_logger
+
+logger = get_logger(__name__)
+
 
 class IOTestRunner:
     def __init__(
@@ -22,7 +26,9 @@ class IOTestRunner:
         self.skip_async_workers_cpuset = skip_async_workers_cpuset
 
     def __run_test(self, backend: str, output_filename: str, cpuset: str, async_worker_cpuset: str | None):
-        print(f"Running io_tester with backend {backend}, cpuset: {cpuset}, async worker cpuset: {async_worker_cpuset}")
+        logger.info(
+            f"Running io_tester with backend {backend}, cpuset: {cpuset}, async worker cpuset: {async_worker_cpuset}"
+        )
         self.run_output_dir.mkdir(parents=True, exist_ok=True)
         self.storage_dir.mkdir(parents=True, exist_ok=True)
 
