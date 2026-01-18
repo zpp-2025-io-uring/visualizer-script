@@ -68,7 +68,6 @@ class IOTestRunner:
         self.storage_dir.rmdir()
 
         if err := result.returncode != 0:
-            logger.critical(f"Tester failed with exit code {err}")
             raise RuntimeError(f"Tester failed with exit code {err}")
 
         return result.stdout

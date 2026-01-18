@@ -254,7 +254,6 @@ def run_benchmark_suite_args(args):
             case 2:
                 pass
             case other:
-                logger.critical(f"Unknown config version: {other}")
                 raise ValueError(f"Unknown config version: {other}")
 
         output_dir = Path(config["output_dir"]).resolve()

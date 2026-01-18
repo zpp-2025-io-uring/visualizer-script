@@ -128,11 +128,9 @@ class RpcTestRunner:
             print(client.stderr, file=f)
 
         if (err := server_process.returncode) != 0:
-            logger.critical(f"Server failed with exit code {err}")
             raise RuntimeError(f"Server failed with exit code {err}")
 
         if err := client.returncode != 0:
-            logger.critical(f"Client failed with exit code {err}")
             raise RuntimeError(f"Client failed with exit code {err}")
 
         return client.stdout
