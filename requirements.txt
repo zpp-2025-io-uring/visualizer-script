@@ -9,4 +9,5 @@ yamlable==1.1.1
 fpdf2==2.8.2
 pypdf==5.1.0
 
+# logging
 colorama==0.4.6
