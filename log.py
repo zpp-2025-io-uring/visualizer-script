@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 
 from colorama import Fore
 
@@ -46,3 +47,11 @@ def get_logger(name: str | None) -> logging.Logger:
     logger.setLevel(LoggerLevel.level)
     logger.addHandler(handler)
     return logger
+
+
+logger = get_logger(__name__)
+
+
+def warn_if_not_release(path: Path):
+    if "release" not in path:
+        logger.warning(f"Path does not contain release: {path}")

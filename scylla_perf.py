@@ -7,7 +7,7 @@ from typing import override
 
 from yaml import safe_load
 
-from log import get_logger
+from log import get_logger, warn_if_not_release
 
 logger = get_logger(__name__)
 
@@ -25,8 +25,8 @@ class OneExecutableTestRunner(ABC):
         self.backends = backends
         self.skip_async_workers_cpuset = skip_async_workers_cpuset
 
-        if "release" not in self.tester_path:
-            logger.warning(f"Tester path does not contain release: {self.tester_path}")
+        warn_if_not_release(self.tester_path)
+
         logger.debug(
             f"Initialized single executable test runner with tester_path={self.tester_path}, config_path={self.config_path}, run_output_dir={self.run_output_dir}, asymmetric_app_cpuset={self.asymmetric_app_cpuset}, asymmetric_async_worker_cpuset={self.asymmetric_async_worker_cpuset}, symmetric_cpuset={self.symmetric_cpuset}, backends={self.backends}, skip_async_workers_cpuset={self.skip_async_workers_cpuset}"
         )

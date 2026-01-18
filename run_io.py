@@ -1,7 +1,7 @@
 import subprocess
 from pathlib import Path
 
-from log import get_logger
+from log import get_logger, warn_if_not_release
 
 logger = get_logger(__name__)
 
@@ -25,8 +25,7 @@ class IOTestRunner:
         self.backends = backends
         self.skip_async_workers_cpuset = skip_async_workers_cpuset
 
-        if "release" not in self.tester_path:
-            logger.warning(f"Tester path does not contain release: {self.tester_path}")
+        warn_if_not_release(self.tester_path)
 
     def __run_test(self, backend: str, output_filename: str, cpuset: str, async_worker_cpuset: str | None):
         logger.info(
