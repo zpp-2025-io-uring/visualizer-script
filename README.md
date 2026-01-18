@@ -35,7 +35,9 @@ Consists of a list of the following elements:
 ```
 
 ### Configs
+
 #### simple-query
+
 ```yaml
 random-seed: 1             # Random number generator seed
 partitions: 10000          # number of partitions
