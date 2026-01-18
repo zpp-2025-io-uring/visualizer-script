@@ -14,9 +14,12 @@ from run_io import run_io_test
 from run_rpc import run_rpc_test
 from scylla_perf import PerfSimpleQueryTestRunner
 from stats import join_metrics, join_stats
+from log import get_logger
 
 SUITE_SUMMARY_PDF_FILENAME = "suite_summary.pdf"
 BENCHMARK_SUMMARY_FILENAME = "metrics_summary.yaml"
+
+logger = get_logger(__name__)
 
 
 class BenchmarkSuiteRunner:
@@ -36,6 +39,9 @@ class BenchmarkSuiteRunner:
         self.generate_summary_graph = generate_summary_graphs
         self.generate_pdf = generate_pdf
         self.plot_generator = PlotGenerator()
+        logger.debug(
+            f"Initialized benchmark suite runner with output_dir={self.output_dir}, backends={self.backends}, params={self.params}, io_config={self.io_config}, rpc_config={self.rpc_config}, scylla_config={self.scylla_config}, benchmarks={self.benchmarks}, genetare_graphs={self.generate_graphs}, generate_summary_graph={self.generate_summary_graph}, generate_pdf={self.generate_pdf}"
+        )
 
     def run(self):
         per_benchmark_pdfs: list[Path] = []
@@ -43,9 +49,11 @@ class BenchmarkSuiteRunner:
         for benchmark in self.benchmarks:
             test_name = benchmark["name"]
             iterations = benchmark.get("iterations", 1)
+            logger.info(f"Running benchmark {test_name} with {iterations} iterations")
 
             test_output_dir: Path = self.output_dir / test_name
             test_output_dir.mkdir(exist_ok=True, parents=True)
+            logger.debug(f"Set output directory as {test_output_dir}")
 
             config_path = test_output_dir / "conf.yaml"
             with open(config_path, "w") as f:
@@ -53,7 +61,7 @@ class BenchmarkSuiteRunner:
 
             metrics_runs = []
             for i in range(iterations):
-                print(f"Running benchmark {test_name}, i={i}")
+                logger.info(f"Running test {test_name}, i={i}")
 
                 run_output_dir: Path = test_output_dir / f"run_{i}"
                 run_output_dir.mkdir(exist_ok=True, parents=True)
@@ -106,11 +114,13 @@ class BenchmarkSuiteRunner:
             summary = compute_benchmark_summary(combined_sharded, combined_shardless, benchmark_info)
 
             if self.generate_summary_graph:
+                logger.info("Generating summary graphs")
                 self.plot_generator.schedule_graphs_for_summary(
                     summary.get_stats(), test_output_dir, image_format="svg"
                 )
 
             if self.generate_pdf:
+                logger.info("Generating pdf graphs")
                 self.plot_generator.schedule_graphs_for_summary(
                     summary.get_stats(), test_output_dir, image_format="png"
                 )
@@ -119,6 +129,7 @@ class BenchmarkSuiteRunner:
             self.plot_generator.plot()
 
             if self.generate_pdf:
+                logger.info("Generating pdf")
                 summary_images = sorted(test_output_dir.glob("*.png"))
                 pdf_path = generate_benchmark_summary_pdf(
                     benchmark_name=test_name,
@@ -130,6 +141,7 @@ class BenchmarkSuiteRunner:
             dump_summary(test_output_dir, summary)
 
         if self.generate_pdf and per_benchmark_pdfs:
+            logger.info("Merging pdfs")
             merge_pdfs(input_pdfs=per_benchmark_pdfs, output_pdf=self.output_dir / SUITE_SUMMARY_PDF_FILENAME)
 
 
@@ -153,6 +165,7 @@ def dump_environment(dir_for_config: Path, dir_to_seastar: Path):
     - hostname output
     - git log of seastar repo since 2025-12-01
     """
+    logger.info("Dumping environment")
 
     lscpu = subprocess.run(
         ["lscpu"],
@@ -231,8 +244,8 @@ def run_benchmark_suite_args(args):
                 if "legacy_cores_per_worker" not in args:
                     raise RuntimeError("Missing legacy_cores_per_worker value")
 
-                print(
-                    f"Warning: automatically calculating async worker cpused based on cores_per_worker value {args.legacy_cores_per_worker}"
+                logger.warning(
+                    f"Automatically calculating async worker cpused based on cores_per_worker value {args.legacy_cores_per_worker}"
                 )
 
                 config = upgrade_version1_to_version2(
@@ -260,7 +273,7 @@ def run_benchmark_suite_args(args):
 
         if "backends" not in config:
             config["backends"] = ["asymmetric_io_uring", "io_uring"]
-            print(f"Warning: backends selecton not detected, assuming {config['backends']}")
+            logger.warning(f"backends selecton not detected, assuming {config['backends']}")
 
         runner = BenchmarkSuiteRunner(
             safe_load(benchmark_yaml), config, args.generate_graphs, args.generate_summary_graphs, args.pdf

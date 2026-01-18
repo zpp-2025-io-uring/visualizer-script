@@ -1,7 +1,10 @@
 from yaml import safe_load
 from yamlable import YamlAble, yaml_info
 
+from log import get_logger
 from stats import Stats, summarize_stats
+
+logger = get_logger(__name__)
 
 
 @yaml_info("benchmark")
@@ -11,6 +14,9 @@ class Benchmark(YamlAble):
         self.benchmark = benchmark
         self.summary = summary
         self.run_count = run_count if run_count is not None else len(runs)
+        logger.debug(
+            f"Initialized benchmark with runs={self.runs}, benchmark={self.benchmark}, summary={self.summary}, run_count={self.run_count}"
+        )
 
     def get_runs(self) -> dict:
         return self.runs
@@ -42,6 +48,7 @@ class Benchmark(YamlAble):
         (no `!yamlable/...` tag). It prefers the yamlable loading path when possible,
         otherwise it normalizes the mapping and constructs the object.
         """
+        logger.debug(f"Loading benchmark from file {file}")
         data = safe_load(file)
 
         if isinstance(data, cls):
@@ -56,6 +63,8 @@ class Benchmark(YamlAble):
 def compute_benchmark_summary(sharded_metrics: dict, shardless_metrics: dict, benchmark_info: dict) -> Benchmark:
     # build map run_id -> run entry
     runs_map: dict = {}
+
+    logger.debug(f"Computing benchmark summary {sharded_metrics=}, {shardless_metrics=}, {benchmark_info=}")
 
     # process sharded metrics
     for metric_name, backends in (sharded_metrics or {}).items():

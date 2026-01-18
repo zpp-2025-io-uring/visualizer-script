@@ -7,6 +7,10 @@ from typing import override
 
 from yaml import safe_load
 
+from log import get_logger, warn_if_not_release
+
+logger = get_logger(__name__)
+
 
 class OneExecutableTestRunner(ABC):
     def __init__(self, test_config: dict, config_path: Path, run_output_dir: Path, backends, skip_async_workers_cpuset):
@@ -21,10 +25,16 @@ class OneExecutableTestRunner(ABC):
         self.backends = backends
         self.skip_async_workers_cpuset = skip_async_workers_cpuset
 
+        warn_if_not_release(self.tester_path)
+
+        logger.debug(
+            f"Initialized single executable test runner with tester_path={self.tester_path}, config_path={self.config_path}, run_output_dir={self.run_output_dir}, asymmetric_app_cpuset={self.asymmetric_app_cpuset}, asymmetric_async_worker_cpuset={self.asymmetric_async_worker_cpuset}, symmetric_cpuset={self.symmetric_cpuset}, backends={self.backends}, skip_async_workers_cpuset={self.skip_async_workers_cpuset}"
+        )
+
     def run_tester_with_additional_args(
         self, backend: str, cpuset: str, async_worker_cpuset: str | None, args: list[str]
     ) -> CompletedProcess:
-        print(
+        logger.info(
             f"Running {self.__class__.__name__} with backend {backend}, cpuset: {cpuset}, async worker cpuset: {async_worker_cpuset}"
         )
         self.run_output_dir.mkdir(parents=True, exist_ok=True)
@@ -43,6 +53,7 @@ class OneExecutableTestRunner(ABC):
         if async_worker_cpuset is not None:
             argv.extend(["--async-workers-cpuset", async_worker_cpuset])
 
+        logger.debug(f"Running {argv=}")
         result = subprocess.run(
             argv,
             check=False,

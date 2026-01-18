@@ -5,8 +5,11 @@ from pathlib import Path
 from benchmark import Benchmark
 from benchmarks import BENCHMARK_SUMMARY_FILENAME
 from generate import PlotGenerator
+from log import get_logger
 from parse import auto_generate_data_points, load_data
 from stats import join_metrics
+
+logger = get_logger(__name__)
 
 
 class RedrawSuiteRunner:
@@ -14,7 +17,7 @@ class RedrawSuiteRunner:
         self.plot_generator = PlotGenerator()
 
     def redraw_run(self, run_dir: Path):
-        print(f"Redrawing {run_dir}")
+        logger.info(f"Redrawing {run_dir}")
         backend_names = ["asymmetric_io_uring", "io_uring", "linux-aio", "epoll"]
 
         regexes = [rf"({backend}.out|{backend}.client.out)" for backend in backend_names]
@@ -22,7 +25,7 @@ class RedrawSuiteRunner:
         for file in run_dir.iterdir():
             for backend, regex in zip(backend_names, regexes):
                 if re.fullmatch(regex, str(file.name)):
-                    print(f"Found data for backend {backend} in {file.name}")
+                    logger.info(f"Found data for backend {backend} in {file.name}")
                     with open(file) as f:
                         backend_data_raw[backend] = f.read()
 
@@ -50,7 +53,7 @@ class RedrawSuiteRunner:
         self.plot_generator.plot()
 
     def redraw_summary(self, summary_file: Path, output_dir: Path):
-        print(f"Redrawing summary from {summary_file}")
+        logger.info(f"Redrawing summary from {summary_file}")
 
         with open(summary_file) as file:
             summary = Benchmark.load_from_file(file)
