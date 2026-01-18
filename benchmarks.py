@@ -12,6 +12,7 @@ from parse import auto_generate_data_points, load_data
 from pdf_summary import generate_benchmark_summary_pdf, merge_pdfs
 from run_io import run_io_test
 from run_rpc import run_rpc_test
+from scylla_perf import PerfSimpleQueryTestRunner
 from stats import join_metrics, join_stats
 
 SUITE_SUMMARY_PDF_FILENAME = "suite_summary.pdf"
@@ -23,10 +24,12 @@ class BenchmarkSuiteRunner:
         self, benchmarks, config: dict, generate_graphs: bool, generate_summary_graphs: bool, generate_pdf: bool
     ):
         self.output_dir: Path = Path(config["output_dir"]).resolve()
-        self.io_config = config["io"]
-        self.rpc_config = config["rpc"]
         self.backends = config["backends"]
         self.params = config["params"]
+
+        self.io_config = config["io"]
+        self.rpc_config = config["rpc"]
+        self.scylla_config = config["scylla"]
 
         self.benchmarks = benchmarks
         self.generate_graphs = generate_graphs
@@ -73,12 +76,23 @@ class BenchmarkSuiteRunner:
                         self.backends,
                         self.params["skip_async_workers_cpuset"],
                     )
+                elif benchmark["type"] == "simple-query":
+                    result = PerfSimpleQueryTestRunner(
+                        self.scylla_config,
+                        config_path,
+                        run_output_dir,
+                        self.backends,
+                        self.params["skip_async_workers_cpuset"],
+                    ).run()
                 else:
                     raise Exception(f"Unknown benchmark type {benchmark['type']}")
 
                 backends_parsed = {}
                 for backend, raw in result.items():
-                    parsed = load_data(raw)
+                    if benchmark["type"] in ["rpc", "io"]:
+                        parsed = load_data(raw)
+                    else:
+                        parsed = raw
                     backends_parsed[backend] = auto_generate_data_points(parsed)
 
                 [shardless_metrics, sharded_metrics] = join_metrics(backends_parsed)
