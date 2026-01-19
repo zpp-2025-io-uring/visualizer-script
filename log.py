@@ -53,5 +53,5 @@ logger = get_logger(__name__)
 
 
 def warn_if_not_release(path: Path):
-    if "release" not in path:
+    if "release" not in str(path):
         logger.warning(f"Path does not contain release: {path}")
