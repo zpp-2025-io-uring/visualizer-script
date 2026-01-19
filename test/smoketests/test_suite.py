@@ -38,9 +38,7 @@ shardless_metrics = [["errors", "total"]]
 shards_count = 3
 
 
-def generate_simple_config(
-    name: str, output_dir: Path, rpc_tester_path: Path, io_tester_path: Path
-) -> dict:
+def generate_simple_config(name: str, output_dir: Path, rpc_tester_path: Path, io_tester_path: Path) -> dict:
     cfg = {
         "config_version": 2,
         "output_dir": str(output_dir / name.replace(".yaml", "")),
