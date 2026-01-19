@@ -40,7 +40,7 @@ shards_count = 3
 
 def generate_simple_config(
     name: str, output_dir: Path, rpc_tester_path: Path, io_tester_path: Path
-) -> tuple[str, dict]:
+) -> dict:
     cfg = {
         "config_version": 2,
         "output_dir": str(output_dir / name.replace(".yaml", "")),
@@ -63,6 +63,7 @@ def generate_simple_config(
             "asymmetric_client_async_worker_cpuset": "1",
             "symmetric_client_cpuset": "0",
         },
+        "scylla": {},
     }
     return cfg
 
