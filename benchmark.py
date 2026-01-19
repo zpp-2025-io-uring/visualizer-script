@@ -4,7 +4,7 @@ from yamlable import YamlAble, yaml_info
 from log import get_logger
 from stats import Stats, summarize_stats
 
-logger = get_logger(__name__)
+logger = get_logger()
 
 
 @yaml_info("benchmark")

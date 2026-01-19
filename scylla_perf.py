@@ -9,7 +9,7 @@ from yaml import safe_load
 
 from log import get_logger, warn_if_not_release
 
-logger = get_logger(__name__)
+logger = get_logger()
 
 
 class OneExecutableTestRunner(ABC):

@@ -19,7 +19,7 @@ from log import get_logger
 SUITE_SUMMARY_PDF_FILENAME = "suite_summary.pdf"
 BENCHMARK_SUMMARY_FILENAME = "metrics_summary.yaml"
 
-logger = get_logger(__name__)
+logger = get_logger()
 
 
 class BenchmarkSuiteRunner:
