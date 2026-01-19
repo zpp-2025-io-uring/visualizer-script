@@ -1,5 +1,6 @@
 pandas==2.3.3
 plotly==6.5.0
+kaleido
 
 # yaml
 PyYAML==6.0.3
@@ -11,3 +12,7 @@ pypdf==5.1.0
 
 # logging
 colorama==0.4.6
+
+# testing
+pytest>=9.0.0
+pytest-xdist>=3.8.0

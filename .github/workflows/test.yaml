@@ -1,0 +1,57 @@
+name: Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  PYTHON_VERSION: '3.14'
+
+permissions:
+  contents: read
+  actions: read
+  checks: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+        REPORT_PATH: 'pytest.xml'
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+            python-version: ${{ env.PYTHON_VERSION }}
+            cache: 'pip' # caching pip dependencies
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Set Git config for Tests
+        run: |
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Run tests
+        run: pytest --junitxml=${{ env.REPORT_PATH }} -n auto
+
+        # https://federschmidt.org/posts/pytest_github_actions_reporter/
+      - name: Test Report
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+            name: pytest test results
+            path: ${{ env.REPORT_PATH }}
+            reporter: java-junit
+
+      - name: Upload Test Artifacts
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+            name: pytest-report
+            path: ${{ env.REPORT_PATH }}
