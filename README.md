@@ -91,9 +91,7 @@ python3 ./main.py redraw --io_uring results/<run_dir>/io_uring.out --epoll resul
 
 #### `--dir` (required)
 
-Path to a results directory to scan recursively for benchmark runs to redraw.
-
-Redraw all benchmarks and runs found under a results directory (recursively finds per-benchmark runs):
+Path to a results directory for given (cpumask) config inside of timestamp-directory created during a benchmark suite run.
 
 ```bash
 python3 ./main.py redraw_suite --dir results/timestamp/config_name
