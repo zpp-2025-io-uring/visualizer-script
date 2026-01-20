@@ -100,11 +100,6 @@ Redraw all benchmarks and runs found under a results directory (recursively find
 python3 ./main.py redraw_suite --dir results/timestamp/config_name
 ```
 
-### Flags exposed by subcommands
-- `redraw` flags: `--asymmetric_io_uring`, `--io_uring`, `--linux-aio`, `--epoll`, `--output-dir` (required).
-- `redraw_suite` flags: `--dir` (required).
-- `suite` flags: `--benchmark` (required), `--config` (required, one or more), `--generate-graphs`, `--generate-summary-graphs`, `--pdf`, `--legacy-cores-per-worker`.
-
 ### Configs
 
 #### Benchmark suite (suite `--benchmark`)
