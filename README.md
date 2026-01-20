@@ -39,11 +39,33 @@ to check the options for a specific subcommand.
 
 Run a benchmark suite. The benchmark suite mode requires config and benchmark files in YAML format. `--config` accepts one or more YAML files or a directory (all `*.yaml` will be used):
 
+#### `--benchmark` (required)
+
+Path to a benchmark suite YAML file. Example: `configuration/suite.yaml`.
+
+#### `--config` (required, one or more)
+
+One or more cpumask/config YAML files or a directory containing `*.yaml` files. Example: `--config configs/` or `--config cfg1.yaml cfg2.yaml`.
+
+#### `--generate-graphs` (optional)
+
+Generate per-run graphs after running the suite.
+
+#### `--generate-summary-graphs` (optional)
+
+Generate summary graphs aggregated across runs.
+
+#### `--pdf` (optional)
+
+Produce a PDF summary of generated graphs.
+
+#### `--legacy-cores-per-worker` (optional)
+
+Enable legacy cores-per-worker behavior when launching testers.
+
 ```bash
 python3 ./main.py suite --benchmark configuration/suite.yaml --config configuration/configs --generate-graphs --generate-summary-graphs --pdf
 ```
-
-You can also pass multiple specific config files (at least one):
 
 ```bash
 python3 ./main.py suite --benchmark configuration/suite.yaml --config config_1.yaml config_2.yaml
@@ -52,12 +74,22 @@ python3 ./main.py suite --benchmark configuration/suite.yaml --config config_1.y
 ### redraw
 
 Redraw from explicit backend output files (provide any combination of backends):
+ - `--io_uring` (optional)
+ - `--asymmetric_io_uring` (optional)
+ - `--linux-aio` (optional)
+ - `--epoll` (optional)
+ - `--output-dir` (required)
 
 ```bash
 python3 ./main.py redraw --io_uring results/<run_dir>/io_uring.out --epoll results/<run_dir>/epoll.out --output-dir generated/graphs
 ```
 
 ### redraw_suite
+
+#### `--dir` (required)
+
+Path to a results directory to scan recursively for benchmark runs to redraw. Example: `results/15-01-2026_12:04:13/config/`.
+
 
 Redraw all benchmarks and runs found under a results directory (recursively finds per-benchmark runs):
 
