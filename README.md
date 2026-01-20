@@ -78,7 +78,10 @@ Redraw from explicit backend output files (provide any combination of backends):
  - `--asymmetric_io_uring` (optional)
  - `--linux-aio` (optional)
  - `--epoll` (optional)
- - `--output-dir` (required)
+
+#### `--output-dir` (required)
+
+Directory where generated graphs will be written.
 
 ```bash
 python3 ./main.py redraw --io_uring results/<run_dir>/io_uring.out --epoll results/<run_dir>/epoll.out --output-dir generated/graphs
