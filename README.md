@@ -70,7 +70,9 @@ python3 ./main.py redraw_suite --dir results/timestamp/config_name
 - `redraw_suite` flags: `--dir` (required).
 - `suite` flags: `--benchmark` (required), `--config` (required, one or more), `--generate-graphs`, `--generate-summary-graphs`, `--pdf`, `--legacy-cores-per-worker`.
 
-### Benchmark suite (`--benchmark`)
+### Configs
+
+#### Benchmark suite (suite `--benchmark`)
 
 Consists of a list of the following elements:
 
@@ -82,7 +84,7 @@ Consists of a list of the following elements:
   ... # Configuration to be passed to the tester
 ```
 
-### Cpumask config (`--config`)
+#### Cpumask config (suite `--config`)
 
 Must contain the following elements:
 
@@ -116,8 +118,6 @@ scylla:
   asymmetric_async_worker_cpuset: ...
   symmetric_cpuset: ...
 ```
-
-### Configs
 
 #### simple-query
 
