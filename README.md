@@ -91,7 +91,7 @@ python3 ./main.py redraw --io_uring results/<run_dir>/io_uring.out --epoll resul
 
 #### `--dir` (required)
 
-Path to a results directory for given (cpumask) config inside of timestamp-directory created during a benchmark suite run.
+Path to a results directory for given (cpumask) config inside of timestamp-directory created during a benchmark suite run. Child directories (each storing results from different test) should each contain `metrics_summary.yaml`, as this file is the source of data for the graphs.
 
 ```bash
 python3 ./main.py redraw_suite --dir results/timestamp/config_name
