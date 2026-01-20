@@ -35,7 +35,9 @@ to check the options for a specific subcommand.
 
 ## Usage
 
-- Run a benchmark suite. The benchmark suite mode requires config and benchmark files in YAML format. `--config` accepts one or more YAML files or a directory (all `*.yaml` will be used):
+### suite
+
+Run a benchmark suite. The benchmark suite mode requires config and benchmark files in YAML format. `--config` accepts one or more YAML files or a directory (all `*.yaml` will be used):
 
 ```bash
 python3 ./main.py suite --benchmark configuration/suite.yaml --config configuration/configs --generate-graphs --generate-summary-graphs --pdf
@@ -47,13 +49,17 @@ You can also pass multiple specific config files (at least one):
 python3 ./main.py suite --benchmark configuration/suite.yaml --config config_1.yaml config_2.yaml
 ```
 
-- Redraw from explicit backend output files (provide any combination of backends):
+### redraw
+
+Redraw from explicit backend output files (provide any combination of backends):
 
 ```bash
 python3 ./main.py redraw --io_uring results/<run_dir>/io_uring.out --epoll results/<run_dir>/epoll.out --output-dir generated/graphs
 ```
 
-- Redraw all benchmarks and runs found under a results directory (recursively finds per-benchmark runs):
+### redraw_suite
+
+Redraw all benchmarks and runs found under a results directory (recursively finds per-benchmark runs):
 
 ```bash
 python3 ./main.py redraw_suite --dir results/timestamp/config_name
