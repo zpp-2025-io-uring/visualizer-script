@@ -22,34 +22,38 @@ class ColoredLogger(logging.Formatter):
         return f"{color}{message}{Fore.RESET}"
 
 
-class LoggerLevel:
-    level = logging.NOTSET
+def _get_logger(name: str | None) -> logging.Logger:
+    handler = logging.StreamHandler()
+    handler.setFormatter(ColoredLogger("%(levelname)s: %(message)s"))
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.NOTSET)
+    logger.addHandler(handler)
+    return logger
+
+
+class __Logger:
+    logger = _get_logger(None)
 
 
 def set_level(new_level: str):
     match new_level:
         case "debug":
-            LoggerLevel.level = logging.DEBUG
+            __Logger.logger.setLevel(logging.DEBUG)
         case "info":
-            LoggerLevel.level = logging.INFO
+            __Logger.logger.setLevel(logging.INFO)
         case "warning":
-            LoggerLevel.level = logging.WARNING
+            __Logger.logger.setLevel(logging.WARNING)
         case "error":
-            LoggerLevel.level = logging.ERROR
+            __Logger.logger.setLevel(logging.ERROR)
         case "critical":
-            LoggerLevel.level = logging.CRITICAL
+            __Logger.logger.setLevel(logging.CRITICAL)
 
 
-def get_logger(name: str | None) -> logging.Logger:
-    handler = logging.StreamHandler()
-    handler.setFormatter(ColoredLogger("%(levelname)s: %(message)s"))
-    logger = logging.getLogger(name)
-    logger.setLevel(LoggerLevel.level)
-    logger.addHandler(handler)
-    return logger
+def get_logger() -> logging.Logger:
+    return __Logger.logger
 
 
-logger = get_logger(__name__)
+logger = get_logger()
 
 
 def warn_if_not_release(path: Path):

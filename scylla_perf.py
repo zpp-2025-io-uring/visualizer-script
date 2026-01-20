@@ -9,7 +9,7 @@ from yaml import safe_load
 
 from log import get_logger, warn_if_not_release
 
-logger = get_logger(__name__)
+logger = get_logger()
 
 
 class OneExecutableTestRunner(ABC):
@@ -97,7 +97,7 @@ class OneExecutableTestRunner(ABC):
 class PerfSimpleQueryTestRunner(OneExecutableTestRunner):
     @override
     def _run_test(self, backend, cpuset, async_worker_cpuset) -> list[dict]:
-        json_output_path = self.run_output_dir / "result.json"
+        json_output_path = self.run_output_dir / f"{backend}.json"
 
         with open(self.config_path) as f:
             config = safe_load(f.read())

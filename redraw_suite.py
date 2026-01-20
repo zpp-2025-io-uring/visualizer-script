@@ -9,7 +9,7 @@ from log import get_logger
 from parse import auto_generate_data_points, load_data
 from stats import join_metrics
 
-logger = get_logger(__name__)
+logger = get_logger()
 
 
 class RedrawSuiteRunner:

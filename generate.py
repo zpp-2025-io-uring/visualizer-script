@@ -9,7 +9,7 @@ import plotly.io as pio
 from log import get_logger
 from stats import Stats
 
-logger = get_logger(__name__)
+logger = get_logger()
 
 
 class PlotGenerator:
