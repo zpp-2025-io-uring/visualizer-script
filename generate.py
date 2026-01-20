@@ -256,7 +256,7 @@ def plot_sharded_metric(metric_name: str, sharded_metric_by_backend: dict, build
     # determine max shard index
     max_shard = -1
     for backend, result_by_shard in sharded_metric_by_backend.items():
-        for shard, result in result_by_shard.items():
+        for shard, _ in result_by_shard.items():
             try:
                 shard_idx = int(shard)
                 max_shard = max(max_shard, shard_idx)
