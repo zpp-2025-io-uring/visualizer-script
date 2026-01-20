@@ -41,7 +41,7 @@ Run a benchmark suite. The benchmark suite mode requires config and benchmark fi
 
 #### `--benchmark` (required)
 
-Path to a benchmark suite YAML file. Example: `configuration/suite.yaml`.
+Path to a benchmark suite YAML file.
 
 #### `--config` (required, one or more)
 
@@ -64,11 +64,11 @@ Produce a PDF summary of generated graphs.
 Enable legacy cores-per-worker behavior when launching testers.
 
 ```bash
-python3 ./main.py suite --benchmark configuration/suite.yaml --config configuration/configs --generate-graphs --generate-summary-graphs --pdf
+python3 ./main.py suite --benchmark configuration/suites/suite.yaml --config configuration/configs --generate-graphs --generate-summary-graphs --pdf
 ```
 
 ```bash
-python3 ./main.py suite --benchmark configuration/suite.yaml --config config_1.yaml config_2.yaml
+python3 ./main.py suite --benchmark suite.yaml --config config_1.yaml config_2.yaml
 ```
 
 ### redraw
@@ -91,8 +91,7 @@ python3 ./main.py redraw --io_uring results/<run_dir>/io_uring.out --epoll resul
 
 #### `--dir` (required)
 
-Path to a results directory to scan recursively for benchmark runs to redraw. Example: `results/15-01-2026_12:04:13/config/`.
-
+Path to a results directory to scan recursively for benchmark runs to redraw.
 
 Redraw all benchmarks and runs found under a results directory (recursively finds per-benchmark runs):
 
