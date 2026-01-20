@@ -1,7 +1,9 @@
-# io_tester_visualizer
+# Seastar Benchmark Visualizer
 
 [![Test](https://github.com/zpp-2025-io-uring/visualizer-script/actions/workflows/test.yaml/badge.svg)](https://github.com/zpp-2025-io-uring/visualizer-script/actions/workflows/test.yaml)
 [![Lint](https://github.com/zpp-2025-io-uring/visualizer-script/actions/workflows/lint.yaml/badge.svg)](https://github.com/zpp-2025-io-uring/visualizer-script/actions/workflows/lint.yaml)
+
+Generate graphs and run benchmark suites for Seastar-based testers.
 
 ## Running
 
@@ -31,29 +33,38 @@ python3 main.py <subcommand> --help
 
 to check the options for a specific subcommand.
 
-## Benchmark suite
+## Usage
 
-The benchmark suite mode requires config and benchmark files in YAML format.
-
-To run the benchmark suite, use the following command:
+- Run a benchmark suite. The benchmark suite mode requires config and benchmark files in YAML format. `--config` accepts one or more YAML files or a directory (all `*.yaml` will be used):
 
 ```bash
-python3 ./main.py suite --benchmark configuration/suite.yaml --config configuration/configs
+python3 ./main.py suite --benchmark configuration/suite.yaml --config configuration/configs --generate-graphs --generate-summary-graphs --pdf
 ```
 
-or
+You can also pass multiple specific config files (at least one):
 
 ```bash
-python3 ./main.py suite --benchmark configuration/suite.yaml --config config_1.yaml
+python3 ./main.py suite --benchmark configuration/suite.yaml --config config_1.yaml config_2.yaml
 ```
 
-or
+- Redraw from explicit backend output files (provide any combination of backends):
 
 ```bash
-python3 ./main.py suite --benchmark configuration/suite.yaml --config config_1.yaml config_2.yaml config_3.yaml
+python3 ./main.py redraw --io_uring results/<run_dir>/io_uring.out --epoll results/<run_dir>/epoll.out --output-dir generated/graphs
 ```
 
-### `--benchmark`
+- Redraw all benchmarks and runs found under a results directory (recursively finds per-benchmark runs):
+
+```bash
+python3 ./main.py redraw_suite --dir results/timestamp/config_name
+```
+
+### Flags exposed by subcommands
+- `redraw` flags: `--asymmetric_io_uring`, `--io_uring`, `--linux-aio`, `--epoll`, `--output-dir` (required).
+- `redraw_suite` flags: `--dir` (required).
+- `suite` flags: `--benchmark` (required), `--config` (required, one or more), `--generate-graphs`, `--generate-summary-graphs`, `--pdf`, `--legacy-cores-per-worker`.
+
+### Benchmark suite (`--benchmark`)
 
 Consists of a list of the following elements:
 
@@ -63,6 +74,41 @@ Consists of a list of the following elements:
   iterations: # number of iterations to run, optional, default: 1, used for charts with stddev
   config:
   ... # Configuration to be passed to the tester
+```
+
+### Cpumask config (`--config`)
+
+Must contain the following elements:
+
+```yaml
+config_version: ...
+output_dir: ...
+params:
+  skip_async_workers_cpuset: true/false
+backends:
+  - ...
+  - ...
+  ...
+io:
+  tester_path: ...
+  storage_dir: ...
+  asymmetric_app_cpuset: ...
+  asymmetric_async_worker_cpuset: ...
+  symmetric_cpuset: ...
+rpc:
+  tester_path: ...
+  ip_address: ...
+  asymmetric_server_app_cpuset: ...
+  asymmetric_server_async_worker_cpuset: ...
+  symmetric_server_cpuset: ...
+  asymmetric_client_app_cpuset: ...
+  asymmetric_client_async_worker_cpuset: ...
+  symmetric_client_cpuset: ...
+scylla:
+  path: ... # Path to scylla executable
+  asymmetric_app_cpuset: ...
+  asymmetric_async_worker_cpuset: ...
+  symmetric_cpuset: ...
 ```
 
 ### Configs
@@ -98,41 +144,6 @@ flags:
 ```
 where ommited keys are set to default values.
 All values could be ommited, but this is not recommended for clarity.
-
-### `--config`
-
-Must contain the following elements:
-
-```yaml
-config_version: ...
-output_dir: ...
-params:
-  skip_async_workers_cpuset: true/false
-backends:
-  - ...
-  - ...
-  ...
-io:
-  tester_path: ...
-  storage_dir: ...
-  asymmetric_app_cpuset: ...
-  asymmetric_async_worker_cpuset: ...
-  symmetric_cpuset: ...
-rpc:
-  tester_path: ...
-  ip_address: ...
-  asymmetric_server_app_cpuset: ...
-  asymmetric_server_async_worker_cpuset: ...
-  symmetric_server_cpuset: ...
-  asymmetric_client_app_cpuset: ...
-  asymmetric_client_async_worker_cpuset: ...
-  symmetric_client_cpuset: ...
-scylla:
-  path: ... # Path to scylla executable
-  asymmetric_app_cpuset: ...
-  asymmetric_async_worker_cpuset: ...
-  symmetric_cpuset: ...
-```
 
 ## Development
 
