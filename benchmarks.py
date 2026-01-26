@@ -218,7 +218,7 @@ def dump_environment(dir_for_config: Path, dir_to_seastar: Path):
         raise Exception("git_log failed")
 
     git_status = subprocess.run(
-        ["git", "status"],
+        ["git", "status", "-v", "-v"],
         check=False,
         cwd=Path(dir_to_seastar).expanduser().resolve(),
         capture_output=True,
