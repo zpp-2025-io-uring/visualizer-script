@@ -35,7 +35,7 @@ class RpcTestRunner:
         client_cpuset: str,
         client_async_worker_cpuset: str | None,
     ):
-        print(
+        logger.info(
             f"Running rpc_tester with backend {backend}, server cpuset: {server_cpuset}, server async worker cpuset: {server_async_worker_cpuset}, client cpuset: {client_cpuset}, client async worker cpuset: {client_async_worker_cpuset}"
         )
         self.run_output_dir.mkdir(parents=True, exist_ok=True)
