@@ -1,7 +1,9 @@
-# io_tester_visualizer
+# Seastar Benchmark Visualizer
 
 [![Test](https://github.com/zpp-2025-io-uring/visualizer-script/actions/workflows/test.yaml/badge.svg)](https://github.com/zpp-2025-io-uring/visualizer-script/actions/workflows/test.yaml)
 [![Lint](https://github.com/zpp-2025-io-uring/visualizer-script/actions/workflows/lint.yaml/badge.svg)](https://github.com/zpp-2025-io-uring/visualizer-script/actions/workflows/lint.yaml)
+
+Generate graphs and run benchmark suites for Seastar-based testers.
 
 ## Running
 
@@ -31,29 +33,73 @@ python3 main.py <subcommand> --help
 
 to check the options for a specific subcommand.
 
-## Benchmark suite
+## Usage
 
-The benchmark suite mode requires config and benchmark files in YAML format.
+### suite
 
-To run the benchmark suite, use the following command:
+Run a benchmark suite. The benchmark suite mode requires config and benchmark files in YAML format. `--config` accepts one or more YAML files or a directory (all `*.yaml` will be used):
+
+#### `--benchmark` (required)
+
+Path to a benchmark suite YAML file.
+
+#### `--config` (required, one or more)
+
+One or more cpumask/config YAML files or a directory containing `*.yaml` files. Example: `--config configs/` or `--config cfg1.yaml cfg2.yaml`.
+
+#### `--generate-graphs` (optional)
+
+Generate per-run graphs after running the suite.
+
+#### `--generate-summary-graphs` (optional)
+
+Generate summary graphs aggregated across runs.
+
+#### `--pdf` (optional)
+
+Produce a PDF summary of generated graphs.
+
+#### `--legacy-cores-per-worker` (optional)
+
+Enable legacy cores-per-worker behavior when launching testers.
 
 ```bash
-python3 ./main.py suite --benchmark configuration/suite.yaml --config configuration/configs
+python3 ./main.py suite --benchmark configuration/suites/suite.yaml --config configuration/configs --generate-graphs --generate-summary-graphs --pdf
 ```
-
-or
 
 ```bash
-python3 ./main.py suite --benchmark configuration/suite.yaml --config config_1.yaml
+python3 ./main.py suite --benchmark suite.yaml --config config_1.yaml config_2.yaml
 ```
 
-or
+### redraw
+
+Redraw from explicit backend output files (provide any combination of backends):
+ - `--io_uring` (optional)
+ - `--asymmetric_io_uring` (optional)
+ - `--linux-aio` (optional)
+ - `--epoll` (optional)
+
+#### `--output-dir` (required)
+
+Directory where generated graphs will be written.
 
 ```bash
-python3 ./main.py suite --benchmark configuration/suite.yaml --config config_1.yaml config_2.yaml config_3.yaml
+python3 ./main.py redraw --io_uring results/<run_dir>/io_uring.out --epoll results/<run_dir>/epoll.out --output-dir generated/graphs
 ```
 
-### `--benchmark`
+### redraw_suite
+
+#### `--dir` (required)
+
+Path to a results directory for given (cpumask) config inside of timestamp-directory created during a benchmark suite run. Child directories (each storing results from different test) should each contain `metrics_summary.yaml`, as this file is the source of data for the graphs.
+
+```bash
+python3 ./main.py redraw_suite --dir results/timestamp/config_name
+```
+
+### Configs
+
+#### Benchmark suite (suite `--benchmark`)
 
 Consists of a list of the following elements:
 
@@ -65,41 +111,7 @@ Consists of a list of the following elements:
   ... # Configuration to be passed to the tester
 ```
 
-### Configs
-
-#### simple-query
-
-```yaml
-random-seed: 1             # Random number generator seed
-partitions: 10000          # number of partitions
-duration: 5                # test duration in seconds
-concurrency: 100           # workers per core
-operations-per-shard: #arg # run this many operations per shard (overrides 
-                            #  duration)
-initial-tablets:  128      # initial number of tablets
-memtable-partitions: #arg  # apply this number of partitions to memtable, 
-                            #  then flush
-enable-cache: 1            # enable row cache
-stop-on-error: 1           # stop after encountering the first error
-timeout:  #arg             # use timeout
-audit: #arg                # value for audit config entry
-audit-keyspaces: #arg      # value for audit_keyspaces config entry
-audit-tables: #arg         # value for audit_tables config entry
-audit-categories: #arg     # value for audit_categories config entry
-flags:
-- write                      # test write path instead of read path
-- delete                     # test delete path instead of read path
-- query-single-key           # test reading with a single key instead of random keys
-- counters                   # test counters
-- tablets                    # use tablets
-- flush                      # flush memtables before test
-- bypass-cache               # use bypass cache when querying
-
-```
-where ommited keys are set to default values.
-All values could be ommited, but this is not recommended for clarity.
-
-### `--config`
+#### Cpumask config (suite `--config`)
 
 Must contain the following elements:
 
@@ -133,6 +145,38 @@ scylla:
   asymmetric_async_worker_cpuset: ...
   symmetric_cpuset: ...
 ```
+
+#### simple-query
+
+```yaml
+random-seed: 1             # Random number generator seed
+partitions: 10000          # number of partitions
+duration: 5                # test duration in seconds
+concurrency: 100           # workers per core
+operations-per-shard: #arg # run this many operations per shard (overrides 
+                            #  duration)
+initial-tablets:  128      # initial number of tablets
+memtable-partitions: #arg  # apply this number of partitions to memtable, 
+                            #  then flush
+enable-cache: 1            # enable row cache
+stop-on-error: 1           # stop after encountering the first error
+timeout:  #arg             # use timeout
+audit: #arg                # value for audit config entry
+audit-keyspaces: #arg      # value for audit_keyspaces config entry
+audit-tables: #arg         # value for audit_tables config entry
+audit-categories: #arg     # value for audit_categories config entry
+flags:
+- write                      # test write path instead of read path
+- delete                     # test delete path instead of read path
+- query-single-key           # test reading with a single key instead of random keys
+- counters                   # test counters
+- tablets                    # use tablets
+- flush                      # flush memtables before test
+- bypass-cache               # use bypass cache when querying
+
+```
+where ommited keys are set to default values.
+All values could be ommited, but this is not recommended for clarity.
 
 ## Development
 
