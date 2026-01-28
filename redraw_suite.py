@@ -31,11 +31,13 @@ class RedrawSuiteRunner:
                     self.plot_generator.schedule_graphs_for_summary(summary.get_stats(), benchmark_dir)
 
                     for run in summary.get_runs():
-                        run_dir = benchmark_dir / f"run_{run["id"]}"
+                        run_dir = benchmark_dir / f"run_{run['id']}"
                         if not run_dir.is_dir():
                             raise Exception(f"Run directory not found at: {run_dir}")
 
-                        self.plot_generator.schedule_generate_graphs(run["results"]["sharded_metrics"], run["results"]["shardless_metrics"], run_dir)
+                        self.plot_generator.schedule_generate_graphs(
+                            run["results"]["sharded_metrics"], run["results"]["shardless_metrics"], run_dir
+                        )
 
         self.plot_generator.plot()
 
