@@ -24,7 +24,7 @@ class RedrawSuiteRunner:
                 summary_file = benchmark_dir / BENCHMARK_SUMMARY_FILENAME
                 if not summary_file.is_file():
                     raise Exception(f"Benchmark summary file not found at: {summary_file}")
-                    
+
                 logger.info(f"Redrawing summary from {summary_file}")
                 with open(summary_file) as file:
                     summary = Benchmark.load_from_file(file)
@@ -34,9 +34,9 @@ class RedrawSuiteRunner:
                         run_dir = benchmark_dir / f"run_{run["id"]}"
                         if not run_dir.is_dir():
                             raise Exception(f"Run directory not found at: {run_dir}")
-                        
+
                         self.plot_generator.schedule_generate_graphs(run["results"]["sharded_metrics"], run["results"]["shardless_metrics"], run_dir)
-        
+
         self.plot_generator.plot()
 
 
