@@ -23,7 +23,7 @@ rpc:
   asymmetric_client_async_worker_cpuset: '7'
   symmetric_client_cpuset: '0-6'
 scylla:
-  path: .../scylladb/build/dev/scylla
+  path: .../scylladb/build/release/scylla
   asymmetric_app_cpuset: '0-6'
   asymmetric_async_worker_cpuset: '7'
   symmetric_cpuset: '0-6'
