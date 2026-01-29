@@ -6,6 +6,18 @@ from redraw import configure_redraw_parser
 from redraw_suite import configure_redraw_suite_parser
 
 
+def test_func(args):
+    print("Test function executed with args:", args)
+    xd = [1, 2, 3]
+    return xd
+
+
+def test_func(args):
+    print("Test function executed with args:", args)
+    xd = [1, 2, 3]
+    return xd
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Utility for running seastar performance tests")
 
@@ -26,6 +38,8 @@ def main(argv=None):
 
     args = parser.parse_args(argv)
     set_level(args.log_level)
+    _ = test_func(args)
+
     args.func(args)
 
 
