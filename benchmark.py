@@ -3,6 +3,7 @@ from yamlable import YamlAble, yaml_info
 
 from log import get_logger
 from stats import Stats, summarize_stats
+from tree import TreeDict
 
 logger = get_logger()
 
@@ -60,7 +61,9 @@ class Benchmark(YamlAble):
         raise TypeError(f"Cannot load benchmark: unexpected YAML document type {type(data)}")
 
 
-def compute_benchmark_summary(sharded_metrics: dict, shardless_metrics: dict, benchmark_info: dict) -> Benchmark:
+def compute_benchmark_summary(
+    sharded_metrics: TreeDict, shardless_metrics: TreeDict, benchmark_info: dict
+) -> Benchmark:
     # build map run_id -> run entry
     runs_map: dict = {}
 
@@ -78,13 +81,12 @@ def compute_benchmark_summary(sharded_metrics: dict, shardless_metrics: dict, be
                     runs_map[run_id] = {
                         "id": run_id,
                         "properties": {},
-                        "results": {"sharded_metrics": {}, "shardless_metrics": {}},
+                        "results": {"sharded_metrics": TreeDict(), "shardless_metrics": TreeDict()},
                     }
 
                 run_entry = runs_map[run_id]
                 sharded_metrics_for_run = run_entry["results"]["sharded_metrics"]
-                if metric_name not in sharded_metrics_for_run:
-                    sharded_metrics_for_run[metric_name] = {"properties": {}, "backends": {}}
+                sharded_metrics_for_run.setdefault(metric_name, {"properties": {}, "backends": {}})
 
                 backends_for_metric = sharded_metrics_for_run[metric_name]["backends"]
                 if backend_name not in backends_for_metric:
@@ -103,13 +105,12 @@ def compute_benchmark_summary(sharded_metrics: dict, shardless_metrics: dict, be
                     runs_map[run_id] = {
                         "id": run_id,
                         "properties": {},
-                        "results": {"sharded_metrics": {}, "shardless_metrics": {}},
+                        "results": {"sharded_metrics": TreeDict(), "shardless_metrics": TreeDict()},
                     }
 
                 run_entry = runs_map[run_id]
                 shardless_metrics_for_run = run_entry["results"]["shardless_metrics"]
-                if metric_name not in shardless_metrics_for_run:
-                    shardless_metrics_for_run[metric_name] = {"properties": {}, "backends": {}}
+                shardless_metrics_for_run.setdefault(metric_name, {"properties": {}, "backends": {}})
 
                 backends_for_metric = shardless_metrics_for_run[metric_name]["backends"]
                 # for shardless, we store a single value per backend per run

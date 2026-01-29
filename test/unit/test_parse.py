@@ -17,27 +17,28 @@ def test_auto_generate_data_points():
 
     (shardless_data_points, sharded_data_points) = auto_generate_data_points(fake_output)
 
+    print("Shardless data points:", shardless_data_points)
+    print("Sharded data points:", sharded_data_points)
+
     # Check sharded metrics
     for metric in sharded_metrics:
+        value_per_shard = sharded_data_points[tuple(metric)]
+        assert isinstance(value_per_shard, dict)
         for shard in range(shards_count):
-            key = (shard,) + tuple(metric)
-            assert key in sharded_data_points
-            value = sharded_data_points[key]
-
+            actual_value = value_per_shard.get(shard)
+            assert actual_value is not None, f"Missing shard {shard} for sharded metric {metric}"
             expected_value = walk_tree(fake_output[shard], metric)
-            assert value == expected_value, (
-                f"Value mismatch for sharded metric {key}: expected {expected_value}, got {value}"
+            assert actual_value == expected_value, (
+                f"Value mismatch for sharded metric {metric}: expected {expected_value}, got {actual_value}"
             )
 
     # Check shardless metrics
+    shardless_fake_output = fake_output[-1]
     for metric in shardless_metrics:
-        key = tuple(metric)
-        assert key in shardless_data_points
-        value = shardless_data_points[key]
-
-        expected_value = walk_tree(fake_output[-1], metric)
-        assert value == expected_value, (
-            f"Value mismatch for shardless metric {key}: expected {expected_value}, got {value}"
+        actual_value = shardless_data_points[tuple(metric)]
+        expected_value = walk_tree(shardless_fake_output, metric)
+        assert actual_value == expected_value, (
+            f"Value mismatch for shardless metric {metric}: expected {expected_value}, got {actual_value}"
         )
 
 

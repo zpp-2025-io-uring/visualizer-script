@@ -1,3 +1,4 @@
+from glob import escape
 from pathlib import Path
 
 from yaml import safe_load
@@ -165,4 +166,4 @@ def get_expected_files_for_metrics(metrics: list[list[str]], prefixes: list[str]
 
 
 def metric_name_from_list(metric_path: list[str]) -> str:
-    return "_".join(metric_path)
+    return escape("_".join(metric_path))
