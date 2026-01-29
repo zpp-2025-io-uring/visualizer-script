@@ -82,6 +82,7 @@ class RpcTestRunner:
                 argv,
                 capture_output=True,
                 text=True,
+                check=True,
             )
         except KeyboardInterrupt:
             server_process.terminate()

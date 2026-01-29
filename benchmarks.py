@@ -171,6 +171,7 @@ def dump_environment(dir_for_config: Path, dir_to_seastar: Path):
         ["lscpu"],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     with open(dir_for_config / "lscpu.txt", "w") as f:
@@ -183,6 +184,7 @@ def dump_environment(dir_for_config: Path, dir_to_seastar: Path):
         ["lscpu", "-e"],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     with open(dir_for_config / "lscpu_e.txt", "w") as f:
@@ -195,6 +197,7 @@ def dump_environment(dir_for_config: Path, dir_to_seastar: Path):
         ["hostname"],
         capture_output=True,
         text=True,
+        check=False,
     )
 
     with open(dir_for_config / "hostname.txt", "w") as f:

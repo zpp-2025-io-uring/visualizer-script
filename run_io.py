@@ -52,6 +52,7 @@ class IOTestRunner:
             argv,
             capture_output=True,
             text=True,
+            check=True,
         )
 
         stdout_output_path: Path = self.run_output_dir / (output_filename + ".out")

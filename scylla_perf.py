@@ -56,7 +56,7 @@ class OneExecutableTestRunner(ABC):
         logger.debug(f"Running {argv=}")
         result = subprocess.run(
             argv,
-            check=False,
+            check=True,
             capture_output=True,
             text=True,
         )
