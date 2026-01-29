@@ -43,7 +43,7 @@ class BenchmarkSuiteRunner:
             f"Initialized benchmark suite runner with output_dir={self.output_dir}, backends={self.backends}, params={self.params}, io_config={self.io_config}, rpc_config={self.rpc_config}, scylla_config={self.scylla_config}, benchmarks={self.benchmarks}, genetare_graphs={self.generate_graphs}, generate_summary_graph={self.generate_summary_graph}, generate_pdf={self.generate_pdf}"
         )
 
-    def run(self):
+    def run(self) -> None:
         per_benchmark_pdfs: list[Path] = []
 
         for benchmark in self.benchmarks:
