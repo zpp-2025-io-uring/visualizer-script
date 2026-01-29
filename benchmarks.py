@@ -16,10 +16,19 @@ from scylla_perf import PerfSimpleQueryTestRunner
 from stats import join_metrics, join_stats
 from log import get_logger
 
-SUITE_SUMMARY_PDF_FILENAME = "suite_summary.pdf"
+SUITE_SUMMARY_PDF_SUFFIX = "_suite_summary.pdf"
+BENCHMARK_SUMMARY_PDF_SUFFIX = "_summary.pdf"
 BENCHMARK_SUMMARY_FILENAME = "metrics_summary.yaml"
 
 logger = get_logger()
+
+
+def benchmark_summary_pdf_filename(benchmark_name: str) -> str:
+    return f"{benchmark_name}{BENCHMARK_SUMMARY_PDF_SUFFIX}"
+
+
+def suite_summary_pdf_filename(config_name: str) -> str:
+    return f"{config_name}{SUITE_SUMMARY_PDF_SUFFIX}"
 
 
 class BenchmarkSuiteRunner:
@@ -134,7 +143,7 @@ class BenchmarkSuiteRunner:
                 pdf_path = generate_benchmark_summary_pdf(
                     benchmark_name=test_name,
                     images=summary_images,
-                    output_pdf=test_output_dir / "summary.pdf",
+                    output_pdf=test_output_dir / benchmark_summary_pdf_filename(test_name),
                 )
                 per_benchmark_pdfs.append(pdf_path)
 
@@ -142,7 +151,10 @@ class BenchmarkSuiteRunner:
 
         if self.generate_pdf and per_benchmark_pdfs:
             logger.info("Merging pdfs")
-            merge_pdfs(input_pdfs=per_benchmark_pdfs, output_pdf=self.output_dir / SUITE_SUMMARY_PDF_FILENAME)
+            merge_pdfs(
+                input_pdfs=per_benchmark_pdfs,
+                output_pdf=self.output_dir / suite_summary_pdf_filename(self.output_dir.name),
+            )
 
 
 def dump_summary(benchmark_output_dir: Path, summary: dict):

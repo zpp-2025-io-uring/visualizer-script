@@ -3,7 +3,7 @@ import re
 from pathlib import Path
 
 from benchmark import Benchmark
-from benchmarks import BENCHMARK_SUMMARY_FILENAME, SUITE_SUMMARY_PDF_FILENAME
+from benchmarks import BENCHMARK_SUMMARY_FILENAME, benchmark_summary_pdf_filename, suite_summary_pdf_filename
 from generate import PlotGenerator
 from log import get_logger
 from parse import auto_generate_data_points, load_data
@@ -62,12 +62,15 @@ class RedrawSuiteRunner:
                 pdf_path = generate_benchmark_summary_pdf(
                     benchmark_name=benchmark_dir.name,
                     images=summary_images,
-                    output_pdf=benchmark_dir / "summary.pdf",
+                    output_pdf=benchmark_dir / benchmark_summary_pdf_filename(benchmark_dir.name),
                 )
                 per_benchmark_pdfs.append(pdf_path)
 
             if per_benchmark_pdfs:
-                merge_pdfs(input_pdfs=per_benchmark_pdfs, output_pdf=dir / SUITE_SUMMARY_PDF_FILENAME)
+                merge_pdfs(
+                    input_pdfs=per_benchmark_pdfs,
+                    output_pdf=dir / suite_summary_pdf_filename(dir.name),
+                )
 
     def redraw_summary(self, summary_file: Path, output_dir: Path):
         logger.info(f"Redrawing summary from {summary_file}")

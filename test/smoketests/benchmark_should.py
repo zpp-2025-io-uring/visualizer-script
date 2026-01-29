@@ -3,6 +3,7 @@ from pathlib import Path
 from yaml import safe_load
 
 from parse import load_data
+from benchmarks import benchmark_summary_pdf_filename, suite_summary_pdf_filename
 
 
 class BenchmarkShould:
@@ -104,14 +105,15 @@ class BenchmarkShould:
 
     def __verify_pdf_for_benchmark(self, name: str, generate_pdf: bool):
         benchmark_dir = Path(self.output_dir) / name
-        pdf_file = benchmark_dir / "summary.pdf"
+        pdf_file = benchmark_dir / benchmark_summary_pdf_filename(name)
         if generate_pdf:
             assert pdf_file.exists(), f"Expected PDF file {pdf_file} missing"
         else:
             assert not pdf_file.exists(), f"Expected no PDF file {pdf_file}, but found one."
 
     def __verify_summary_pdf(self, generate_pdf: bool):
-        pdf_file = Path(self.output_dir) / "suite_summary.pdf"
+        output_dir = Path(self.output_dir)
+        pdf_file = output_dir / suite_summary_pdf_filename(output_dir.name)
         if generate_pdf:
             assert pdf_file.exists(), f"Expected summary PDF file {pdf_file} missing"
         else:

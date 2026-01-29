@@ -2,6 +2,7 @@ import argparse
 from pathlib import Path
 
 from generate import PlotGenerator
+from benchmarks import benchmark_summary_pdf_filename
 from pdf_summary import generate_benchmark_summary_pdf
 from parse import auto_generate_data_points, load_data
 from stats import join_metrics
@@ -35,7 +36,7 @@ def run_redraw(backend_paths: dict, output_dir, generate_pdf: bool):
         generate_benchmark_summary_pdf(
             benchmark_name=output_dir.name,
             images=summary_images,
-            output_pdf=output_dir / "summary.pdf",
+            output_pdf=output_dir / benchmark_summary_pdf_filename(output_dir.name),
         )
 
 
