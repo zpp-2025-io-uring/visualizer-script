@@ -24,10 +24,10 @@ def cpuset_to_string(cpuset: set[int]) -> str:
 
 
 def make_proportional_splitter(cores_per_worker: int) -> Callable[[set[int]], tuple[set[int], set[int]]]:
-    return lambda cpuset: proportional_splitter(cpuset, cores_per_worker)
+    return lambda cpuset: proportional_splitter(list(cpuset), cores_per_worker)
 
 
-def proportional_splitter(cpuset: set[int], cores_per_worker: int) -> tuple[set[int], set[int]]:
+def proportional_splitter(cpuset: list[int], cores_per_worker: int) -> tuple[set[int], set[int]]:
     if cores_per_worker == 0:
         raise ValueError("Cores per worker must be more than 0")
 
