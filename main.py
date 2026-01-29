@@ -12,12 +12,6 @@ def test_func(args):
     return xd
 
 
-def test_func(args):
-    print("Test function executed with args:", args)
-    xd = [1, 2, 3]
-    return xd
-
-
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Utility for running seastar performance tests")
 
