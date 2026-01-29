@@ -56,7 +56,7 @@ jobs:
           execute_command: 'python -m mypy
            --config-file ${{ env.CONFIG_FILE }}
            --show-column-numbers --show-error-codes --disallow-untyped-defs
-           --check-untyped-defs --namespace-packages --non-interactive --install-types
+           --check-untyped-defs --namespace-packages --non-interactive
            --explicit-package-bases'
 
   ruff:
