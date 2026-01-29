@@ -8,13 +8,13 @@ from yaml import safe_dump, safe_load
 from benchmark import compute_benchmark_summary
 from config_versioning import get_config_version, make_proportional_splitter, upgrade_version1_to_version2
 from generate import PlotGenerator
-from parse import auto_generate_data_points, load_data
+from log import get_logger
+from parse import auto_generate_data_points, join_metrics, load_data
 from pdf_summary import generate_benchmark_summary_pdf, merge_pdfs
 from run_io import run_io_test
 from run_rpc import run_rpc_test
 from scylla_perf import PerfSimpleQueryTestRunner
-from stats import join_metrics, join_stats
-from log import get_logger
+from stats import join_stats
 
 SUITE_SUMMARY_PDF_FILENAME = "suite_summary.pdf"
 BENCHMARK_SUMMARY_FILENAME = "metrics_summary.yaml"

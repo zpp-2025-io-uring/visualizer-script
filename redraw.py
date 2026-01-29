@@ -2,8 +2,7 @@ import argparse
 from pathlib import Path
 
 from generate import PlotGenerator
-from parse import auto_generate_data_points, load_data
-from stats import join_metrics
+from parse import auto_generate_data_points, join_metrics, load_data
 
 
 def run_redraw(backend_paths: dict, output_dir):

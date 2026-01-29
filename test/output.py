@@ -6,8 +6,8 @@ from yaml import safe_dump
 
 from benchmark import compute_benchmark_summary
 from benchmarks import BENCHMARK_SUMMARY_FILENAME
-from parse import auto_generate_data_points
-from stats import join_metrics, join_stats
+from parse import auto_generate_data_points, join_metrics
+from stats import join_stats
 
 
 def generate_fake_output(
@@ -54,7 +54,7 @@ def generate_fake_output(
     return output
 
 
-def _recursive_metric(target: dict, metric_path: list[str], value: Any):
+def _recursive_metric(target: dict, metric_path: list[str], value: Any) -> None:
     for key in metric_path[:-1]:
         target = target.setdefault(key, {})
     target[metric_path[-1]] = value
@@ -116,5 +116,7 @@ def generate_fake_benchmark_results(
     (combined_sharded, combined_shardless) = join_stats(metrics_runs)
     benchmark_info = {"id": suite_name, "properties": {"iterations": runs_count}}
     summary = compute_benchmark_summary(combined_sharded, combined_shardless, benchmark_info)
+    print("Writing benchmark summary to:", suite_path / BENCHMARK_SUMMARY_FILENAME)
+    print(summary)
     with open(suite_path / BENCHMARK_SUMMARY_FILENAME, "w") as f:
         f.write(safe_dump(summary))

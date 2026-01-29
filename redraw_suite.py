@@ -6,8 +6,7 @@ from benchmark import Benchmark
 from benchmarks import BENCHMARK_SUMMARY_FILENAME
 from generate import PlotGenerator
 from log import get_logger
-from parse import auto_generate_data_points, load_data
-from stats import join_metrics
+from parse import auto_generate_data_points, join_metrics, load_data
 
 logger = get_logger()
 
