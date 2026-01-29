@@ -49,10 +49,10 @@ jobs:
           reporter: ${{ env.REVIEWDOG_REPORTER }}
           level: ${{ env.REVIEWDOG_LEVEL }}
           workdir: ${{ env.CODE_DIRECTORY }}
-          execute_command: 'python -m mypy \
-           --config-file ${{ env.CONFIG_FILE }} \
-           --show-column-numbers --show-error-codes --disallow-untyped-defs \
-           --check-untyped-defs --namespace-packages --non-interactive --install-types \
+          execute_command: 'python -m mypy
+           --config-file ${{ env.CONFIG_FILE }}
+           --show-column-numbers --show-error-codes --disallow-untyped-defs
+           --check-untyped-defs --namespace-packages --non-interactive --install-types
            --explicit-package-bases'
 
   ruff:
