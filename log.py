@@ -5,7 +5,7 @@ from colorama import Fore
 
 
 class ColoredLogger(logging.Formatter):
-    def format(self, record):
+    def format(self, record) -> str:
         match record.levelno:
             case logging.DEBUG:
                 color = Fore.WHITE

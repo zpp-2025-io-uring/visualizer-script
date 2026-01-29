@@ -34,7 +34,7 @@ class RpcTestRunner:
         server_async_worker_cpuset: str | None,
         client_cpuset: str,
         client_async_worker_cpuset: str | None,
-    ):
+    ) -> str:
         logger.info(
             f"Running rpc_tester with backend {backend}, server cpuset: {server_cpuset}, server async worker cpuset: {server_async_worker_cpuset}, client cpuset: {client_cpuset}, client async worker cpuset: {client_async_worker_cpuset}"
         )
