@@ -48,7 +48,6 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           reporter: ${{ env.REVIEWDOG_REPORTER }}
           level: ${{ env.REVIEWDOG_LEVEL }}
-          workdir: ${{ env.CODE_DIRECTORY }}
           execute_command: 'python -m mypy
            --config-file ${{ env.CONFIG_FILE }}
            --show-column-numbers --show-error-codes --disallow-untyped-defs
