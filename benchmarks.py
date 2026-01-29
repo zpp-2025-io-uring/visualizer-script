@@ -205,6 +205,7 @@ def dump_environment(dir_for_config: Path, dir_to_seastar: Path):
 
     git_log = subprocess.run(
         ["git", "log", '--since="2025-12-01"'],
+        check=False,
         cwd=Path(dir_to_seastar).expanduser().resolve(),
         capture_output=True,
         text=True,
@@ -215,6 +216,20 @@ def dump_environment(dir_for_config: Path, dir_to_seastar: Path):
 
     if git_log.returncode != 0:
         raise Exception("git_log failed")
+
+    git_status = subprocess.run(
+        ["git", "status", "-v", "-v"],
+        check=False,
+        cwd=Path(dir_to_seastar).expanduser().resolve(),
+        capture_output=True,
+        text=True,
+    )
+
+    with open(dir_for_config / "git_status.txt", "w") as f:
+        print(git_status.stdout, file=f)
+
+    if git_status.returncode != 0:
+        raise Exception("git_status failed")
 
 
 def run_benchmark_suite_args(args):

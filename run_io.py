@@ -83,7 +83,7 @@ class IOTestRunner:
                         backend, backend, self.asymmetric_app_cpuset, self.asymmetric_async_worker_cpuset
                     )
             else:
-                backends_data_raw[backend] = self.__run_test(backend, backend, self.asymmetric_app_cpuset, None)
+                backends_data_raw[backend] = self.__run_test(backend, backend, self.symmetric_cpuset, None)
 
         return backends_data_raw
 
