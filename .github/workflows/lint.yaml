@@ -53,7 +53,7 @@ jobs:
            --config-file ${{ env.CONFIG_FILE }}
            --show-column-numbers --show-error-codes --disallow-untyped-defs
            --check-untyped-defs --namespace-packages --non-interactive --install-types
-           --explicit-package-bases'
+           --explicit-package-bases ${{ env.CODE_DIRECTORY }}'
 
   ruff:
     runs-on: ubuntu-latest
