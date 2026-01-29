@@ -67,7 +67,7 @@ jobs:
         shell: bash
         run: |
           cat ${{ env.OUTPUT_FILE }} | reviewdog -f=mypy -name="mypy" \
-          -reporter=github-pr-check -level=${{ env.REVIEWDOG_LEVEL }} \
+          -reporter=github-pr-annotations -level=${{ env.REVIEWDOG_LEVEL }} \
           -filter-mode=${{ env.REVIEWDOG_FILTER_MODE }} -log-level=${{ env.REVIEWDOG_LOG_LEVEL }} \
           -log-level=${{ env.REVIEWDOG_LOG_LEVEL }} -fail-level=${{ env.REVIEWDOG_FAIL_LEVEL }} -tee
   ruff:
