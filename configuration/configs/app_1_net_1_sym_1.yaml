@@ -1,0 +1,29 @@
+config_version: 2
+output_dir: ./results
+params:
+  skip_async_workers_cpuset: false
+backends:
+  - asymmetric_io_uring
+  - io_uring
+  - linux-aio
+  - epoll
+io:
+  tester_path: .../seastar/build/release/apps/io_tester/io_tester
+  storage_dir: ./storage
+  asymmetric_app_cpuset: '0'
+  asymmetric_async_worker_cpuset: '1'
+  symmetric_cpuset: '0'
+rpc:
+  tester_path: .../seastar/build/release/apps/rpc_tester/rpc_tester
+  ip_address: 127.0.0.67
+  asymmetric_server_app_cpuset: '2'
+  asymmetric_server_async_worker_cpuset: '3'
+  symmetric_server_cpuset: '2'
+  asymmetric_client_app_cpuset: '0'
+  asymmetric_client_async_worker_cpuset: '1'
+  symmetric_client_cpuset: '0'
+scylla:
+  path: .../scylladb/build/release/scylla
+  asymmetric_app_cpuset: '0'
+  asymmetric_async_worker_cpuset: '1'
+  symmetric_cpuset: '0'

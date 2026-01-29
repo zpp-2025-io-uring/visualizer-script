@@ -1,9 +1,8 @@
 build/*
-__pycache__/*
+**/__pycache__/*
 out/*
 .temp/*
 results/*
-.configs/*
 
 # Python vnenv
 venv/

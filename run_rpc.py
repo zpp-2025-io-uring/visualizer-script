@@ -2,6 +2,10 @@ import subprocess
 from pathlib import Path
 from time import sleep
 
+from log import get_logger, warn_if_not_release
+
+logger = get_logger()
+
 
 class RpcTestRunner:
     def __init__(
@@ -20,6 +24,8 @@ class RpcTestRunner:
         self.backends = backends
         self.skip_async_workers_cpuset = skip_async_workers_cpuset
 
+        warn_if_not_release(self.tester_path)
+
     def __run_test(
         self,
         backend: str,
@@ -29,7 +35,7 @@ class RpcTestRunner:
         client_cpuset: str,
         client_async_worker_cpuset: str | None,
     ):
-        print(
+        logger.info(
             f"Running rpc_tester with backend {backend}, server cpuset: {server_cpuset}, server async worker cpuset: {server_async_worker_cpuset}, client cpuset: {client_cpuset}, client async worker cpuset: {client_async_worker_cpuset}"
         )
         self.run_output_dir.mkdir(parents=True, exist_ok=True)
@@ -84,7 +90,7 @@ class RpcTestRunner:
                 sleep(1)
 
             if server_process.poll() is None:
-                print("WARNING: Force killing server")
+                logger.warning("Force killing server")
                 server_process.kill()
 
             raise
