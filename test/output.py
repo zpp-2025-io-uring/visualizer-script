@@ -54,21 +54,21 @@ def generate_fake_output(
     return output
 
 
-def _recursive_metric(target: dict, metric_path: list[str], value: Any) -> dict:
+def _recursive_metric(target: dict, metric_path: list[str], value: Any):
     for key in metric_path[:-1]:
         target = target.setdefault(key, {})
     target[metric_path[-1]] = value
 
 
-def dump_fake_output_to_file(output: dict, path: Path) -> None:
+def dump_fake_output_to_file(output: list[dict], path: Path) -> None:
     """Dump the generated fake output to a YAML file.
 
     Args:
-        output: The output dict to dump.
+        output: The output list of dicts to dump.
         path: The file path to write the YAML data to.
     """
-    output = safe_dump(output)
-    output_wrapped_with_markers = f"---\n{output}...\n"
+    output_str = safe_dump(output)
+    output_wrapped_with_markers = f"---\n{output_str}...\n"
     with open(path, "w") as f:
         f.write(output_wrapped_with_markers)
 
