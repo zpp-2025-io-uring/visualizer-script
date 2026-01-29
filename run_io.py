@@ -35,11 +35,11 @@ class IOTestRunner:
         self.storage_dir.mkdir(parents=True, exist_ok=True)
 
         argv = [
-            self.tester_path,
+            str(self.tester_path),
             "--conf",
-            self.config_path,
+            str(self.config_path),
             "--storage",
-            self.storage_dir,
+            str(self.storage_dir),
             "--reactor-backend",
             backend,
             "--cpuset",
