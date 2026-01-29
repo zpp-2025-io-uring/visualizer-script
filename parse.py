@@ -22,7 +22,7 @@ def load_data(raw_output: str):
     return safe_load(yaml_part)
 
 
-def auto_generate_data_points(backend_data: dict) -> tuple[dict, dict]:
+def auto_generate_data_points(backend_data: list[dict]) -> tuple[dict, dict]:
     """Generates all data points available in the data for automatic plotting.
 
     Walks the nested dicts and collects all data point paths and their values.
