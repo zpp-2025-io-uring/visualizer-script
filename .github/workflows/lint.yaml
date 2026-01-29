@@ -12,7 +12,7 @@ env:
   REVIEWDOG_REPORTER: 'github-pr-check'
   REVIEWDOG_LEVEL: 'info' # Reviewdog level of reporting
   REVIEWDOG_FAIL_LEVEL: 'info' # Reviewdog level to fail the check if an issue is found >= this level
-  REVIEWDOG_FILTER_MODE: 'added' # Reviewdog filter mode
+  REVIEWDOG_FILTER_MODE: 'nofilter' # Reviewdog filter mode
   REVIEWDOG_LOG_LEVEL: 'warning' # Reviewdog log level
   CONFIG_FILE: './pyproject.toml'
 
