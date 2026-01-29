@@ -43,10 +43,6 @@ jobs:
       - name: Install mypy
         run: pip install mypy
 
-      - name: Install missing type stubs
-        run: |
-          python -m mypy --install-types --non-interactive
-
       - uses: tsuyoshicho/action-mypy@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -56,7 +52,7 @@ jobs:
           execute_command: 'python -m mypy
            --config-file ${{ env.CONFIG_FILE }}
            --show-column-numbers --show-error-codes --disallow-untyped-defs
-           --check-untyped-defs --namespace-packages --non-interactive
+           --check-untyped-defs --namespace-packages --non-interactive --install-types
            --explicit-package-bases'
 
   ruff:
