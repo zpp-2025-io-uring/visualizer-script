@@ -20,23 +20,37 @@ class PlotGenerator:
         self.file_paths = []
 
     def schedule_generate_graphs(
-        self, sharded_metrics: dict[dict[dict]], shardless_metrics: dict[dict], build_dir: pathlib.Path
+        self,
+        sharded_metrics: dict[dict[dict]],
+        shardless_metrics: dict[dict],
+        build_dir: pathlib.Path,
+        image_format: str = "svg",
     ):
         """Schedule generating plots from a metrics mapping (metric_name -> backend -> value-or-dict).
 
         This function expects the output of `stats.join_metrics` as input.
         """
+        image_format = image_format.removeprefix(".").lower()
+        if image_format not in {"svg", "png"}:
+            raise ValueError(f"Unsupported image format: {image_format}")
+
         for metric_name, metric_by_backend in sharded_metrics.items():
-            (metric_file_path, plot) = plot_sharded_metric(metric_name, metric_by_backend, build_dir)
+            (metric_file_path, plot) = plot_sharded_metric(
+                metric_name, metric_by_backend, build_dir, image_format=image_format
+            )
             self.figs.append(plot)
             self.file_paths.append(metric_file_path)
 
-            (total_file_path, total_plot) = plot_total_metric(metric_name, metric_by_backend, build_dir)
+            (total_file_path, total_plot) = plot_total_metric(
+                metric_name, metric_by_backend, build_dir, image_format=image_format
+            )
             self.figs.append(total_plot)
             self.file_paths.append(total_file_path)
 
         for metric_name, metric_by_backend in shardless_metrics.items():
-            (metric_file_path, plot) = plot_shardless_metric(metric_name, metric_by_backend, build_dir)
+            (metric_file_path, plot) = plot_shardless_metric(
+                metric_name, metric_by_backend, build_dir, image_format=image_format
+            )
             self.figs.append(plot)
             self.file_paths.append(metric_file_path)
 
@@ -246,7 +260,9 @@ def find_height_for_min_bar(number_of_groups: int, number_of_bars_per_group: int
     return max(default_height, calculated_height)
 
 
-def plot_sharded_metric(metric_name: str, sharded_metric_by_backend: dict, build_dir: pathlib.Path):
+def plot_sharded_metric(
+    metric_name: str, sharded_metric_by_backend: dict, build_dir: pathlib.Path, image_format: str = "svg"
+):
     """Plot a single metric described by `metric_map` (backend -> shard -> value).
 
     Produces a per-shard grouped plot and a separate totals plot.
@@ -278,12 +294,14 @@ def plot_sharded_metric(metric_name: str, sharded_metric_by_backend: dict, build
                 values.append(0)
         per_backend[backend] = values
 
-    file_path = build_dir / pathlib.Path(f"{file_basename}.svg")
+    file_path = build_dir / pathlib.Path(f"{file_basename}.{image_format}")
     logger.debug(f"Plotting sharded {file_path}")
     return (file_path, make_plot(metric_name, "shard", None, per_backend, True))
 
 
-def plot_shardless_metric(metric_name: str, shardless_metric_by_backend: dict, build_dir: pathlib.Path):
+def plot_shardless_metric(
+    metric_name: str, shardless_metric_by_backend: dict, build_dir: pathlib.Path, image_format: str = "svg"
+):
     """Plot a single shardless metric described by `metric_map` (backend -> value).
 
     Produces a single bar chart.
@@ -294,12 +312,14 @@ def plot_shardless_metric(metric_name: str, shardless_metric_by_backend: dict, b
     for backend, value in shardless_metric_by_backend.items():
         per_backend[backend] = [value]
 
-    file_path = build_dir / pathlib.Path(f"{file_basename}.svg")
+    file_path = build_dir / pathlib.Path(f"{file_basename}.{image_format}")
     logger.debug(f"Plotting shardless metric {file_path}")
     return (file_path, make_plot(metric_name, None, None, per_backend, False))
 
 
-def plot_total_metric(metric_name: str, sharded_metric_by_backend: dict, build_dir: pathlib.Path):
+def plot_total_metric(
+    metric_name: str, sharded_metric_by_backend: dict, build_dir: pathlib.Path, image_format: str = "svg"
+):
     """Plot a sharded metric as total values per backend.
 
     Produces a single bar chart.
@@ -313,7 +333,7 @@ def plot_total_metric(metric_name: str, sharded_metric_by_backend: dict, build_d
             total += value
         per_backend[backend] = [total]
 
-    file_path = build_dir / pathlib.Path(f"total_{file_basename}.svg")
+    file_path = build_dir / pathlib.Path(f"total_{file_basename}.{image_format}")
     logger.debug(f"Plotting total metric {file_path}")
     return (file_path, make_plot("Total " + metric_name, None, None, per_backend, False))
 

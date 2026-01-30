@@ -1,6 +1,7 @@
 import pytest
 
 from test.output import dump_fake_output_to_file, generate_fake_benchmark_results, generate_fake_output
+from benchmarks import benchmark_summary_pdf_filename
 from test.smoketests.benchmark_should import (
     BenchmarkShould,
     assert_files,
@@ -75,6 +76,7 @@ def test_redraw(invoke_main, tmp_path_factory):
             str(asymmetric_path),
             "--output-dir",
             str(output_dir),
+            "--pdf",
         ]
     )
 
@@ -85,6 +87,9 @@ def test_redraw(invoke_main, tmp_path_factory):
 
     expected_files_for_shardless = get_expected_files_for_metrics_per_run_shardless(SHARDLESS_METRICS_PATHS)
     assert_files(output_dir, expected_files_for_shardless)
+
+    pdf_file = output_dir / benchmark_summary_pdf_filename(output_dir.name)
+    assert pdf_file.exists(), f"Expected PDF file {pdf_file} missing"
 
 
 @pytest.mark.parametrize("suite_name, runs_count", [("rpc_vecho", 3), ("rpc_64kB_stream_unidirectional", 2)])
@@ -98,7 +103,7 @@ def test_redraw_suite(invoke_main, tmp_path, suite_name: str, runs_count: int):
     print("Generated test suite files in:", dir_with_files)
 
     # Act
-    _, _ = invoke_main(["redraw_suite", "--dir", str(dir_with_files)])
+    _, _ = invoke_main(["redraw_suite", "--dir", str(dir_with_files), "--pdf"])
 
     # Assert
     benchmark_should = BenchmarkShould(
@@ -111,5 +116,5 @@ def test_redraw_suite(invoke_main, tmp_path, suite_name: str, runs_count: int):
         benchmarks=[{"name": suite_name, "iterations": runs_count}],
         generate_graphs=True,
         generate_summary_graphs=True,
-        generate_pdf=False,  # PDF generation is not part of redraw_suite
+        generate_pdf=True,
     )
