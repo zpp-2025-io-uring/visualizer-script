@@ -19,7 +19,7 @@ class Benchmark(YamlAble):
             f"Initialized benchmark with runs={self.runs}, benchmark={self.benchmark}, summary={self.summary}, run_count={self.run_count}"
         )
 
-    def get_runs(self) -> dict:
+    def get_runs(self) -> list:
         return self.runs
 
     def get_benchmark(self) -> dict:
@@ -30,16 +30,6 @@ class Benchmark(YamlAble):
 
     def get_run_count(self) -> int:
         return self.run_count
-
-    @classmethod
-    def __from_yaml_dict__(cls, dct, yaml_tag=None):
-        # If a legacy (plain mapping) YAML was used and `summary` is a dict,
-        # convert it into a `stats` instance so the `benchmark` object always
-        # exposes a `stats` object for `.summary`.
-        if isinstance(dct, dict) and "summary" in dct and isinstance(dct["summary"], dict):
-            dct["summary"] = Stats(**dct["summary"])
-
-        return cls(**dct)
 
     @classmethod
     def load_from_file(cls, file):
