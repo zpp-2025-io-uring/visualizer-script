@@ -99,6 +99,9 @@ class Stats(YamlAble):
     def get_shardless_metrics(self) -> TreeDict[dict[str, Any]]:
         return self.shardless_metrics
 
+    def __repr__(self) -> str:
+        return f"Stats(sharded_metrics={self.sharded_metrics}, shardless_metrics={self.shardless_metrics})"
+
 
 def summarize_stats(
     sharded_metrics: TreeDict[dict[str, list[dict]]], shardless_metrics: TreeDict[dict[str, list[dict]]]

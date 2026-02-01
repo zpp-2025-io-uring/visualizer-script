@@ -50,6 +50,9 @@ class Benchmark(YamlAble):
 
         raise TypeError(f"Cannot load benchmark: unexpected YAML document type {type(data)}")
 
+    def __repr__(self) -> str:
+        return f"Benchmark(runs={self.runs}, benchmark={self.benchmark}, summary={self.summary}, run_count={self.run_count})"
+
 
 def compute_benchmark_summary(
     sharded_metrics: TreeDict, shardless_metrics: TreeDict, benchmark_info: dict
