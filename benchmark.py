@@ -2,7 +2,7 @@ from yaml import safe_load
 from yamlable import YamlAble, yaml_info
 
 from log import get_logger
-from stats import Stats, summarize_stats
+from stats import ShardedMetricRunMeasurement, ShardlessMetricRunMeasurement, Stats, summarize_stats
 from tree import TreeDict
 
 logger = get_logger()
@@ -55,7 +55,9 @@ class Benchmark(YamlAble):
 
 
 def compute_benchmark_summary(
-    sharded_metrics: TreeDict, shardless_metrics: TreeDict, benchmark_info: dict
+    sharded_metrics: TreeDict[dict[str, list[ShardedMetricRunMeasurement]]],
+    shardless_metrics: TreeDict[dict[str, list[ShardlessMetricRunMeasurement]]],
+    benchmark_info: dict,
 ) -> Benchmark:
     # build map run_id -> run entry
     runs_map: dict = {}
@@ -66,9 +68,9 @@ def compute_benchmark_summary(
     for metric_name, backends in (sharded_metrics or {}).items():
         for backend_name, items in backends.items():
             for item in items:
-                run_id = item.get("run_id")
-                shard = item.get("shard")
-                value = item.get("value")
+                run_id = item.run_id
+                shard = item.shard
+                value = item.value
 
                 if run_id not in runs_map:
                     runs_map[run_id] = {
@@ -91,8 +93,8 @@ def compute_benchmark_summary(
     for metric_name, backends in (shardless_metrics or {}).items():
         for backend_name, items in backends.items():
             for item in items:
-                run_id = item.get("run_id")
-                value = item.get("value")
+                run_id = item.run_id
+                value = item.value
 
                 if run_id not in runs_map:
                     runs_map[run_id] = {

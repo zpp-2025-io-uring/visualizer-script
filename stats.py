@@ -7,27 +7,42 @@ from yamlable import YamlAble, yaml_info
 from tree import TreeDict
 
 
-def join_stats(metrics_runs: list[dict]) -> tuple[TreeDict[dict[str, list[dict]]], TreeDict[dict[str, list[dict]]]]:
+class ShardlessMetricRunMeasurement:
+    def __init__(self, run_id: int, value: Any):
+        self.run_id = run_id
+        self.value = value
+
+    def __repr__(self) -> str:
+        return f"ShardlessMetricRunMeasurement(run_id={self.run_id}, value={self.value})"
+
+
+class ShardedMetricRunMeasurement(ShardlessMetricRunMeasurement):
+    def __init__(self, run_id: int, shard: int, value: Any):
+        super().__init__(run_id, value)
+        self.shard = shard
+
+    def __repr__(self) -> str:
+        return f"ShardedMetricRunMeasurement(run_id={self.run_id}, shard={self.shard}, value={self.value})"
+
+
+def join_stats(
+    metrics_runs: list[dict],
+) -> tuple[
+    TreeDict[dict[str, list[ShardedMetricRunMeasurement]]], TreeDict[dict[str, list[ShardlessMetricRunMeasurement]]]
+]:
     """Aggregate per-run metrics into a run-oriented structure.
 
     Expected input: list of dicts with keys:
         - 'run_id': arbitrary run identifier (int or str)
         - 'sharded': mapping metric -> backend -> { shard: value }
         - 'shardless': mapping metric -> backend -> value
-
-    Returns a tuple (sharded, shardless) where:
-        sharded: metric -> backend -> list of { 'run_id', 'shard', 'value' }
-        shardless: metric -> backend -> list of { 'run_id', 'value' }
-
-    This shape avoids duplicating aggregated lists per metric and keeps per-run
-    information available for downstream consumers.
     """
 
-    sharded_out: TreeDict[dict[str, list[dict]]] = TreeDict()
-    shardless_out: TreeDict[dict[str, list[dict]]] = TreeDict()
+    sharded_out: TreeDict[dict[str, list[ShardedMetricRunMeasurement]]] = TreeDict()
+    shardless_out: TreeDict[dict[str, list[ShardlessMetricRunMeasurement]]] = TreeDict()
 
     for run in metrics_runs:
-        run_id = run.get("run_id")
+        run_id = int(run.get("run_id", 0))
 
         # sharded metrics: iterate over metrics and backends and record each shard as a run entry
         for metric_name, backend_map in run["sharded"].items():
@@ -39,7 +54,7 @@ def join_stats(metrics_runs: list[dict]) -> tuple[TreeDict[dict[str, list[dict]]
                     sharded_out[metric_name][backend] = []
 
                 for shard, value in shard_map.items():
-                    sharded_out[metric_name][backend].append({"run_id": run_id, "shard": shard, "value": value})
+                    sharded_out[metric_name][backend].append(ShardedMetricRunMeasurement(run_id, shard, value))
 
         # shardless metrics: record single value per run per backend
         for metric_name, backend_map in run["shardless"].items():
@@ -49,7 +64,7 @@ def join_stats(metrics_runs: list[dict]) -> tuple[TreeDict[dict[str, list[dict]]
                 if backend not in shardless_out[metric_name]:
                     shardless_out[metric_name][backend] = []
 
-                shardless_out[metric_name][backend].append({"run_id": run_id, "value": value})
+                shardless_out[metric_name][backend].append(ShardlessMetricRunMeasurement(run_id, value))
 
     return (sharded_out, shardless_out)
 
@@ -104,14 +119,17 @@ class Stats(YamlAble):
 
 
 def summarize_stats(
-    sharded_metrics: TreeDict[dict[str, list[dict]]], shardless_metrics: TreeDict[dict[str, list[dict]]]
+    sharded_metrics: TreeDict[dict[str, list[ShardedMetricRunMeasurement]]],
+    shardless_metrics: TreeDict[dict[str, list[ShardlessMetricRunMeasurement]]],
 ) -> Stats:
     sharded_stats: TreeDict[dict[str, dict[int, Any]]] = __summarize_sharded_stats(sharded_metrics)
     shardless_stats: TreeDict[dict[str, Any]] = __summarize_shardless_stats(shardless_metrics)
     return Stats(sharded_stats, shardless_stats)
 
 
-def __summarize_sharded_stats(sharded_metrics: TreeDict[dict[str, list[dict]]]) -> TreeDict[dict[str, dict[int, Any]]]:
+def __summarize_sharded_stats(
+    sharded_metrics: TreeDict[dict[str, list[ShardedMetricRunMeasurement]]],
+) -> TreeDict[dict[str, dict[int, Any]]]:
     summarized: TreeDict[dict[str, dict[int, Any]]] = TreeDict()
 
     for metric_name, backends in sharded_metrics.items():
@@ -120,10 +138,8 @@ def __summarize_sharded_stats(sharded_metrics: TreeDict[dict[str, list[dict]]]) 
             summarized[metric_name].setdefault(backend_name, {})
             shard_map: dict[int, list[Any]] = summarized[metric_name][backend_name]
             for item in items:
-                shard = int(item.get("shard"))
-                value = item.get("value")
-                shard_map.setdefault(shard, [])
-                shard_map[shard].append(value)
+                shard_map.setdefault(item.shard, [])
+                shard_map[item.shard].append(item.value)
 
     for metric_name, backends in summarized.items():
         for backend_name, shard_map in backends.items():
@@ -134,7 +150,9 @@ def __summarize_sharded_stats(sharded_metrics: TreeDict[dict[str, list[dict]]]) 
     return summarized
 
 
-def __summarize_shardless_stats(shardless_metrics: TreeDict[dict[str, list[dict]]]) -> TreeDict[dict[str, Any]]:
+def __summarize_shardless_stats(
+    shardless_metrics: TreeDict[dict[str, list[ShardlessMetricRunMeasurement]]],
+) -> TreeDict[dict[str, Any]]:
     summarized: TreeDict[dict[str, Any]] = TreeDict()
 
     for metric_name, backends in shardless_metrics.items():
@@ -142,8 +160,7 @@ def __summarize_shardless_stats(shardless_metrics: TreeDict[dict[str, list[dict]
         for backend_name, items in backends.items():
             summarized[metric_name].setdefault(backend_name, [])
             for item in items:
-                value = item.get("value")
-                summarized[metric_name][backend_name].append(value)
+                summarized[metric_name][backend_name].append(item.value)
 
     for metric_name, backends in summarized.items():
         for backend_name, samples in backends.items():
