@@ -106,38 +106,47 @@ class Stats(YamlAble):
 def summarize_stats(
     sharded_metrics: TreeDict[dict[str, list[dict]]], shardless_metrics: TreeDict[dict[str, list[dict]]]
 ) -> Stats:
-    # gather sharded values: metric -> backend -> shard -> [values]
-    sharded_stats: TreeDict[dict[str, dict[int, Any]]] = TreeDict()
-    for metric_name, backends in (sharded_metrics or {}).items():
-        sharded_stats.setdefault(metric_name, {})
+    sharded_stats: TreeDict[dict[str, dict[int, Any]]] = __summarize_sharded_stats(sharded_metrics)
+    shardless_stats: TreeDict[dict[str, Any]] = __summarize_shardless_stats(shardless_metrics)
+    return Stats(sharded_stats, shardless_stats)
+
+
+def __summarize_sharded_stats(sharded_metrics: TreeDict[dict[str, list[dict]]]) -> TreeDict[dict[str, dict[int, Any]]]:
+    summarized: TreeDict[dict[str, dict[int, Any]]] = TreeDict()
+
+    for metric_name, backends in sharded_metrics.items():
+        summarized.setdefault(metric_name, {})
         for backend_name, items in backends.items():
-            sharded_stats[metric_name].setdefault(backend_name, {})
+            summarized[metric_name].setdefault(backend_name, {})
+            shard_map: dict[int, list[Any]] = summarized[metric_name][backend_name]
             for item in items:
-                shard = item.get("shard")
+                shard = int(item.get("shard"))
                 value = item.get("value")
-                b = sharded_stats[metric_name][backend_name]
-                b.setdefault(shard, [])
-                b[shard].append(value)
+                shard_map.setdefault(shard, [])
+                shard_map[shard].append(value)
 
-    # compute stats for sharded
-    for metric_name, backends in sharded_stats.items():
-        for backend_name, shards in backends.items():
-            for shard, samples in shards.items():
-                shards[shard] = compute_stats(samples)
+    for metric_name, backends in summarized.items():
+        for backend_name, shard_map in backends.items():
+            shard_dict: dict[int, list[Any]] = shard_map
+            for shard, samples in shard_dict.items():
+                shard_dict[shard] = compute_stats(samples)
 
-    # gather shardless values: metric -> backend -> [values]
-    shardless_stats: TreeDict[dict[str, Any]] = TreeDict()
-    for metric_name, backends in (shardless_metrics or {}).items():
-        shardless_stats.setdefault(metric_name, {})
+    return summarized
+
+
+def __summarize_shardless_stats(shardless_metrics: TreeDict[dict[str, list[dict]]]) -> TreeDict[dict[str, Any]]:
+    summarized: TreeDict[dict[str, Any]] = TreeDict()
+
+    for metric_name, backends in shardless_metrics.items():
+        summarized.setdefault(metric_name, {})
         for backend_name, items in backends.items():
-            shardless_stats[metric_name].setdefault(backend_name, [])
+            summarized[metric_name].setdefault(backend_name, [])
             for item in items:
                 value = item.get("value")
-                shardless_stats[metric_name][backend_name].append(value)
+                summarized[metric_name][backend_name].append(value)
 
-    # compute stats for shardless
-    for metric_name, backends in shardless_stats.items():
+    for metric_name, backends in summarized.items():
         for backend_name, samples in backends.items():
             backends[backend_name] = compute_stats(samples)
 
-    return Stats(sharded_metrics=sharded_stats, shardless_metrics=shardless_stats)
+    return summarized
