@@ -143,9 +143,8 @@ def __summarize_sharded_stats(
 
     for metric_name, backends in summarized.items():
         for backend_name, shard_map in backends.items():
-            shard_dict: dict[int, list[Any]] = shard_map
-            for shard, samples in shard_dict.items():
-                shard_dict[shard] = compute_stats(samples)
+            for shard, samples in shard_map.items():
+                shard_map[shard] = compute_stats(samples)
 
     return summarized
 
