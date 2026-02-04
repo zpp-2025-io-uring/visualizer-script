@@ -8,7 +8,7 @@ from tree import TreeDict
 
 
 class ShardlessMetricRunMeasurement:
-    def __init__(self, run_id: int, value: Any):
+    def __init__(self, run_id: int | str, value: Any):
         self.run_id = run_id
         self.value = value
 
@@ -16,9 +16,10 @@ class ShardlessMetricRunMeasurement:
         return f"ShardlessMetricRunMeasurement(run_id={self.run_id}, value={self.value})"
 
 
-class ShardedMetricRunMeasurement(ShardlessMetricRunMeasurement):
-    def __init__(self, run_id: int, shard: int, value: Any):
-        super().__init__(run_id, value)
+class ShardedMetricRunMeasurement:
+    def __init__(self, run_id: int | str, shard: int, value: Any):
+        self.run_id = run_id
+        self.value = value
         self.shard = shard
 
     def __repr__(self) -> str:
@@ -42,7 +43,9 @@ def join_stats(
     shardless_out: TreeDict[dict[str, list[ShardlessMetricRunMeasurement]]] = TreeDict()
 
     for run in metrics_runs:
-        run_id = int(run.get("run_id", 0))
+        run_id = run["run_id"]
+        if run_id is None:
+            raise ValueError(f"Missing run_id in run entry: {run}")
 
         # sharded metrics: iterate over metrics and backends and record each shard as a run entry
         for metric_name, backend_map in run["sharded"].items():
