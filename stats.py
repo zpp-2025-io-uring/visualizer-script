@@ -53,9 +53,7 @@ def join_stats(
                 sharded_out.setdefault(metric_name, {})
 
             for backend, shard_map in backend_map.items():
-                if backend not in sharded_out[metric_name]:
-                    sharded_out[metric_name][backend] = []
-
+                sharded_out[metric_name].setdefault(backend, [])
                 for shard, value in shard_map.items():
                     sharded_out[metric_name][backend].append(ShardedMetricRunMeasurement(run_id, shard, value))
 
@@ -64,9 +62,7 @@ def join_stats(
             shardless_out.setdefault(metric_name, {})
 
             for backend, value in backend_map.items():
-                if backend not in shardless_out[metric_name]:
-                    shardless_out[metric_name][backend] = []
-
+                shardless_out[metric_name].setdefault(backend, [])
                 shardless_out[metric_name][backend].append(ShardlessMetricRunMeasurement(run_id, value))
 
     return (sharded_out, shardless_out)
