@@ -233,7 +233,7 @@ def dump_environment(dir_for_config: Path, dir_to_seastar: Path):
 
 
 def run_benchmark_suite_args(args):
-    timestamp_for_suite: str = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
+    timestamp_for_suite: str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 
     benchmark_path = Path(args.benchmark).resolve()
     with open(benchmark_path) as f:
