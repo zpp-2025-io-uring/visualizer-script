@@ -73,11 +73,10 @@ class PlotGenerator:
                 x="shard",
                 y=stat_to_plot,
                 color="backend",
-                color_discrete_map=BACKEND_COLORS,
                 error_y=stat_as_error,
+                xticks=True,
                 xlabel="Shard",
                 ylabel=f"{stat_to_plot} value",
-                xticks=True,
             )
 
             self.figs.append(fig)
@@ -94,10 +93,9 @@ class PlotGenerator:
                 x="backend",
                 y=stat_to_plot,
                 color="backend",
-                color_discrete_map=BACKEND_COLORS,
                 error_y=stat_as_error,
-                ylabel=f"{stat_to_plot} value",
                 xticks=False,
+                ylabel=f"{stat_to_plot} value",
             )
             self.figs.append(fig)
             self.file_paths.append(file_path)
@@ -158,11 +156,10 @@ def _summarize_shardless_metrics_by_backend(
 
 def _make_plot(
     title: str,
-    xlabel: str | None,
-    ylabel: str | None,
     per_backend_data_vec: dict[str, list[Any]],
-    color_map: dict[str, str],
     xticks: bool,
+    xlabel: str | None = None,
+    ylabel: str | None = None,
 ) -> Figure:
     """Draw a grouped bar chart from a mapping backend -> list-of-values.
 
@@ -179,12 +176,11 @@ def _make_plot(
     df = pd.DataFrame(per_backend_data_with_shardnum)
 
     # Convert to long form
-    color_name = "Backend"
-    df_long = df.melt(id_vars="Shard", value_vars=per_backend_data_vec.keys(), var_name=color_name, value_name="Value")
+    df_long = df.melt(id_vars="Shard", value_vars=per_backend_data_vec.keys(), var_name="Backend", value_name="Value")
 
     labels = {
-        "Shard": xlabel if xlabel is not None else "",
-        "Value": ylabel if ylabel is not None else "",
+        "Shard": xlabel or "",
+        "Value": ylabel or "",
         "Backend": "Backend",
     }
 
@@ -193,12 +189,12 @@ def _make_plot(
         df_long,
         x="Shard",
         y="Value",
-        color=color_name,
+        color="Backend",
         labels=labels,
         barmode="group",
         title=title,
-        color_discrete_map=color_map,
-        category_orders={color_name: BACKENDS_NAMES},
+        color_discrete_map=BACKEND_COLORS,
+        category_orders={"Backend": BACKENDS_NAMES},
     )
 
     fig.update_layout(bargap=0.5, bargroupgap=0.1)
@@ -220,30 +216,31 @@ def _make_plot_from_df(
     x: str,
     y: str,
     color: str,
-    color_discrete_map: dict[str, str],
     error_y: str,
+    xticks: bool = False,
     xlabel: str | None = None,
     ylabel: str | None = None,
-    xticks: bool = False,
 ) -> Figure:
-    """Draw a grouped bar chart from a DataFrame.
+    """Draw a horizontal grouped bar chart from a DataFrame.
 
     Parameters mirror the usage in this module: `x`, `y` are column names in `df`, `color`
-    is an column name to group by color, `error_y` is a column name for error bars.
+    is a column name to group by color, `error_y` is a column name for error bars.
     """
-    labels = {}
-    if xlabel is not None:
-        labels[x] = xlabel
-    if ylabel is not None:
-        labels[y] = ylabel
+    labels = {k: v for k, v in [(x, xlabel), (y, ylabel)] if v}
 
-    plot_kwargs = {"x": y, "y": x, "orientation": "h", "barmode": "group", "title": title, "labels": labels}
-    plot_kwargs["color"] = color
-    plot_kwargs["error_x"] = error_y
-    plot_kwargs["color_discrete_map"] = color_discrete_map
-    plot_kwargs["category_orders"] = {color: BACKENDS_NAMES}
-
-    fig = px.bar(df, **plot_kwargs)
+    fig = px.bar(
+        df,
+        x=y,
+        y=x,
+        color=color,
+        error_x=error_y,
+        orientation="h",
+        barmode="group",
+        title=title,
+        labels=labels,
+        color_discrete_map=BACKEND_COLORS,
+        category_orders={color: BACKENDS_NAMES},
+    )
 
     fig.update_layout(height=_find_height_for_min_bar(len(df[x].unique()), len(df[color].unique()) if color else 1))
     fig.update_layout(bargap=0.2, bargroupgap=0.1)
@@ -302,7 +299,7 @@ def _plot_sharded_metric(
 
     file_path = build_dir / pathlib.Path(f"{file_basename}.svg")
     logger.debug(f"Plotting sharded {file_path}")
-    return (file_path, _make_plot(metric_name, "shard", None, per_backend, BACKEND_COLORS, True))
+    return (file_path, _make_plot(metric_name, per_backend, True, xlabel="shard"))
 
 
 def _plot_shardless_metric(
@@ -320,7 +317,7 @@ def _plot_shardless_metric(
 
     file_path = build_dir / pathlib.Path(f"{file_basename}.svg")
     logger.debug(f"Plotting shardless metric {file_path}")
-    return (file_path, _make_plot(metric_name, None, None, per_backend, BACKEND_COLORS, False))
+    return (file_path, _make_plot(metric_name, per_backend, False))
 
 
 def _plot_total_metric(
@@ -341,7 +338,7 @@ def _plot_total_metric(
 
     file_path = build_dir / pathlib.Path(f"total_{file_basename}.svg")
     logger.debug(f"Plotting total metric {file_path}")
-    return (file_path, _make_plot("Total " + metric_name, None, None, per_backend, BACKEND_COLORS, False))
+    return (file_path, _make_plot("Total " + metric_name, per_backend, False))
 
 
 def _make_metric_name_for_plot(name: tuple[str, ...]) -> str:
