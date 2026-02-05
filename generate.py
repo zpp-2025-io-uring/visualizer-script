@@ -10,6 +10,7 @@ import plotly.io as pio
 from plotly.graph_objs import Figure
 
 from log import get_logger
+from metadata import BACKEND_COLORS, BACKENDS_NAMES
 from stats import Stats
 from tree import TreeDict
 
@@ -34,18 +35,18 @@ class PlotGenerator:
         This function expects the output of `stats.join_metrics` as input.
         """
         for metric_name, metric_by_backend in sharded_metrics.items():
-            plot_metric_name = make_metric_name_for_plot(metric_name)
-            (metric_file_path, plot) = plot_sharded_metric(plot_metric_name, metric_by_backend, build_dir)
+            plot_metric_name = _make_metric_name_for_plot(metric_name)
+            (metric_file_path, plot) = _plot_sharded_metric(plot_metric_name, metric_by_backend, build_dir)
             self.figs.append(plot)
             self.file_paths.append(metric_file_path)
 
-            (total_file_path, total_plot) = plot_total_metric(plot_metric_name, metric_by_backend, build_dir)
+            (total_file_path, total_plot) = _plot_total_metric(plot_metric_name, metric_by_backend, build_dir)
             self.figs.append(total_plot)
             self.file_paths.append(total_file_path)
 
         for metric_name, metric_by_backend in shardless_metrics.items():
-            plot_metric_name = make_metric_name_for_plot(metric_name)
-            (metric_file_path, plot) = plot_shardless_metric(plot_metric_name, metric_by_backend, build_dir)
+            plot_metric_name = _make_metric_name_for_plot(metric_name)
+            (metric_file_path, plot) = _plot_shardless_metric(plot_metric_name, metric_by_backend, build_dir)
             self.figs.append(plot)
             self.file_paths.append(metric_file_path)
 
@@ -61,17 +62,18 @@ class PlotGenerator:
         stat_as_error = "stdev"
 
         for metric, per_backend_sharded_metrics in stats.get_sharded_metrics().items():
-            rows = summarize_sharded_metrics_by_backend(per_backend_sharded_metrics, stat_to_plot, stat_as_error)
+            rows = _summarize_sharded_metrics_by_backend(per_backend_sharded_metrics, stat_to_plot, stat_as_error)
             df_long = pd.DataFrame(rows)
 
-            plot_metric_name = make_metric_name_for_plot(metric)
-            file_path = build_dir / pathlib.Path(f"{sanitize_filename(plot_metric_name)}.{image_format}")
-            fig = make_plot_from_df(
+            plot_metric_name = _make_metric_name_for_plot(metric)
+            file_path = build_dir / pathlib.Path(f"{_sanitize_filename(plot_metric_name)}.{image_format}")
+            fig = _make_plot_from_df(
                 plot_metric_name,
                 df_long,
                 x="shard",
                 y=stat_to_plot,
                 color="backend",
+                color_discrete_map=BACKEND_COLORS,
                 error_y=stat_as_error,
                 xlabel="Shard",
                 ylabel=f"{stat_to_plot} value",
@@ -82,16 +84,17 @@ class PlotGenerator:
             self.file_paths.append(file_path)
 
         for metric, per_backend_shardless_metrics in stats.get_shardless_metrics().items():
-            rows = summarize_shardless_metrics_by_backend(per_backend_shardless_metrics, stat_to_plot, stat_as_error)
+            rows = _summarize_shardless_metrics_by_backend(per_backend_shardless_metrics, stat_to_plot, stat_as_error)
             df = pd.DataFrame(rows)
-            plot_metric_name = make_metric_name_for_plot(metric)
-            file_path = build_dir / pathlib.Path(f"{sanitize_filename(plot_metric_name)}.{image_format}")
-            fig = make_plot_from_df(
+            plot_metric_name = _make_metric_name_for_plot(metric)
+            file_path = build_dir / pathlib.Path(f"{_sanitize_filename(plot_metric_name)}.{image_format}")
+            fig = _make_plot_from_df(
                 plot_metric_name,
                 df,
                 x="backend",
                 y=stat_to_plot,
                 color="backend",
+                color_discrete_map=BACKEND_COLORS,
                 error_y=stat_as_error,
                 ylabel=f"{stat_to_plot} value",
                 xticks=False,
@@ -111,7 +114,7 @@ class PlotGenerator:
             self.plot()
 
 
-def summarize_sharded_metrics_by_backend(
+def _summarize_sharded_metrics_by_backend(
     per_backend_sharded_metrics: dict[str, dict[int, Any]], stat_to_plot: str, stat_as_error: str
 ) -> list[dict]:
     """Summarize sharded metrics into a list of rows for plotting."""
@@ -135,7 +138,7 @@ def summarize_sharded_metrics_by_backend(
     return rows
 
 
-def summarize_shardless_metrics_by_backend(
+def _summarize_shardless_metrics_by_backend(
     per_backend_shardless_metrics: dict[str, dict[Any, Any]], stat_to_plot: str, stat_as_error: str
 ) -> list[dict]:
     """Summarize shardless metrics into a list of rows for plotting."""
@@ -153,8 +156,13 @@ def summarize_shardless_metrics_by_backend(
     return rows
 
 
-def make_plot(
-    title: str, xlabel: str | None, ylabel: str | None, per_backend_data_vec: dict[str, list[Any]], xticks: bool
+def _make_plot(
+    title: str,
+    xlabel: str | None,
+    ylabel: str | None,
+    per_backend_data_vec: dict[str, list[Any]],
+    color_map: dict[str, str],
+    xticks: bool,
 ) -> Figure:
     """Draw a grouped bar chart from a mapping backend -> list-of-values.
 
@@ -171,7 +179,8 @@ def make_plot(
     df = pd.DataFrame(per_backend_data_with_shardnum)
 
     # Convert to long form
-    df_long = df.melt(id_vars="Shard", value_vars=per_backend_data_vec.keys(), var_name="Backend", value_name="Value")
+    color_name = "Backend"
+    df_long = df.melt(id_vars="Shard", value_vars=per_backend_data_vec.keys(), var_name=color_name, value_name="Value")
 
     labels = {
         "Shard": xlabel if xlabel is not None else "",
@@ -184,10 +193,12 @@ def make_plot(
         df_long,
         x="Shard",
         y="Value",
-        color="Backend",
+        color=color_name,
         labels=labels,
         barmode="group",
         title=title,
+        color_discrete_map=color_map,
+        category_orders={color_name: BACKENDS_NAMES},
     )
 
     fig.update_layout(bargap=0.5, bargroupgap=0.1)
@@ -203,12 +214,13 @@ def make_plot(
     return fig
 
 
-def make_plot_from_df(
+def _make_plot_from_df(
     title: str,
     df: pd.DataFrame,
     x: str,
     y: str,
     color: str,
+    color_discrete_map: dict[str, str],
     error_y: str,
     xlabel: str | None = None,
     ylabel: str | None = None,
@@ -228,10 +240,12 @@ def make_plot_from_df(
     plot_kwargs = {"x": y, "y": x, "orientation": "h", "barmode": "group", "title": title, "labels": labels}
     plot_kwargs["color"] = color
     plot_kwargs["error_x"] = error_y
+    plot_kwargs["color_discrete_map"] = color_discrete_map
+    plot_kwargs["category_orders"] = {color: BACKENDS_NAMES}
 
     fig = px.bar(df, **plot_kwargs)
 
-    fig.update_layout(height=find_height_for_min_bar(len(df[x].unique()), len(df[color].unique()) if color else 1))
+    fig.update_layout(height=_find_height_for_min_bar(len(df[x].unique()), len(df[color].unique()) if color else 1))
     fig.update_layout(bargap=0.2, bargroupgap=0.1)
     fig.update_layout(margin_autoexpand=True)
 
@@ -243,7 +257,7 @@ def make_plot_from_df(
     return fig
 
 
-def find_height_for_min_bar(number_of_groups: int, number_of_bars_per_group: int) -> int:
+def _find_height_for_min_bar(number_of_groups: int, number_of_bars_per_group: int) -> int:
     default_height = 400
     if number_of_groups * number_of_bars_per_group == 0:
         return default_height
@@ -252,14 +266,14 @@ def find_height_for_min_bar(number_of_groups: int, number_of_bars_per_group: int
     return max(default_height, calculated_height)
 
 
-def plot_sharded_metric(
+def _plot_sharded_metric(
     metric_name: str, sharded_metric_by_backend: dict[str, dict[int, Any]], build_dir: pathlib.Path
 ) -> tuple[pathlib.Path, Figure]:
     """Plot a single metric described by `metric_map` (backend -> shard -> value).
 
     Produces a per-shard grouped plot and a separate totals plot.
     """
-    file_basename = sanitize_filename(metric_name)
+    file_basename = _sanitize_filename(metric_name)
 
     # determine max shard index
     max_shard = -1
@@ -288,17 +302,17 @@ def plot_sharded_metric(
 
     file_path = build_dir / pathlib.Path(f"{file_basename}.svg")
     logger.debug(f"Plotting sharded {file_path}")
-    return (file_path, make_plot(metric_name, "shard", None, per_backend, True))
+    return (file_path, _make_plot(metric_name, "shard", None, per_backend, BACKEND_COLORS, True))
 
 
-def plot_shardless_metric(
+def _plot_shardless_metric(
     metric_name: str, shardless_metric_by_backend: dict[str, Any], build_dir: pathlib.Path
 ) -> tuple[pathlib.Path, Figure]:
     """Plot a single shardless metric described by `metric_map` (backend -> value).
 
     Produces a single bar chart.
     """
-    file_basename = sanitize_filename(metric_name)
+    file_basename = _sanitize_filename(metric_name)
 
     per_backend = {}
     for backend, value in shardless_metric_by_backend.items():
@@ -306,17 +320,17 @@ def plot_shardless_metric(
 
     file_path = build_dir / pathlib.Path(f"{file_basename}.svg")
     logger.debug(f"Plotting shardless metric {file_path}")
-    return (file_path, make_plot(metric_name, None, None, per_backend, False))
+    return (file_path, _make_plot(metric_name, None, None, per_backend, BACKEND_COLORS, False))
 
 
-def plot_total_metric(
+def _plot_total_metric(
     metric_name: str, sharded_metric_by_backend: dict[str, dict[int, Any]], build_dir: pathlib.Path
 ) -> tuple[pathlib.Path, Figure]:
     """Plot a sharded metric as total values per backend.
 
     Produces a single bar chart.
     """
-    file_basename = sanitize_filename(metric_name)
+    file_basename = _sanitize_filename(metric_name)
 
     per_backend = {}
     for backend, result_by_shard in sharded_metric_by_backend.items():
@@ -327,12 +341,12 @@ def plot_total_metric(
 
     file_path = build_dir / pathlib.Path(f"total_{file_basename}.svg")
     logger.debug(f"Plotting total metric {file_path}")
-    return (file_path, make_plot("Total " + metric_name, None, None, per_backend, False))
+    return (file_path, _make_plot("Total " + metric_name, None, None, per_backend, BACKEND_COLORS, False))
 
 
-def make_metric_name_for_plot(name: tuple[str, ...]) -> str:
+def _make_metric_name_for_plot(name: tuple[str, ...]) -> str:
     return "_".join(name)
 
 
-def sanitize_filename(name: str) -> str:
+def _sanitize_filename(name: str) -> str:
     return escape(name)

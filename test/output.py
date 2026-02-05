@@ -6,6 +6,7 @@ from yaml import safe_dump
 
 from benchmark import compute_benchmark_summary
 from benchmarks import BENCHMARK_SUMMARY_FILENAME
+from metadata import BACKENDS_NAMES
 from parse import auto_generate_data_points, join_metrics
 from stats import join_stats
 
@@ -79,7 +80,7 @@ def generate_fake_benchmark_results(
     runs_count: int,
     sharded_metrics: list[list[str]],
     shardless_metrics: list[list[str]],
-) -> None:
+) -> list[str]:
     suite_path = output_dir / suite_name
     suite_path.mkdir(parents=True, exist_ok=True)
     metrics_runs = []
@@ -88,27 +89,22 @@ def generate_fake_benchmark_results(
         run_path = suite_path / f"run_{run_idx}"
         run_path.mkdir(parents=True, exist_ok=True)
 
-        io_uring_results = generate_fake_output(
-            shards_count=4,
-            sharded_metrics=sharded_metrics,
-            shardless_metrics=shardless_metrics,
-            seed=run_idx * 1000 + 123,
-        )
-        io_uring_file_path = run_path / "io_uring.client.out"
-        dump_fake_output_to_file(io_uring_results, io_uring_file_path)
+        backends_results = {}
 
-        epoll_results = generate_fake_output(
-            shards_count=4,
-            sharded_metrics=sharded_metrics,
-            shardless_metrics=shardless_metrics,
-            seed=run_idx * 1000 + 456,
-        )
-        epoll_file_path = run_path / "epoll.client.out"
-        dump_fake_output_to_file(epoll_results, epoll_file_path)
-        backends_results = {
-            "io_uring": auto_generate_data_points(io_uring_results),
-            "epoll": auto_generate_data_points(epoll_results),
-        }
+        seed_base = run_idx * 1000
+        backend_results_paths = {}
+        for backend in BACKENDS_NAMES:
+            results = generate_fake_output(
+                shards_count=4,
+                sharded_metrics=sharded_metrics,
+                shardless_metrics=shardless_metrics,
+                seed=seed_base,
+            )
+            seed_base += 1
+            file_path = run_path / f"{backend}.client.out"
+            backend_results_paths[backend] = file_path
+            dump_fake_output_to_file(results, file_path)
+            backends_results[backend] = auto_generate_data_points(results)
 
         [shardless, sharded] = join_metrics(backends_results)
         metrics_runs.append({"run_id": run_idx, "sharded": sharded, "shardless": shardless})
@@ -120,3 +116,5 @@ def generate_fake_benchmark_results(
     print(summary)
     with open(suite_path / BENCHMARK_SUMMARY_FILENAME, "w") as f:
         f.write(safe_dump(summary))
+
+    return list(backend_results_paths.values())
