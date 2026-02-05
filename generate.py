@@ -208,8 +208,8 @@ def make_plot_from_df(
     df: pd.DataFrame,
     x: str,
     y: str,
-    color: str | None = None,
-    error_y: str | None = None,
+    color: str,
+    error_y: str,
     xlabel: str | None = None,
     ylabel: str | None = None,
     xticks: bool = False,
@@ -217,8 +217,7 @@ def make_plot_from_df(
     """Draw a grouped bar chart from a DataFrame.
 
     Parameters mirror the usage in this module: `x`, `y` are column names in `df`, `color`
-    is an optional column name for series, and `error_y` is an optional column name
-    providing error bar values.
+    is an column name to group by color, `error_y` is a column name for error bars.
     """
     labels = {}
     if xlabel is not None:
@@ -227,10 +226,8 @@ def make_plot_from_df(
         labels[y] = ylabel
 
     plot_kwargs = {"x": y, "y": x, "orientation": "h", "barmode": "group", "title": title, "labels": labels}
-    if color is not None:
-        plot_kwargs["color"] = color
-    if error_y is not None:
-        plot_kwargs["error_x"] = error_y
+    plot_kwargs["color"] = color
+    plot_kwargs["error_x"] = error_y
 
     fig = px.bar(df, **plot_kwargs)
 
