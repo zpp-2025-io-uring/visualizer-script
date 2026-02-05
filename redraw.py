@@ -2,6 +2,7 @@ import argparse
 from pathlib import Path
 
 from generate import PlotGenerator
+from metadata import BACKENDS_NAMES
 from parse import auto_generate_data_points, join_metrics, load_data
 
 
@@ -27,12 +28,10 @@ def run_redraw(backend_paths: dict, output_dir):
 
 
 def run_redraw_args(args):
-    backend_names = ["asymmetric_io_uring", "io_uring", "linux-aio", "epoll"]
-
     backend_paths = {}
 
     args_dict = vars(args)
-    for backend in backend_names:
+    for backend in BACKENDS_NAMES:
         if backend in args_dict and args_dict[backend] is not None:
             backend_paths[backend] = args_dict[backend]
 
@@ -40,9 +39,7 @@ def run_redraw_args(args):
 
 
 def configure_redraw_parser(parser: argparse.ArgumentParser):
-    parser.add_argument("--asymmetric_io_uring", help="path to asymmetric_io_uring results", default=None)
-    parser.add_argument("--io_uring", help="path to asymmetric_io_uring results", default=None)
-    parser.add_argument("--linux-aio", help="path to linux-aio results", default=None)
-    parser.add_argument("--epoll", help="path to epoll results", default=None)
+    for backend in BACKENDS_NAMES:
+        parser.add_argument(f"--{backend}", help=f"path to {backend} results", default=None)
     parser.add_argument("--output-dir", help="directory to save the output to", required=True)
     parser.set_defaults(func=run_redraw_args)
