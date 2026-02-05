@@ -75,7 +75,6 @@ class PlotGenerator:
                 color="backend",
                 error_y=stat_as_error,
                 xticks=True,
-                xlabel="Shard",
                 ylabel=f"{stat_to_plot} value",
             )
 
@@ -230,11 +229,11 @@ def _make_plot_from_df(
 
     fig = px.bar(
         df,
-        x=y,
-        y=x,
+        x=x,
+        y=y,
         color=color,
-        error_x=error_y,
-        orientation="h",
+        error_y=error_y,
+        orientation="v",
         barmode="group",
         title=title,
         labels=labels,
@@ -242,14 +241,12 @@ def _make_plot_from_df(
         category_orders={color: BACKENDS_NAMES},
     )
 
-    fig.update_layout(height=_find_height_for_min_bar(len(df[x].unique()), len(df[color].unique()) if color else 1))
-    fig.update_layout(bargap=0.2, bargroupgap=0.1)
-    fig.update_layout(margin_autoexpand=True)
+    fig.update_layout(bargap=0.5, bargroupgap=0.1)
 
     if xticks:
-        fig.update_yaxes(tickmode="linear", dtick=1)
+        fig.update_xaxes(tickmode="linear", dtick=1)
     else:
-        fig.update_yaxes(showticklabels=False)
+        fig.update_xaxes(showticklabels=False)
 
     return fig
 
@@ -299,7 +296,7 @@ def _plot_sharded_metric(
 
     file_path = build_dir / pathlib.Path(f"{file_basename}.svg")
     logger.debug(f"Plotting sharded {file_path}")
-    return (file_path, _make_plot(metric_name, per_backend, True, xlabel="shard"))
+    return (file_path, _make_plot(metric_name, per_backend, True))
 
 
 def _plot_shardless_metric(
