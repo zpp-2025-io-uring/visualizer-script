@@ -156,6 +156,7 @@ def summarize_shardless_metrics_by_backend(
                 DF_BACKEND_KEY: backend,
                 DF_VALUE_KEY: value,
                 DF_ERROR_KEY: error,
+                DF_SHARD_KEY: None,
             }
         )
 
@@ -218,13 +219,7 @@ def make_plot(
         title=data.display_name,
     )
 
-    fig.update_layout(bargap=0.5, bargroupgap=0.1)
-
-    if data.type == PlotType.Sharded:
-        fig.update_xaxes(tickmode="linear", dtick=1)
-    else:
-        fig.update_xaxes(showticklabels=False)
-
+    apply_bar_template(fig, data.type)
     fig.update_traces(texttemplate="%{y}", textposition="outside")
 
     return fig
@@ -259,7 +254,6 @@ def make_plot_with_error(
     labels[DF_BACKEND_KEY] = "Backend"
 
     plot_kwargs = {
-        "x": DF_SHARD_KEY,
         "y": DF_VALUE_KEY,
         "error_y": DF_ERROR_KEY,
         "barmode": "group",
@@ -267,6 +261,8 @@ def make_plot_with_error(
         "labels": labels,
         "color": DF_BACKEND_KEY,
     }
+    if data.type == PlotType.Sharded:
+        plot_kwargs["x"] = DF_SHARD_KEY
 
     fig = px.bar(data.df, **plot_kwargs)
 
@@ -276,22 +272,26 @@ def make_plot_with_error(
             len(data.df[DF_BACKEND_KEY].unique()) if DF_BACKEND_KEY else 1,
         )
     )
+    apply_bar_template(fig, data.type)
+
+    return fig
+
+
+def apply_bar_template(fig: Figure, type: PlotType) -> None:
     fig.update_layout(bargap=0.2, bargroupgap=0.1)
     fig.update_layout(margin_autoexpand=True)
 
-    if data.type == PlotType.Sharded:
+    if type == PlotType.Sharded:
         fig.update_xaxes(tickmode="linear", dtick=1)
     else:
         fig.update_xaxes(showticklabels=False)
-
-    return fig
 
 
 def find_width_for_min_bar(number_of_groups: int, number_of_bars_per_group: int) -> int:
     default_width = 400
     if number_of_groups * number_of_bars_per_group == 0:
         return default_width
-    width_per_bar = 20
+    width_per_bar = 60
     calculated_width = number_of_groups * number_of_bars_per_group * width_per_bar
     return max(default_width, calculated_width)
 
