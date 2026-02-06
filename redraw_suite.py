@@ -6,6 +6,7 @@ from benchmark import Benchmark
 from benchmarks import BENCHMARK_SUMMARY_FILENAME
 from generate import PlotGenerator
 from log import get_logger
+from metadata import BACKENDS_NAMES
 from parse import auto_generate_data_points, join_metrics, load_data
 
 logger = get_logger()
@@ -17,12 +18,11 @@ class RedrawSuiteRunner:
 
     def redraw_run(self, run_dir: Path):
         logger.info(f"Redrawing {run_dir}")
-        backend_names = ["asymmetric_io_uring", "io_uring", "linux-aio", "epoll"]
 
-        regexes = [rf"({backend}.out|{backend}.client.out)" for backend in backend_names]
+        regexes = [rf"({backend}.out|{backend}.client.out)" for backend in BACKENDS_NAMES]
         backend_data_raw: dict[str, str] = {}
         for file in run_dir.iterdir():
-            for backend, regex in zip(backend_names, regexes):
+            for backend, regex in zip(BACKENDS_NAMES, regexes):
                 if re.fullmatch(regex, str(file.name)):
                     logger.info(f"Found data for backend {backend} in {file.name}")
                     with open(file) as f:

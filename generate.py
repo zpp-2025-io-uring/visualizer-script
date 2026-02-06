@@ -1,6 +1,7 @@
 """Generates plots for sharded and shardless metrics."""
 
 import pathlib
+from enum import Enum
 from glob import escape
 from typing import Any
 
@@ -10,6 +11,7 @@ import plotly.io as pio
 from plotly.graph_objs import Figure
 
 from log import get_logger
+from metadata import BACKEND_COLORS, BACKENDS_NAMES
 from stats import Stats
 from tree import TreeDict
 
@@ -66,16 +68,13 @@ class PlotGenerator:
 
             plot_metric_name = make_metric_name_for_plot(metric)
             file_path = build_dir / pathlib.Path(f"{sanitize_filename(plot_metric_name)}.{image_format}")
-            fig = make_plot_from_df(
-                plot_metric_name,
-                df_long,
-                x="shard",
-                y=stat_to_plot,
-                color="backend",
-                error_y=stat_as_error,
-                xlabel="Shard",
-                ylabel=f"{stat_to_plot} value",
-                xticks=True,
+            fig = make_plot_with_error(
+                PlotDataWithError(
+                    type=PlotType.Sharded,
+                    display_name=plot_metric_name,
+                    df=df_long,
+                    value_axis_label=f"{stat_to_plot} value",
+                )
             )
 
             self.figs.append(fig)
@@ -86,15 +85,13 @@ class PlotGenerator:
             df = pd.DataFrame(rows)
             plot_metric_name = make_metric_name_for_plot(metric)
             file_path = build_dir / pathlib.Path(f"{sanitize_filename(plot_metric_name)}.{image_format}")
-            fig = make_plot_from_df(
-                plot_metric_name,
-                df,
-                x="backend",
-                y=stat_to_plot,
-                color="backend",
-                error_y=stat_as_error,
-                ylabel=f"{stat_to_plot} value",
-                xticks=False,
+            fig = make_plot_with_error(
+                PlotDataWithError(
+                    type=PlotType.Shardless,
+                    display_name=plot_metric_name,
+                    df=df,
+                    value_axis_label=f"{stat_to_plot} value",
+                )
             )
             self.figs.append(fig)
             self.file_paths.append(file_path)
@@ -130,7 +127,14 @@ def summarize_sharded_metrics_by_backend(
     for backend, shards in metric_by_backend.items():
         for shard in sorted(shards.keys()):
             value, error = shards[shard]
-            rows.append({"shard": int(shard), "backend": backend, stat_to_plot: value, stat_as_error: error})
+            rows.append(
+                {
+                    DF_SHARD_KEY: int(shard),
+                    DF_BACKEND_KEY: backend,
+                    DF_VALUE_KEY: value,
+                    DF_ERROR_KEY: error,
+                }
+            )
 
     return rows
 
@@ -148,111 +152,155 @@ def summarize_shardless_metrics_by_backend(
     # Convert to list of rows for plotting
     rows = []
     for backend, (value, error) in metric_by_backend.items():
-        rows.append({"backend": backend, stat_to_plot: value, stat_as_error: error})
+        rows.append(
+            {
+                DF_BACKEND_KEY: backend,
+                DF_VALUE_KEY: value,
+                DF_ERROR_KEY: error,
+                DF_SHARD_KEY: None,
+            }
+        )
 
     return rows
 
 
+class PlotType(Enum):
+    Sharded = 1
+    Shardless = 2
+
+
+class PlotData:
+    type: PlotType
+    display_name: str
+    data: dict[str, Any]
+    value_axis_label: str
+
+    def __init__(self, type: PlotType, display_name: str, data: dict[str, Any], value_axis_label: str | None = None):
+        self.type = type
+        self.display_name = display_name
+        self.data = data
+        self.value_axis_label = value_axis_label if value_axis_label is not None else "Value"
+
+        size = len(next(iter(data.values())))
+        for val in data.values():
+            if len(val) != size:
+                raise ValueError("Plotted data must have the same length")
+
+
+DF_SHARD_KEY = "Shard"
+DF_VALUE_KEY = "Value"
+DF_BACKEND_KEY = "Backend"
+DF_ERROR_KEY = "Error"
+
+
 def make_plot(
-    title: str, xlabel: str | None, ylabel: str | None, per_backend_data_vec: dict[str, list[Any]], xticks: bool
+    data: PlotData,
 ) -> Figure:
-    """Draw a grouped bar chart from a mapping backend -> list-of-values.
-
-    Expects all value lists to have identical length.
-    """
-    size = len(next(iter(per_backend_data_vec.values())))
-    for val in per_backend_data_vec.values():
-        if len(val) != size:
-            raise ValueError("Plotted data must have the same length")
-
-    per_backend_data_with_shardnum = per_backend_data_vec.copy()
-    per_backend_data_with_shardnum["Shard"] = list(range(0, size))
+    size = len(next(iter(data.data.values())))
+    per_backend_data_with_shardnum = data.data.copy()
+    per_backend_data_with_shardnum[DF_SHARD_KEY] = list(range(0, size))
 
     df = pd.DataFrame(per_backend_data_with_shardnum)
-
-    # Convert to long form
-    df_long = df.melt(id_vars="Shard", value_vars=per_backend_data_vec.keys(), var_name="Backend", value_name="Value")
-
-    labels = {
-        "Shard": xlabel if xlabel is not None else "",
-        "Value": ylabel if ylabel is not None else "",
-        "Backend": "Backend",
-    }
-
-    # Plot grouped bar chart
-    fig = px.bar(
-        df_long,
-        x="Shard",
-        y="Value",
-        color="Backend",
-        labels=labels,
-        barmode="group",
-        title=title,
+    df_long = df.melt(
+        id_vars=DF_SHARD_KEY, value_vars=list(data.data.keys()), var_name=DF_BACKEND_KEY, value_name=DF_VALUE_KEY
     )
 
-    fig.update_layout(bargap=0.5, bargroupgap=0.1)
+    labels = {
+        DF_SHARD_KEY: "Shard" if data.type == PlotType.Sharded else "",
+        DF_VALUE_KEY: data.value_axis_label,
+        DF_BACKEND_KEY: "Backend",
+    }
+    fig = px.bar(
+        df_long,
+        x=DF_SHARD_KEY,
+        y=DF_VALUE_KEY,
+        color=DF_BACKEND_KEY,
+        color_discrete_map=BACKEND_COLORS,
+        category_orders={DF_BACKEND_KEY: BACKENDS_NAMES},
+        labels=labels,
+        barmode="group",
+        title=data.display_name,
+    )
 
-    if xticks:
-        fig.update_xaxes(tickmode="linear", dtick=1)
-    else:
-        fig.update_xaxes(showticklabels=False)
-
-    # Optional: show values on top of bars
+    apply_bar_template(fig, data.type)
     fig.update_traces(texttemplate="%{y}", textposition="outside")
 
     return fig
 
 
-def make_plot_from_df(
-    title: str,
-    df: pd.DataFrame,
-    x: str,
-    y: str,
-    color: str | None = None,
-    error_y: str | None = None,
-    xlabel: str | None = None,
-    ylabel: str | None = None,
-    xticks: bool = False,
+class PlotDataWithError(PlotData):
+    type: PlotType
+    display_name: str
+    df: pd.DataFrame
+    value_axis_label: str
+
+    def __init__(
+        self,
+        type: PlotType,
+        display_name: str,
+        df: pd.DataFrame,
+        value_axis_label: str | None = None,
+    ):
+        self.type = type
+        self.display_name = display_name
+        self.df = df
+        self.value_axis_label = value_axis_label if value_axis_label is not None else "Value"
+
+
+def make_plot_with_error(
+    data: PlotDataWithError,
 ) -> Figure:
-    """Draw a grouped bar chart from a DataFrame.
+    labels = {
+        DF_SHARD_KEY: "Shard" if data.type == PlotType.Sharded else "",
+        DF_VALUE_KEY: data.value_axis_label,
+        DF_BACKEND_KEY: "Backend",
+    }
 
-    Parameters mirror the usage in this module: `x`, `y` are column names in `df`, `color`
-    is an optional column name for series, and `error_y` is an optional column name
-    providing error bar values.
-    """
-    labels = {}
-    if xlabel is not None:
-        labels[x] = xlabel
-    if ylabel is not None:
-        labels[y] = ylabel
-
-    plot_kwargs = {"x": y, "y": x, "orientation": "h", "barmode": "group", "title": title, "labels": labels}
-    if color is not None:
-        plot_kwargs["color"] = color
-    if error_y is not None:
-        plot_kwargs["error_x"] = error_y
-
-    fig = px.bar(df, **plot_kwargs)
-
-    fig.update_layout(height=find_height_for_min_bar(len(df[x].unique()), len(df[color].unique()) if color else 1))
-    fig.update_layout(bargap=0.2, bargroupgap=0.1)
-    fig.update_layout(margin_autoexpand=True)
-
-    if xticks:
-        fig.update_yaxes(tickmode="linear", dtick=1)
+    plot_kwargs = {
+        "y": DF_VALUE_KEY,
+        "error_y": DF_ERROR_KEY,
+        "barmode": "group",
+        "title": data.display_name,
+        "labels": labels,
+        "color": DF_BACKEND_KEY,
+        "color_discrete_map": BACKEND_COLORS,
+        "category_orders": {DF_BACKEND_KEY: BACKENDS_NAMES},
+    }
+    if data.type == PlotType.Sharded:
+        plot_kwargs["x"] = DF_SHARD_KEY
     else:
-        fig.update_yaxes(showticklabels=False)
+        plot_kwargs["x"] = DF_BACKEND_KEY
+
+    fig = px.bar(data.df, **plot_kwargs)
+
+    fig.update_layout(
+        width=find_width_for_min_bar(
+            len(data.df[DF_SHARD_KEY].unique()),
+            len(data.df[DF_BACKEND_KEY].unique()) if DF_BACKEND_KEY else 1,
+        )
+    )
+    apply_bar_template(fig, data.type)
 
     return fig
 
 
-def find_height_for_min_bar(number_of_groups: int, number_of_bars_per_group: int) -> int:
-    default_height = 400
+def apply_bar_template(fig: Figure, type: PlotType) -> None:
+    fig.update_layout(bargap=0.2, bargroupgap=0.1)
+    fig.update_layout(margin_autoexpand=True)
+
+    if type == PlotType.Sharded:
+        fig.update_xaxes(tickmode="linear", dtick=1)
+    else:
+        fig.update_xaxes(showticklabels=False)
+
+
+def find_width_for_min_bar(number_of_groups: int, number_of_bars_per_group: int) -> int:
+    default_width = 400
     if number_of_groups * number_of_bars_per_group == 0:
-        return default_height
-    height_per_bar = 20
-    calculated_height = number_of_groups * number_of_bars_per_group * height_per_bar
-    return max(default_height, calculated_height)
+        return default_width
+    width_per_bar = 60
+    calculated_width = number_of_groups * number_of_bars_per_group * width_per_bar
+    return max(default_width, calculated_width)
 
 
 def plot_sharded_metric(
@@ -291,7 +339,10 @@ def plot_sharded_metric(
 
     file_path = build_dir / pathlib.Path(f"{file_basename}.svg")
     logger.debug(f"Plotting sharded {file_path}")
-    return (file_path, make_plot(metric_name, "shard", None, per_backend, True))
+    return (
+        file_path,
+        make_plot(PlotData(type=PlotType.Sharded, display_name=metric_name, data=per_backend)),
+    )
 
 
 def plot_shardless_metric(
@@ -309,7 +360,10 @@ def plot_shardless_metric(
 
     file_path = build_dir / pathlib.Path(f"{file_basename}.svg")
     logger.debug(f"Plotting shardless metric {file_path}")
-    return (file_path, make_plot(metric_name, None, None, per_backend, False))
+    return (
+        file_path,
+        make_plot(PlotData(type=PlotType.Shardless, display_name=metric_name, data=per_backend)),
+    )
 
 
 def plot_total_metric(
@@ -330,7 +384,10 @@ def plot_total_metric(
 
     file_path = build_dir / pathlib.Path(f"total_{file_basename}.svg")
     logger.debug(f"Plotting total metric {file_path}")
-    return (file_path, make_plot("Total " + metric_name, None, None, per_backend, False))
+    return (
+        file_path,
+        make_plot(PlotData(type=PlotType.Shardless, display_name=f"Total {metric_name}", data=per_backend)),
+    )
 
 
 def make_metric_name_for_plot(name: tuple[str, ...]) -> str:
