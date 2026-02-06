@@ -128,10 +128,10 @@ def summarize_sharded_metrics_by_backend(
             value, error = shards[shard]
             rows.append(
                 {
-                    PlotDataWithError.SHARD_KEY: int(shard),
-                    PlotDataWithError.BACKEND_KEY: backend,
-                    PlotDataWithError.VALUE_KEY: value,
-                    PlotDataWithError.ERROR_KEY: error,
+                    DF_SHARD_KEY: int(shard),
+                    DF_BACKEND_KEY: backend,
+                    DF_VALUE_KEY: value,
+                    DF_ERROR_KEY: error,
                 }
             )
 
@@ -153,9 +153,9 @@ def summarize_shardless_metrics_by_backend(
     for backend, (value, error) in metric_by_backend.items():
         rows.append(
             {
-                PlotDataWithError.BACKEND_KEY: backend,
-                PlotDataWithError.VALUE_KEY: value,
-                PlotDataWithError.ERROR_KEY: error,
+                DF_BACKEND_KEY: backend,
+                DF_VALUE_KEY: value,
+                DF_ERROR_KEY: error,
             }
         )
 
@@ -185,32 +185,34 @@ class PlotData:
                 raise ValueError("Plotted data must have the same length")
 
 
+DF_SHARD_KEY = "Shard"
+DF_VALUE_KEY = "Value"
+DF_BACKEND_KEY = "Backend"
+DF_ERROR_KEY = "Error"
+
+
 def make_plot(
     data: PlotData,
 ) -> Figure:
-    df_shard_key = "Shard"
-    df_value_key = "Value"
-    df_backend_key = "Backend"
-
     size = len(next(iter(data.data.values())))
     per_backend_data_with_shardnum = data.data.copy()
-    per_backend_data_with_shardnum[df_shard_key] = list(range(0, size))
+    per_backend_data_with_shardnum[DF_SHARD_KEY] = list(range(0, size))
 
     df = pd.DataFrame(per_backend_data_with_shardnum)
     df_long = df.melt(
-        id_vars=df_shard_key, value_vars=data.data.keys(), var_name=df_backend_key, value_name=df_value_key
+        id_vars=DF_SHARD_KEY, value_vars=data.data.keys(), var_name=DF_BACKEND_KEY, value_name=DF_VALUE_KEY
     )
 
     labels = {
-        df_shard_key: "Shard" if data.type == PlotType.Sharded else "",
-        df_value_key: data.value_axis_label,
-        df_backend_key: "Backend",
+        DF_SHARD_KEY: "Shard" if data.type == PlotType.Sharded else "",
+        DF_VALUE_KEY: data.value_axis_label,
+        DF_BACKEND_KEY: "Backend",
     }
     fig = px.bar(
         df_long,
-        x=df_shard_key,
-        y=df_value_key,
-        color=df_backend_key,
+        x=DF_SHARD_KEY,
+        y=DF_VALUE_KEY,
+        color=DF_BACKEND_KEY,
         labels=labels,
         barmode="group",
         title=data.display_name,
@@ -233,10 +235,6 @@ class PlotDataWithError(PlotData):
     display_name: str
     df: pd.DataFrame
     value_axis_label: str
-    VALUE_KEY: str = "Value"
-    ERROR_KEY: str = "Error"
-    SHARD_KEY: str = "Shard"
-    BACKEND_KEY: str = "Backend"
 
     def __init__(
         self,
@@ -256,26 +254,26 @@ def make_plot_with_error(
 ) -> Figure:
     labels = {}
     if data.type == PlotType.Sharded:
-        labels[PlotDataWithError.SHARD_KEY] = "Shard"
-    labels[PlotDataWithError.VALUE_KEY] = data.value_axis_label
-    labels[PlotDataWithError.BACKEND_KEY] = "Backend"
+        labels[DF_SHARD_KEY] = "Shard"
+    labels[DF_VALUE_KEY] = data.value_axis_label
+    labels[DF_BACKEND_KEY] = "Backend"
 
     plot_kwargs = {
-        "x": PlotDataWithError.SHARD_KEY,
-        "y": PlotDataWithError.VALUE_KEY,
-        "error_y": PlotDataWithError.ERROR_KEY,
+        "x": DF_SHARD_KEY,
+        "y": DF_VALUE_KEY,
+        "error_y": DF_ERROR_KEY,
         "barmode": "group",
         "title": data.display_name,
         "labels": labels,
-        "color": PlotDataWithError.BACKEND_KEY,
+        "color": DF_BACKEND_KEY,
     }
 
     fig = px.bar(data.df, **plot_kwargs)
 
     fig.update_layout(
         width=find_width_for_min_bar(
-            len(data.df[PlotDataWithError.SHARD_KEY].unique()),
-            len(data.df[PlotDataWithError.BACKEND_KEY].unique()) if PlotDataWithError.BACKEND_KEY else 1,
+            len(data.df[DF_SHARD_KEY].unique()),
+            len(data.df[DF_BACKEND_KEY].unique()) if DF_BACKEND_KEY else 1,
         )
     )
     fig.update_layout(bargap=0.2, bargroupgap=0.1)
