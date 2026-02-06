@@ -226,33 +226,33 @@ def make_plot_from_df(
     if ylabel is not None:
         labels[y] = ylabel
 
-    plot_kwargs = {"x": y, "y": x, "orientation": "h", "barmode": "group", "title": title, "labels": labels}
+    plot_kwargs = {"x": x, "y": y, "orientation": "v", "barmode": "group", "title": title, "labels": labels}
     if color is not None:
         plot_kwargs["color"] = color
     if error_y is not None:
-        plot_kwargs["error_x"] = error_y
+        plot_kwargs["error_y"] = error_y
 
     fig = px.bar(df, **plot_kwargs)
 
-    fig.update_layout(height=find_height_for_min_bar(len(df[x].unique()), len(df[color].unique()) if color else 1))
+    fig.update_layout(width=find_width_for_min_bar(len(df[x].unique()), len(df[color].unique()) if color else 1))
     fig.update_layout(bargap=0.2, bargroupgap=0.1)
     fig.update_layout(margin_autoexpand=True)
 
     if xticks:
-        fig.update_yaxes(tickmode="linear", dtick=1)
+        fig.update_xaxes(tickmode="linear", dtick=1)
     else:
-        fig.update_yaxes(showticklabels=False)
+        fig.update_xaxes(showticklabels=False)
 
     return fig
 
 
-def find_height_for_min_bar(number_of_groups: int, number_of_bars_per_group: int) -> int:
-    default_height = 400
+def find_width_for_min_bar(number_of_groups: int, number_of_bars_per_group: int) -> int:
+    default_width = 400
     if number_of_groups * number_of_bars_per_group == 0:
-        return default_height
-    height_per_bar = 20
-    calculated_height = number_of_groups * number_of_bars_per_group * height_per_bar
-    return max(default_height, calculated_height)
+        return default_width
+    width_per_bar = 20
+    calculated_width = number_of_groups * number_of_bars_per_group * width_per_bar
+    return max(default_width, calculated_width)
 
 
 def plot_sharded_metric(
