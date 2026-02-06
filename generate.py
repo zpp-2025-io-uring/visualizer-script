@@ -1,6 +1,7 @@
 """Generates plots for sharded and shardless metrics."""
 
 import pathlib
+from enum import Enum
 from glob import escape
 from typing import Any
 
@@ -153,51 +154,81 @@ def summarize_shardless_metrics_by_backend(
     return rows
 
 
+class PlotType(Enum):
+    Sharded = 1
+    Shardless = 2
+
+
+class PlotData:
+    type: PlotType
+    display_name: str
+    data: dict[str, Any]
+    value_axis_label: str
+
+    def __init__(self, type: PlotType, display_name: str, data: dict[str, Any], value_axis_label: str | None = None):
+        self.type = type
+        self.display_name = display_name
+        self.data = data
+        self.value_axis_label = value_axis_label if value_axis_label is not None else "Value"
+
+        size = len(next(iter(data.values())))
+        for val in data.values():
+            if len(val) != size:
+                raise ValueError("Plotted data must have the same length")
+
+
+class PlotDataWithError(PlotData):
+    error_data: dict[str, Any]
+
+    def __init__(
+        self,
+        type: PlotType,
+        display_name: str,
+        data: dict[str, Any],
+        error_data: dict[str, Any],
+    ):
+        super().__init__(type, display_name, data)
+        self.error_data = error_data
+
+
 def make_plot(
-    title: str, xlabel: str | None, ylabel: str | None, per_backend_data_vec: dict[str, list[Any]], xticks: bool
+    data: PlotData,
 ) -> Figure:
-    """Draw a grouped bar chart from a mapping backend -> list-of-values.
+    df_shard_key = "Shard"
+    df_value_key = "Value"
+    df_backend_key = "Backend"
 
-    Expects all value lists to have identical length.
-    """
-    size = len(next(iter(per_backend_data_vec.values())))
-    for val in per_backend_data_vec.values():
-        if len(val) != size:
-            raise ValueError("Plotted data must have the same length")
-
-    per_backend_data_with_shardnum = per_backend_data_vec.copy()
-    per_backend_data_with_shardnum["Shard"] = list(range(0, size))
+    size = len(next(iter(data.data.values())))
+    per_backend_data_with_shardnum = data.data.copy()
+    per_backend_data_with_shardnum[df_shard_key] = list(range(0, size))
 
     df = pd.DataFrame(per_backend_data_with_shardnum)
-
-    # Convert to long form
-    df_long = df.melt(id_vars="Shard", value_vars=per_backend_data_vec.keys(), var_name="Backend", value_name="Value")
+    df_long = df.melt(
+        id_vars=df_shard_key, value_vars=data.data.keys(), var_name=df_backend_key, value_name=df_value_key
+    )
 
     labels = {
-        "Shard": xlabel if xlabel is not None else "",
-        "Value": ylabel if ylabel is not None else "",
-        "Backend": "Backend",
+        df_shard_key: "Shard" if data.type == PlotType.Sharded else "",
+        df_value_key: data.value_axis_label,
+        df_backend_key: "Backend",
     }
-
-    # Plot grouped bar chart
     fig = px.bar(
         df_long,
-        x="Shard",
-        y="Value",
-        color="Backend",
+        x=df_shard_key,
+        y=df_value_key,
+        color=df_backend_key,
         labels=labels,
         barmode="group",
-        title=title,
+        title=data.display_name,
     )
 
     fig.update_layout(bargap=0.5, bargroupgap=0.1)
 
-    if xticks:
+    if data.type == PlotType.Sharded:
         fig.update_xaxes(tickmode="linear", dtick=1)
     else:
         fig.update_xaxes(showticklabels=False)
 
-    # Optional: show values on top of bars
     fig.update_traces(texttemplate="%{y}", textposition="outside")
 
     return fig
@@ -291,7 +322,10 @@ def plot_sharded_metric(
 
     file_path = build_dir / pathlib.Path(f"{file_basename}.svg")
     logger.debug(f"Plotting sharded {file_path}")
-    return (file_path, make_plot(metric_name, "shard", None, per_backend, True))
+    return (
+        file_path,
+        make_plot(PlotData(type=PlotType.Sharded, display_name=metric_name, data=per_backend)),
+    )
 
 
 def plot_shardless_metric(
@@ -309,7 +343,10 @@ def plot_shardless_metric(
 
     file_path = build_dir / pathlib.Path(f"{file_basename}.svg")
     logger.debug(f"Plotting shardless metric {file_path}")
-    return (file_path, make_plot(metric_name, None, None, per_backend, False))
+    return (
+        file_path,
+        make_plot(PlotData(type=PlotType.Shardless, display_name=metric_name, data=per_backend)),
+    )
 
 
 def plot_total_metric(
@@ -330,7 +367,10 @@ def plot_total_metric(
 
     file_path = build_dir / pathlib.Path(f"total_{file_basename}.svg")
     logger.debug(f"Plotting total metric {file_path}")
-    return (file_path, make_plot("Total " + metric_name, None, None, per_backend, False))
+    return (
+        file_path,
+        make_plot(PlotData(type=PlotType.Shardless, display_name=f"Total {metric_name}", data=per_backend)),
+    )
 
 
 def make_metric_name_for_plot(name: tuple[str, ...]) -> str:
