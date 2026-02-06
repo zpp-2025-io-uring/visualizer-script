@@ -202,7 +202,7 @@ def make_plot(
 
     df = pd.DataFrame(per_backend_data_with_shardnum)
     df_long = df.melt(
-        id_vars=DF_SHARD_KEY, value_vars=data.data.keys(), var_name=DF_BACKEND_KEY, value_name=DF_VALUE_KEY
+        id_vars=DF_SHARD_KEY, value_vars=list(data.data.keys()), var_name=DF_BACKEND_KEY, value_name=DF_VALUE_KEY
     )
 
     labels = {
@@ -250,11 +250,11 @@ class PlotDataWithError(PlotData):
 def make_plot_with_error(
     data: PlotDataWithError,
 ) -> Figure:
-    labels = {}
-    if data.type == PlotType.Sharded:
-        labels[DF_SHARD_KEY] = "Shard"
-    labels[DF_VALUE_KEY] = data.value_axis_label
-    labels[DF_BACKEND_KEY] = "Backend"
+    labels = {
+        DF_SHARD_KEY: "Shard" if data.type == PlotType.Sharded else "",
+        DF_VALUE_KEY: data.value_axis_label,
+        DF_BACKEND_KEY: "Backend",
+    }
 
     plot_kwargs = {
         "y": DF_VALUE_KEY,
@@ -268,6 +268,8 @@ def make_plot_with_error(
     }
     if data.type == PlotType.Sharded:
         plot_kwargs["x"] = DF_SHARD_KEY
+    else:
+        plot_kwargs["x"] = DF_BACKEND_KEY
 
     fig = px.bar(data.df, **plot_kwargs)
 
