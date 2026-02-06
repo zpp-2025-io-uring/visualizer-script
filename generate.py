@@ -11,6 +11,7 @@ import plotly.io as pio
 from plotly.graph_objs import Figure
 
 from log import get_logger
+from metadata import BACKEND_COLORS, BACKENDS_NAMES
 from stats import Stats
 from tree import TreeDict
 
@@ -214,6 +215,8 @@ def make_plot(
         x=DF_SHARD_KEY,
         y=DF_VALUE_KEY,
         color=DF_BACKEND_KEY,
+        color_discrete_map=BACKEND_COLORS,
+        category_orders={DF_BACKEND_KEY: BACKENDS_NAMES},
         labels=labels,
         barmode="group",
         title=data.display_name,
@@ -260,6 +263,8 @@ def make_plot_with_error(
         "title": data.display_name,
         "labels": labels,
         "color": DF_BACKEND_KEY,
+        "color_discrete_map": BACKEND_COLORS,
+        "category_orders": {DF_BACKEND_KEY: BACKENDS_NAMES},
     }
     if data.type == PlotType.Sharded:
         plot_kwargs["x"] = DF_SHARD_KEY
