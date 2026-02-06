@@ -67,7 +67,7 @@ class PlotGenerator:
 
             plot_metric_name = make_metric_name_for_plot(metric)
             file_path = build_dir / pathlib.Path(f"{sanitize_filename(plot_metric_name)}.{image_format}")
-            fig = make_plot_from_df(
+            fig = make_plot_with_error(
                 PlotDataWithError(
                     type=PlotType.Sharded,
                     display_name=plot_metric_name,
@@ -84,7 +84,7 @@ class PlotGenerator:
             df = pd.DataFrame(rows)
             plot_metric_name = make_metric_name_for_plot(metric)
             file_path = build_dir / pathlib.Path(f"{sanitize_filename(plot_metric_name)}.{image_format}")
-            fig = make_plot_from_df(
+            fig = make_plot_with_error(
                 PlotDataWithError(
                     type=PlotType.Shardless,
                     display_name=plot_metric_name,
@@ -251,7 +251,7 @@ class PlotDataWithError(PlotData):
         self.value_axis_label = value_axis_label if value_axis_label is not None else "Value"
 
 
-def make_plot_from_df(
+def make_plot_with_error(
     data: PlotDataWithError,
 ) -> Figure:
     labels = {}
