@@ -17,16 +17,16 @@ assert set(BACKENDS_NAMES).issubset(set(BACKEND_COLORS.keys())), "All backends m
 
 @yaml_info("metric_plot_metadata")
 class MetricPlotMetadata(YamlAble):
-    title: str | None
-    value_axis_title: str | None
-    file_name: str | None
+    title: str
+    value_axis_title: str
+    file_name: str
     unit: str | None
 
     def __init__(
         self,
-        title: str | None = None,
-        value_axis_title: str | None = None,
-        file_name: str | None = None,
+        title: str,
+        value_axis_title: str,
+        file_name: str,
         unit: str | None = None,
     ) -> None:
         self.title = title
@@ -67,15 +67,30 @@ class Metadata(YamlAble):
     def __repr__(self) -> str:
         return f"Metadata(sharded_metrics={self.sharded_metrics}, shardless_metrics={self.shardless_metrics})"
 
-    def get_sharded_metric_metadata(self, metric_name: tuple[str, ...]) -> MetricPlotMetadata | None:
-        return self.sharded_metrics.get(metric_name, _asteriks_compare)
+    def get_sharded_metric_metadata_or_default(self, metric_name: tuple[str, ...]) -> MetricPlotMetadata | None:
+        value = self.sharded_metrics.get(metric_name, _asterix_compare)
+        if value is None:
+            return self.default(metric_name)
+        return value
 
-    def get_shardless_metric_metadata(self, metric_name: tuple[str, ...]) -> MetricPlotMetadata | None:
-        return self.shardless_metrics.get(metric_name, _asteriks_compare)
+    def get_shardless_metric_metadata_or_default(self, metric_name: tuple[str, ...]) -> MetricPlotMetadata | None:
+        value = self.shardless_metrics.get(metric_name, _asterix_compare)
+        if value is None:
+            return self.default(metric_name)
+        return value
+
+    @classmethod
+    def default(cls, path: tuple[str, ...]) -> MetricPlotMetadata:
+        name = _make_metric_name_for_plot(path)
+        return MetricPlotMetadata(title=path[-1], value_axis_title="Value", file_name=name, unit=None)
 
 
-def _asteriks_compare(a: str, b: str) -> bool:
+def _asterix_compare(a: str, b: str) -> bool:
     """Compare two strings, treating '*' as a wildcard that matches any string."""
     if a == "*" or b == "*":
         return True
     return a == b
+
+
+def _make_metric_name_for_plot(name: tuple[str, ...]) -> str:
+    return "_".join(name)
