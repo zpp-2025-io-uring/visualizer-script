@@ -89,6 +89,23 @@ class TreeDict(Generic[T], YamlAble):
             else:
                 raise TypeError(f"Expected leaf at path {path}, found subtree.")
 
+    def get(self, path: tuple, comparator=lambda x, y: x == y) -> T | None:
+        """Get the value at the given path if it exists and satisfies the comparator, else None."""
+        cur = self.metrics
+        for part in path:
+            if not isinstance(cur, dict):
+                return None
+            matching_keys = [k for k in cur.keys() if comparator(k, part)]
+            if not matching_keys:
+                return None
+            if len(matching_keys) > 1:
+                raise ValueError(f"Multiple matching keys for {part} at path {path}: {matching_keys}")
+            cur = cur[matching_keys[0]]
+        if isinstance(cur, _Leaf):
+            return cur.value
+        else:
+            return None
+
     def __contains__(self, path: tuple) -> bool:
         """Check if the given path exists in the metrics tree."""
         cur = self.metrics
