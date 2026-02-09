@@ -50,6 +50,20 @@ class MetricPlotMetadata(YamlAble):
     def __hash__(self) -> int:
         return hash((self.title, self.value_axis_title, self.file_name, self.unit))
 
+    def get_title(self) -> str:
+        return self.title
+
+    def get_title_with_unit(self) -> str:
+        if self.unit:
+            return f"{self.title} ({self.unit})"
+        return self.title
+
+    def get_value_axis_title(self) -> str:
+        return self.value_axis_title
+
+    def get_file_name(self) -> str:
+        return self.file_name
+
 
 @yaml_info("metadata")
 class Metadata(YamlAble):
@@ -67,16 +81,19 @@ class Metadata(YamlAble):
     def __repr__(self) -> str:
         return f"Metadata(sharded_metrics={self.sharded_metrics}, shardless_metrics={self.shardless_metrics})"
 
-    def get_sharded_metric_metadata_or_default(self, metric_name: tuple[str, ...]) -> MetricPlotMetadata | None:
-        value = self.sharded_metrics.get(metric_name, _asterix_compare)
-        if value is None:
-            return self.default(metric_name)
-        return value
+    def get_sharded_metric_metadata_or_default(self, metric_name: tuple[str, ...]) -> MetricPlotMetadata:
+        return self._get_plot_metadata_or_default(self.sharded_metrics, metric_name)
 
-    def get_shardless_metric_metadata_or_default(self, metric_name: tuple[str, ...]) -> MetricPlotMetadata | None:
-        value = self.shardless_metrics.get(metric_name, _asterix_compare)
+    def get_shardless_metric_metadata_or_default(self, metric_name: tuple[str, ...]) -> MetricPlotMetadata:
+        return self._get_plot_metadata_or_default(self.shardless_metrics, metric_name)
+
+    @staticmethod
+    def _get_plot_metadata_or_default(
+        tree: TreeDict[MetricPlotMetadata], metric_name: tuple[str, ...]
+    ) -> MetricPlotMetadata:
+        value = tree.get(metric_name, _asterix_compare)
         if value is None:
-            return self.default(metric_name)
+            return Metadata.default(metric_name)
         return value
 
     @classmethod

@@ -9,6 +9,7 @@ from benchmark import compute_benchmark_summary
 from config_versioning import get_config_version, make_proportional_splitter, upgrade_version1_to_version2
 from generate import PlotGenerator
 from log import get_logger
+from metadata import Metadata
 from parse import auto_generate_data_points, join_metrics, load_data
 from pdf_summary import generate_benchmark_summary_pdf, merge_pdfs
 from run_io import run_io_test
@@ -38,7 +39,7 @@ class BenchmarkSuiteRunner:
         self.generate_graphs = generate_graphs
         self.generate_summary_graph = generate_summary_graphs
         self.generate_pdf = generate_pdf
-        self.plot_generator = PlotGenerator()
+        self.plot_generator = PlotGenerator(Metadata())
         logger.debug(
             f"Initialized benchmark suite runner with output_dir={self.output_dir}, backends={self.backends}, params={self.params}, io_config={self.io_config}, rpc_config={self.rpc_config}, scylla_config={self.scylla_config}, benchmarks={self.benchmarks}, genetare_graphs={self.generate_graphs}, generate_summary_graph={self.generate_summary_graph}, generate_pdf={self.generate_pdf}"
         )

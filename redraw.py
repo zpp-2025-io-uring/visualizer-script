@@ -2,7 +2,7 @@ import argparse
 from pathlib import Path
 
 from generate import PlotGenerator
-from metadata import BACKENDS_NAMES
+from metadata import BACKENDS_NAMES, Metadata
 from parse import auto_generate_data_points, join_metrics, load_data
 
 
@@ -22,7 +22,7 @@ def run_redraw(backend_paths: dict, output_dir):
 
     (shardless_metrics, sharded_metrics) = join_metrics(backends_parsed)
 
-    plot_generator = PlotGenerator()
+    plot_generator = PlotGenerator(Metadata())
     plot_generator.schedule_generate_graphs(sharded_metrics, shardless_metrics, output_dir)
     plot_generator.plot()
 
