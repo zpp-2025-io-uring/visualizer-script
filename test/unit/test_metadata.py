@@ -35,8 +35,30 @@ def test_serialization():
 
     # Act
     yaml_str = safe_dump(metadata)
-    loaded_metadata = MetricPlotMetadata.__from_yaml_dict__(safe_load(yaml_str), yaml_tag=None)
+    print("Serialized Metadata YAML:")
+    print(yaml_str)
+
+    loaded_metadata = safe_load(yaml_str)
 
     # Assert
     assert isinstance(loaded_metadata, Metadata)
-    assert metadata == loaded_metadata
+
+    for metric_name, expected_metadata in metadata.sharded_metrics.items():
+        loaded_metric_metadata = loaded_metadata.get_sharded_metric_metadata(metric_name)
+        assert loaded_metric_metadata is not None, f"Missing sharded metric metadata for {metric_name}"
+        assert loaded_metric_metadata == expected_metadata, "Loaded metadata does not match original metadata"
+
+    for metric_name, expected_metadata in metadata.shardless_metrics.items():
+        loaded_metric_metadata = loaded_metadata.get_shardless_metric_metadata(metric_name)
+        assert loaded_metric_metadata is not None, f"Missing shardless metric metadata for {metric_name}"
+        assert loaded_metric_metadata == expected_metadata, "Loaded metadata does not match original metadata"
+
+    for metric_name in metadata.sharded_metrics.keys():
+        assert metric_name in loaded_metadata.sharded_metrics, (
+            f"Missing sharded metric {metric_name} in loaded metadata"
+        )
+
+    for metric_name in metadata.shardless_metrics.keys():
+        assert metric_name in loaded_metadata.shardless_metrics, (
+            f"Missing shardless metric {metric_name} in loaded metadata"
+        )

@@ -34,12 +34,38 @@ class MetricPlotMetadata(YamlAble):
         self.file_name = file_name
         self.unit = unit
 
+    def __repr__(self) -> str:
+        return f"MetricPlotMetadata(title={self.title}, value_axis_title={self.value_axis_title}, file_name={self.file_name}, unit={self.unit})"
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, MetricPlotMetadata):
+            return NotImplemented
+        return (
+            self.title == other.title
+            and self.value_axis_title == other.value_axis_title
+            and self.file_name == other.file_name
+            and self.unit == other.unit
+        )
+
+    def __hash__(self) -> int:
+        return hash((self.title, self.value_axis_title, self.file_name, self.unit))
+
 
 @yaml_info("metadata")
 class Metadata(YamlAble):
-    def __init__(self) -> None:
-        self.sharded_metrics: TreeDict[MetricPlotMetadata] = TreeDict()
-        self.shardless_metrics: TreeDict[MetricPlotMetadata] = TreeDict()
+    sharded_metrics: TreeDict[MetricPlotMetadata]
+    shardless_metrics: TreeDict[MetricPlotMetadata]
+
+    def __init__(
+        self,
+        sharded_metrics: TreeDict[MetricPlotMetadata] | None = None,
+        shardless_metrics: TreeDict[MetricPlotMetadata] | None = None,
+    ) -> None:
+        self.sharded_metrics = sharded_metrics or TreeDict()
+        self.shardless_metrics = shardless_metrics or TreeDict()
+
+    def __repr__(self) -> str:
+        return f"Metadata(sharded_metrics={self.sharded_metrics}, shardless_metrics={self.shardless_metrics})"
 
     def get_sharded_metric_metadata(self, metric_name: tuple[str, ...]) -> MetricPlotMetadata | None:
         return self.sharded_metrics.get(metric_name, _asteriks_compare)

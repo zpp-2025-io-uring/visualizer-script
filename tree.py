@@ -121,6 +121,10 @@ class TreeDict(Generic[T], YamlAble):
     def __to_yaml_dict__(self) -> dict:
         return self.metrics
 
+    def keys(self) -> list[tuple[str, ...]]:
+        """Return a list of all paths to leaf nodes in the metrics tree."""
+        return [path for path, _ in self.items()]
+
     @classmethod
     def __from_yaml_dict__(cls, dct, yaml_tag) -> "TreeDict":
         obj = cls()
