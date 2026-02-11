@@ -1,4 +1,4 @@
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from typing import Generic, TypeVar
 
 from yamlable import YamlAble, yaml_info
@@ -89,6 +89,31 @@ class TreeDict(Generic[T], YamlAble):
             else:
                 raise TypeError(f"Expected leaf at path {path}, found subtree.")
 
+    def get(self, path: tuple, comparator: Callable[[str, str], bool] = lambda x, y: x == y) -> T | None:
+        """Get the value at the given path if it exists and satisfies the comparator, else None."""
+        cur = self.metrics
+        for part in path:
+            if not isinstance(cur, dict):
+                return None
+
+            matching_keys = [k for k in cur.keys() if comparator(k, part)]
+            if not matching_keys:
+                return None
+            if len(matching_keys) > 1:
+                raise ValueError(f"Multiple matching keys for {part} at path {path}: {matching_keys}")
+
+            cur = cur[matching_keys[0]]
+
+        if isinstance(cur, _Leaf):
+            return cur.value
+        else:
+            # We reached a subtree instead of a leaf, so the path is incomplete
+            return None
+
+    def keys(self) -> list[tuple[str, ...]]:
+        """Return a list of all paths to leaf nodes in the metrics tree."""
+        return [path for path, _ in self.items()]
+
     def __contains__(self, path: tuple) -> bool:
         """Check if the given path exists in the metrics tree."""
         cur = self.metrics
@@ -97,6 +122,10 @@ class TreeDict(Generic[T], YamlAble):
                 return False
             cur = cur[part]
         return isinstance(cur, _Leaf)
+
+    def __len__(self) -> int:
+        """Return the number of leaf nodes in the metrics tree."""
+        return sum(1 for _ in self.items())
 
     def __repr__(self) -> str:
         return f"TreeDict({self.metrics})"
