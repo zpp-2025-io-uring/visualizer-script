@@ -8,7 +8,7 @@ from tree import TreeDict
 
 
 class ShardlessMetricRunMeasurement:
-    def __init__(self, run_id: int | str, value: Any):
+    def __init__(self, run_id: int, value: Any):
         self.run_id = run_id
         self.value = value
 
@@ -17,7 +17,7 @@ class ShardlessMetricRunMeasurement:
 
 
 class ShardedMetricRunMeasurement:
-    def __init__(self, run_id: int | str, shard: int, value: Any):
+    def __init__(self, run_id: int, shard: int, value: Any):
         self.run_id = run_id
         self.value = value
         self.shard = shard
