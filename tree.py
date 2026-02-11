@@ -1,6 +1,7 @@
 from collections.abc import Callable, Iterator
 from typing import Generic, TypeVar
 
+import yaml
 from yamlable import YamlAble, yaml_info
 
 T = TypeVar("T")
@@ -138,3 +139,22 @@ class TreeDict(Generic[T], YamlAble):
         obj = cls()
         obj.metrics = dct
         return obj
+
+
+class NoDuplicateLoader(yaml.SafeLoader):
+    def construct_mapping(self, node, deep=False):
+        seen = set()
+        mapping = []
+        for key_node, value_node in node.value:
+            key = self.construct_object(key_node, deep=deep)
+            if key in seen:
+                raise ValueError(f"Duplicate key '{key}' at {key_node.start_mark}")
+            seen.add(key)
+            mapping.append((key, self.construct_object(value_node, deep=deep)))
+        return dict(mapping)
+
+
+yaml.SafeLoader.add_constructor(
+    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+    NoDuplicateLoader.construct_mapping,
+)
