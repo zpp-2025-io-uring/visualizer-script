@@ -57,7 +57,7 @@ class TestMetricPlotMetadata:
 
     def test_default(self) -> None:
         obj = MetricPlotMetadata.default(("path", "to", "metric"))
-        assert obj.title == "metric"
+        assert obj.title == "path_to_metric"
         assert obj.value_axis_title == "Value"
         assert obj.unit is None
 
@@ -111,7 +111,7 @@ class TestMetadata:
     def test_get_sharded_metric_metadata_or_default_missing(self) -> None:
         obj = Metadata()
         plot_meta = obj.get_sharded_metric_metadata_or_default(("missing", "metric"))
-        assert plot_meta.title == "metric"
+        assert plot_meta.title == "missing_metric"
         assert plot_meta.value_axis_title == "Value"
         assert plot_meta.unit is None
 
@@ -123,7 +123,7 @@ class TestMetadata:
     def test_get_shardless_metric_metadata_or_default_missing(self) -> None:
         obj = Metadata()
         plot_meta = obj.get_shardless_metric_metadata_or_default(("missing", "metric"))
-        assert plot_meta.title == "metric"
+        assert plot_meta.title == "missing_metric"
 
 
 def test_asterix_compare() -> None:

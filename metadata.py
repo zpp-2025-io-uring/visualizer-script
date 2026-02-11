@@ -60,7 +60,7 @@ class MetricPlotMetadata(YamlAble):
 
     @classmethod
     def default(cls, path: tuple[str, ...]) -> "MetricPlotMetadata":
-        return MetricPlotMetadata(title=path[-1], value_axis_title="Value", unit=None)
+        return MetricPlotMetadata(title=_get_name_from_path(path), value_axis_title="Value", unit=None)
 
 
 @yaml_info("metric_metadata")
@@ -121,3 +121,8 @@ def _asterix_compare(a: str, b: str) -> bool:
     if a == "*" or b == "*":
         return True
     return a == b
+
+
+def _get_name_from_path(path: tuple[str, ...]) -> str:
+    """Convert a metric path to a human-readable name for use in plot titles and file names."""
+    return "_".join(path)
