@@ -185,11 +185,6 @@ def compute_benchmark_summary(
                 ).backends[backend_name] = ShardlessBackendResult(properties={}, value=value)
 
     # prepare final summary
-    runs_list = [
-        runs_map[k]
-        for k in sorted(
-            runs_map.keys(), key=lambda x: int(x) if isinstance(x, (int, str)) and str(x).isdigit() else str(x)
-        )
-    ]
+    runs_list = [runs_map[k] for k in sorted(runs_map.keys())]
     summary_stats = summarize_stats(sharded_metrics, shardless_metrics)
     return Benchmark(runs=runs_list, benchmark=benchmark_info, summary=summary_stats)
