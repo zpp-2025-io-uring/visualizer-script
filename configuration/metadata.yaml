@@ -61,7 +61,7 @@ sharded_metrics: !yamlable/tree_dict
       value: !yamlable/metric_metadata
         plotting: !yamlable/metric_plot_metadata
           title: Throughput per shard
-          unit: B/s
+          unit: null # should be B/s but we have a conflict between IO and RPC tester :/
           value_axis_title: throughput
   
     # io_tester
@@ -155,13 +155,13 @@ sharded_metrics: !yamlable/tree_dict
               unit: null
               value_axis_title: Total number of requests
 
-    # writes, reads, cpu_hog
-    throughput: !yamlable/leaf
-      value: !yamlable/metric_metadata
-        plotting: !yamlable/metric_plot_metadata
-          title: Throughput per shard
-          unit: kB/s
-          value_axis_title: throughput
+    # # writes, reads, cpu_hog
+    # throughput: !yamlable/leaf
+    #   value: !yamlable/metric_metadata
+    #     plotting: !yamlable/metric_plot_metadata
+    #       title: Throughput per shard
+    #       unit: kB/s
+    #       value_axis_title: throughput
 
     # reads
     statistics:
