@@ -55,7 +55,7 @@ class MetricPlotMetadata(YamlAble):
 
     def get_title_with_unit(self) -> str:
         if self.unit:
-            return f"{self.title} ({self.unit})"
+            return f"{self.title} [{self.unit}]"
         return self.title
 
     def get_value_axis_title(self) -> str:
@@ -64,16 +64,35 @@ class MetricPlotMetadata(YamlAble):
     def get_file_name(self) -> str:
         return self.file_name
 
+    @classmethod
+    def default(cls, path: tuple[str, ...]) -> "MetricPlotMetadata":
+        name = _make_metric_name_for_plot(path)
+        return MetricPlotMetadata(title=path[-1], value_axis_title="Value", file_name=name, unit=None)
+
+
+@yaml_info("metric_metadata")
+class MetricMetadata(YamlAble):
+    plotting: MetricPlotMetadata
+
+    def __init__(self, plot_metadata: MetricPlotMetadata) -> None:
+        self.plotting = plot_metadata
+
+    def get_plot_metadata(self) -> MetricPlotMetadata:
+        return self.plotting
+
+    def __repr__(self) -> str:
+        return f"MetricMetadata(plot_metadata={self.plotting})"
+
 
 @yaml_info("metadata")
 class Metadata(YamlAble):
-    sharded_metrics: TreeDict[MetricPlotMetadata]
-    shardless_metrics: TreeDict[MetricPlotMetadata]
+    sharded_metrics: TreeDict[MetricMetadata]
+    shardless_metrics: TreeDict[MetricMetadata]
 
     def __init__(
         self,
-        sharded_metrics: TreeDict[MetricPlotMetadata] | None = None,
-        shardless_metrics: TreeDict[MetricPlotMetadata] | None = None,
+        sharded_metrics: TreeDict[MetricMetadata] | None = None,
+        shardless_metrics: TreeDict[MetricMetadata] | None = None,
     ) -> None:
         self.sharded_metrics = sharded_metrics or TreeDict()
         self.shardless_metrics = shardless_metrics or TreeDict()
@@ -89,17 +108,12 @@ class Metadata(YamlAble):
 
     @staticmethod
     def _get_plot_metadata_or_default(
-        tree: TreeDict[MetricPlotMetadata], metric_name: tuple[str, ...]
+        tree: TreeDict[MetricMetadata], metric_name: tuple[str, ...]
     ) -> MetricPlotMetadata:
         value = tree.get(metric_name, _asterix_compare)
         if value is None:
-            return Metadata.default(metric_name)
-        return value
-
-    @classmethod
-    def default(cls, path: tuple[str, ...]) -> MetricPlotMetadata:
-        name = _make_metric_name_for_plot(path)
-        return MetricPlotMetadata(title=path[-1], value_axis_title="Value", file_name=name, unit=None)
+            return MetricPlotMetadata.default(metric_name)
+        return value.get_plot_metadata()
 
 
 def _asterix_compare(a: str, b: str) -> bool:
