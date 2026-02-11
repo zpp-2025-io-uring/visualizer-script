@@ -12,9 +12,39 @@ logger = get_logger()
 T = TypeVar("T")
 
 
+@yaml_info("shardless_backend_result")
+class ShardlessBackendResult(YamlAble):
+    def __init__(self, properties: dict[str, Any], value: Any) -> None:
+        self.properties = properties
+        self.value = value
+
+    def __repr__(self) -> str:
+        return f"ShardlessBackendResult(properties={self.properties}, value={self.value})"
+
+
+@yaml_info("sharded_measurement")
+class ShardedMeasurement(YamlAble):
+    def __init__(self, shard: int, value: Any) -> None:
+        self.value = value
+        self.shard = shard
+
+    def __repr__(self) -> str:
+        return f"ShardedMeasurement(shard={self.shard}, value={self.value})"
+
+
+@yaml_info("sharded_backend_result")
+class ShardedBackendResult(YamlAble):
+    def __init__(self, properties: dict[str, Any], shards: list[ShardedMeasurement]) -> None:
+        self.properties = properties
+        self.shards = shards
+
+    def __repr__(self) -> str:
+        return f"ShardedBackendResult(properties={self.properties}, shards={self.shards})"
+
+
 @yaml_info("benchmark_results")
 class PerBenchmarkResults(Generic[T], YamlAble):
-    def __init__(self, backends: dict[str, dict[str, T]], properties: dict[str, Any]) -> None:
+    def __init__(self, backends: dict[str, T], properties: dict[str, Any]) -> None:
         self.backends = backends
         self.properties = properties
 
@@ -30,8 +60,8 @@ class PerBenchmarkResults(Generic[T], YamlAble):
 class Results(YamlAble):
     def __init__(
         self,
-        sharded_metrics: TreeDict[PerBenchmarkResults[Any]],
-        shardless_metrics: TreeDict[PerBenchmarkResults[Any]],
+        sharded_metrics: TreeDict[PerBenchmarkResults[ShardedBackendResult]],
+        shardless_metrics: TreeDict[PerBenchmarkResults[ShardlessBackendResult]],
     ) -> None:
         self.sharded_metrics = sharded_metrics
         self.shardless_metrics = shardless_metrics
@@ -128,13 +158,12 @@ def compute_benchmark_summary(
 
                 run_entry = runs_map[run_id]
                 backends_for_metric = run_entry.results.sharded_metrics.setdefault(
-                    metric_name, PerBenchmarkResults[Any].default()
+                    metric_name, PerBenchmarkResults[ShardedBackendResult].default()
                 ).backends
 
-                if backend_name not in backends_for_metric:
-                    backends_for_metric[backend_name] = {"properties": {}, "shards": []}
-
-                backends_for_metric[backend_name]["shards"].append({"shard": shard, "value": value})
+                backends_for_metric.setdefault(
+                    backend_name, ShardedBackendResult(properties={}, shards=[])
+                ).shards.append(ShardedMeasurement(shard=shard, value=value))
 
     # process shardless metrics
     for metric_name, backends in (shardless_metrics or {}).items():
@@ -152,9 +181,8 @@ def compute_benchmark_summary(
 
                 run_entry = runs_map[run_id]
                 backends_for_metric = run_entry.results.shardless_metrics.setdefault(
-                    metric_name, PerBenchmarkResults[Any].default()
-                ).backends
-                backends_for_metric[backend_name] = {"properties": {}, "value": value}
+                    metric_name, PerBenchmarkResults[ShardlessBackendResult].default()
+                ).backends[backend_name] = ShardlessBackendResult(properties={}, value=value)
 
     # prepare final summary
     runs_list = [
