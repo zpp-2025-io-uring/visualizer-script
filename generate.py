@@ -11,7 +11,7 @@ import plotly.io as pio
 from plotly.graph_objs import Figure
 
 from log import get_logger
-from metadata import BACKEND_COLORS, BACKENDS_NAMES
+from metadata import BACKEND_COLORS, BACKENDS_NAMES, Metadata
 from stats import Stats
 from tree import TreeDict
 
@@ -21,9 +21,10 @@ logger = get_logger()
 class PlotGenerator:
     """Generates plots for sharded and shardless metrics."""
 
-    def __init__(self):
-        self.figs = []
-        self.file_paths = []
+    def __init__(self, metadata: Metadata):
+        self.metadata = metadata
+        self.figs: list[Figure] = []
+        self.file_paths: list[pathlib.Path] = []
 
     def schedule_generate_graphs(
         self,

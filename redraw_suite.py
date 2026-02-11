@@ -6,15 +6,15 @@ from benchmark import Benchmark
 from benchmarks import BENCHMARK_SUMMARY_FILENAME
 from generate import PlotGenerator
 from log import get_logger
-from metadata import BACKENDS_NAMES
+from metadata import BACKENDS_NAMES, Metadata
 from parse import auto_generate_data_points, join_metrics, load_data
 
 logger = get_logger()
 
 
 class RedrawSuiteRunner:
-    def __init__(self):
-        self.plot_generator = PlotGenerator()
+    def __init__(self, metadata: Metadata):
+        self.plot_generator = PlotGenerator(metadata)
 
     def redraw_run(self, run_dir: Path):
         logger.info(f"Redrawing {run_dir}")
@@ -59,8 +59,8 @@ class RedrawSuiteRunner:
         self.plot_generator.schedule_graphs_for_summary(summary.get_stats(), output_dir)
 
 
-def run_redraw_suite_args(args: argparse.Namespace) -> None:
-    runner = RedrawSuiteRunner()
+def run_redraw_suite_args(args: argparse.Namespace, metadata: Metadata) -> None:
+    runner = RedrawSuiteRunner(metadata)
     runner.run_redraw_suite(args.dir)
 
 

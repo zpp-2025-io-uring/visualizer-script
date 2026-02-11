@@ -2,11 +2,11 @@ import argparse
 from pathlib import Path
 
 from generate import PlotGenerator
-from metadata import BACKENDS_NAMES
+from metadata import BACKENDS_NAMES, Metadata
 from parse import auto_generate_data_points, join_metrics, load_data
 
 
-def run_redraw(backend_paths: dict, output_dir):
+def run_redraw(metadata: Metadata, backend_paths: dict, output_dir):
     output_dir = Path(output_dir)
 
     backends_data_raw = {}
@@ -22,12 +22,12 @@ def run_redraw(backend_paths: dict, output_dir):
 
     (shardless_metrics, sharded_metrics) = join_metrics(backends_parsed)
 
-    plot_generator = PlotGenerator()
+    plot_generator = PlotGenerator(metadata)
     plot_generator.schedule_generate_graphs(sharded_metrics, shardless_metrics, output_dir)
     plot_generator.plot()
 
 
-def run_redraw_args(args: argparse.Namespace) -> None:
+def run_redraw_args(args: argparse.Namespace, metadata: Metadata) -> None:
     backend_paths = {}
 
     args_dict = vars(args)
@@ -35,7 +35,7 @@ def run_redraw_args(args: argparse.Namespace) -> None:
         if backend in args_dict and args_dict[backend] is not None:
             backend_paths[backend] = args_dict[backend]
 
-    run_redraw(backend_paths, args.output_dir)
+    run_redraw(metadata, backend_paths, args.output_dir)
 
 
 def configure_redraw_parser(parser: argparse.ArgumentParser) -> None:
