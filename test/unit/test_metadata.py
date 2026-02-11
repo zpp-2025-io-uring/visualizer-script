@@ -132,3 +132,13 @@ def test_asterix_compare() -> None:
     assert _asterix_compare("*", "a") is True
     assert _asterix_compare("*", "*") is True
     assert _asterix_compare("a", "b") is False
+
+
+def test_validity_of_metadata_yaml() -> None:
+    # This test ensures that the metadata.yaml file can be loaded without errors
+    # and that the resulting Metadata object has the expected structure.
+    with open("configuration/metadata.yaml") as f:
+        metadata = Metadata.load_from_file(f)
+        assert isinstance(metadata, Metadata)
+        assert isinstance(metadata.sharded_metrics, TreeDict)
+        assert isinstance(metadata.shardless_metrics, TreeDict)
