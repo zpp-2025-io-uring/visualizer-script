@@ -27,7 +27,7 @@ def run_redraw(backend_paths: dict, output_dir):
     plot_generator.plot()
 
 
-def run_redraw_args(args):
+def run_redraw_args(args: argparse.Namespace) -> None:
     backend_paths = {}
 
     args_dict = vars(args)
@@ -38,7 +38,7 @@ def run_redraw_args(args):
     run_redraw(backend_paths, args.output_dir)
 
 
-def configure_redraw_parser(parser: argparse.ArgumentParser):
+def configure_redraw_parser(parser: argparse.ArgumentParser) -> None:
     for backend in BACKENDS_NAMES:
         parser.add_argument(f"--{backend}", help=f"path to {backend} results", default=None)
     parser.add_argument("--output-dir", help="directory to save the output to", required=True)

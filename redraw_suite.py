@@ -59,11 +59,11 @@ class RedrawSuiteRunner:
         self.plot_generator.schedule_graphs_for_summary(summary.get_stats(), output_dir)
 
 
-def run_redraw_suite_args(args):
+def run_redraw_suite_args(args: argparse.Namespace) -> None:
     runner = RedrawSuiteRunner()
     runner.run_redraw_suite(args.dir)
 
 
-def configure_redraw_suite_parser(parser: argparse.ArgumentParser):
+def configure_redraw_suite_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--dir", help="directory to save the output to", required=True)
     parser.set_defaults(func=run_redraw_suite_args)
