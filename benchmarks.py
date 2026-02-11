@@ -122,7 +122,7 @@ class BenchmarkSuiteRunner:
                     self.plot_generator.schedule_generate_graphs(sharded_metrics, shardless_metrics, run_output_dir)
 
             (combined_sharded, combined_shardless) = join_stats(metrics_runs)
-            benchmark_info = {"id": test_name, "properties": {"iterations": iterations}}
+            benchmark_info = {"id": test_name, "type": benchmark["type"], "properties": {"iterations": iterations}}
             summary = compute_benchmark_summary(combined_sharded, combined_shardless, benchmark_info)
 
             if self.plotting_config.generate_summary_graph:
