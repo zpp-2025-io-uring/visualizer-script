@@ -1,3 +1,4 @@
+from yaml import safe_load
 from yamlable import YamlAble, yaml_info
 
 from tree import TreeDict
@@ -19,36 +20,28 @@ assert set(BACKENDS_NAMES).issubset(set(BACKEND_COLORS.keys())), "All backends m
 class MetricPlotMetadata(YamlAble):
     title: str
     value_axis_title: str
-    file_name: str
     unit: str | None
 
     def __init__(
         self,
         title: str,
         value_axis_title: str,
-        file_name: str,
         unit: str | None = None,
     ) -> None:
         self.title = title
         self.value_axis_title = value_axis_title
-        self.file_name = file_name
         self.unit = unit
 
     def __repr__(self) -> str:
-        return f"MetricPlotMetadata(title={self.title}, value_axis_title={self.value_axis_title}, file_name={self.file_name}, unit={self.unit})"
+        return f"MetricPlotMetadata(title={self.title}, value_axis_title={self.value_axis_title}, unit={self.unit})"
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, MetricPlotMetadata):
             return NotImplemented
-        return (
-            self.title == other.title
-            and self.value_axis_title == other.value_axis_title
-            and self.file_name == other.file_name
-            and self.unit == other.unit
-        )
+        return self.title == other.title and self.value_axis_title == other.value_axis_title and self.unit == other.unit
 
     def __hash__(self) -> int:
-        return hash((self.title, self.value_axis_title, self.file_name, self.unit))
+        return hash((self.title, self.value_axis_title, self.unit))
 
     def get_title(self) -> str:
         return self.title
@@ -61,21 +54,21 @@ class MetricPlotMetadata(YamlAble):
     def get_value_axis_title(self) -> str:
         return self.value_axis_title
 
-    def get_file_name(self) -> str:
-        return self.file_name
+    @classmethod
+    def make_file_name_for_plot(cls, name: tuple[str, ...]) -> str:
+        return "_".join(name)
 
     @classmethod
     def default(cls, path: tuple[str, ...]) -> "MetricPlotMetadata":
-        name = _make_metric_name_for_plot(path)
-        return MetricPlotMetadata(title=path[-1], value_axis_title="Value", file_name=name, unit=None)
+        return MetricPlotMetadata(title=path[-1], value_axis_title="Value", unit=None)
 
 
 @yaml_info("metric_metadata")
 class MetricMetadata(YamlAble):
     plotting: MetricPlotMetadata
 
-    def __init__(self, plot_metadata: MetricPlotMetadata) -> None:
-        self.plotting = plot_metadata
+    def __init__(self, plotting: MetricPlotMetadata) -> None:
+        self.plotting = plotting
 
     def get_plot_metadata(self) -> MetricPlotMetadata:
         return self.plotting
@@ -115,13 +108,16 @@ class Metadata(YamlAble):
             return MetricPlotMetadata.default(metric_name)
         return value.get_plot_metadata()
 
+    @staticmethod
+    def load_from_file(yaml) -> "Metadata":
+        obj = safe_load(yaml)
+        if not isinstance(obj, Metadata):
+            raise ValueError(f"Expected a Metadata object in the metadata file, got {type(obj)}")
+        return obj
+
 
 def _asterix_compare(a: str, b: str) -> bool:
     """Compare two strings, treating '*' as a wildcard that matches any string."""
     if a == "*" or b == "*":
         return True
     return a == b
-
-
-def _make_metric_name_for_plot(name: tuple[str, ...]) -> str:
-    return "_".join(name)

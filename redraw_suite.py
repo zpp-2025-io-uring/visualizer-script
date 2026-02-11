@@ -13,8 +13,8 @@ logger = get_logger()
 
 
 class RedrawSuiteRunner:
-    def __init__(self):
-        self.plot_generator = PlotGenerator(Metadata())
+    def __init__(self, metadata: Metadata):
+        self.plot_generator = PlotGenerator(metadata)
 
     def redraw_run(self, run_dir: Path):
         logger.info(f"Redrawing {run_dir}")
@@ -36,10 +36,10 @@ class RedrawSuiteRunner:
         [shardless_metrics, sharded_metrics] = join_metrics(backends_parsed)
         self.plot_generator.schedule_generate_graphs(sharded_metrics, shardless_metrics, run_dir)
 
-    def run_redraw_suite(self, dir):
-        dir = Path(dir)
+    def run_redraw_suite(self, dir: str):
+        dir_with_benchmarks = Path(dir)
 
-        for benchmark_dir in dir.iterdir():
+        for benchmark_dir in dir_with_benchmarks.iterdir():
             if benchmark_dir.is_dir():
                 summary_file = benchmark_dir / BENCHMARK_SUMMARY_FILENAME
                 if summary_file.is_file():
@@ -59,8 +59,8 @@ class RedrawSuiteRunner:
         self.plot_generator.schedule_graphs_for_summary(summary.get_stats(), output_dir)
 
 
-def run_redraw_suite_args(args):
-    runner = RedrawSuiteRunner()
+def run_redraw_suite_args(args, metadata: Metadata):
+    runner = RedrawSuiteRunner(metadata)
     runner.run_redraw_suite(args.dir)
 
 

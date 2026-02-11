@@ -25,7 +25,13 @@ logger = get_logger()
 
 class BenchmarkSuiteRunner:
     def __init__(
-        self, benchmarks, config: dict, generate_graphs: bool, generate_summary_graphs: bool, generate_pdf: bool
+        self,
+        metadata: Metadata,
+        benchmarks,
+        config: dict,
+        generate_graphs: bool,
+        generate_summary_graphs: bool,
+        generate_pdf: bool,
     ):
         self.output_dir: Path = Path(config["output_dir"]).resolve()
         self.backends = config["backends"]
@@ -39,7 +45,7 @@ class BenchmarkSuiteRunner:
         self.generate_graphs = generate_graphs
         self.generate_summary_graph = generate_summary_graphs
         self.generate_pdf = generate_pdf
-        self.plot_generator = PlotGenerator(Metadata())
+        self.plot_generator = PlotGenerator(metadata)
         logger.debug(
             f"Initialized benchmark suite runner with output_dir={self.output_dir}, backends={self.backends}, params={self.params}, io_config={self.io_config}, rpc_config={self.rpc_config}, scylla_config={self.scylla_config}, benchmarks={self.benchmarks}, genetare_graphs={self.generate_graphs}, generate_summary_graph={self.generate_summary_graph}, generate_pdf={self.generate_pdf}"
         )
@@ -233,7 +239,7 @@ def dump_environment(dir_for_config: Path, dir_to_seastar: Path):
         raise Exception("git_status failed")
 
 
-def run_benchmark_suite_args(args):
+def run_benchmark_suite_args(args, metadata: Metadata):
     timestamp_for_suite: str = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
 
     benchmark_path = Path(args.benchmark).resolve()
@@ -292,7 +298,7 @@ def run_benchmark_suite_args(args):
             logger.warning(f"backends selecton not detected, assuming {config['backends']}")
 
         runner = BenchmarkSuiteRunner(
-            safe_load(benchmark_yaml), config, args.generate_graphs, args.generate_summary_graphs, args.pdf
+            safe_load(benchmark_yaml), config, args.generate_graphs, args.generate_summary_graphs, args.pdf, metadata
         )
 
         runner.run()
