@@ -10,7 +10,7 @@ import plotly.express as px
 import plotly.io as pio
 from plotly.graph_objs import Figure
 
-from benchmark import PerBenchmarkResults, Results, ShardedBackendResult
+from benchmark import PerBenchmarkShardedResults, PerBenchmarkShardlessResults, Results
 from log import get_logger
 from metadata import BACKEND_COLORS, BACKENDS_NAMES
 from stats import Stats
@@ -193,7 +193,6 @@ DF_ERROR_KEY = "Error"
 def make_plot(
     data: PlotData,
 ) -> Figure:
-    print(f"Making plot for {data.display_name} with data {data.data}")
     size = len(next(iter(data.data.values())))
     per_backend_data_with_shardnum = data.data.copy()
     per_backend_data_with_shardnum[DF_SHARD_KEY] = list(range(0, size))
@@ -302,7 +301,7 @@ def find_width_for_min_bar(number_of_groups: int, number_of_bars_per_group: int)
 
 
 def plot_sharded_metric(
-    metric_name: str, sharded_metric_by_backend: PerBenchmarkResults[ShardedBackendResult], build_dir: pathlib.Path
+    metric_name: str, sharded_metric_by_backend: PerBenchmarkShardedResults, build_dir: pathlib.Path
 ) -> tuple[pathlib.Path, Figure]:
     file_basename = sanitize_filename(metric_name)
 
@@ -333,7 +332,7 @@ def plot_sharded_metric(
 
 
 def plot_shardless_metric(
-    metric_name: str, shardless_metric_by_backend: PerBenchmarkResults[ShardedBackendResult], build_dir: pathlib.Path
+    metric_name: str, shardless_metric_by_backend: PerBenchmarkShardlessResults, build_dir: pathlib.Path
 ) -> tuple[pathlib.Path, Figure]:
     file_basename = sanitize_filename(metric_name)
 
@@ -350,7 +349,7 @@ def plot_shardless_metric(
 
 
 def plot_total_metric(
-    metric_name: str, sharded_metric_by_backend: PerBenchmarkResults[ShardedBackendResult], build_dir: pathlib.Path
+    metric_name: str, sharded_metric_by_backend: PerBenchmarkShardedResults, build_dir: pathlib.Path
 ) -> tuple[pathlib.Path, Figure]:
     """Plot a sharded metric as total values per backend.
 
