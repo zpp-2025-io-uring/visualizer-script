@@ -87,7 +87,7 @@ class RunSummary(YamlAble):
 
 @yaml_info("benchmark")
 class Benchmark(YamlAble):
-    def __init__(self, runs: list[RunSummary], benchmark: dict, summary: Stats, run_count: int = None) -> None:
+    def __init__(self, runs: list[RunSummary], benchmark: dict, summary: Stats, run_count: int | None = None) -> None:
         self.runs = runs
         self.benchmark = benchmark
         self.summary = summary
