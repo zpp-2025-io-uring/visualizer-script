@@ -1,4 +1,4 @@
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 from yaml import safe_load
 from yamlable import YamlAble, yaml_info
@@ -21,6 +21,12 @@ class ShardlessBackendResult(YamlAble):
     def __repr__(self) -> str:
         return f"ShardlessBackendResult(properties={self.properties}, value={self.value})"
 
+    @classmethod
+    def __from_yaml_dict__(cls, dct: dict[str, Any], yaml_tag: str) -> "ShardlessBackendResult":
+        properties = dct.get("properties", {})
+        value = dct.get("value")
+        return cls(properties=properties, value=value)
+
 
 @yaml_info("sharded_measurement")
 class ShardedMeasurement(YamlAble):
@@ -30,6 +36,12 @@ class ShardedMeasurement(YamlAble):
 
     def __repr__(self) -> str:
         return f"ShardedMeasurement(shard={self.shard}, value={self.value})"
+
+    @classmethod
+    def __from_yaml_dict__(cls, dct: dict[str, Any], yaml_tag: str) -> "ShardedMeasurement":
+        shard = int(dct["shard"])
+        value = dct["value"]
+        return cls(shard=shard, value=value)
 
 
 @yaml_info("sharded_backend_result")
@@ -41,27 +53,70 @@ class ShardedBackendResult(YamlAble):
     def __repr__(self) -> str:
         return f"ShardedBackendResult(properties={self.properties}, shards={self.shards})"
 
+    @classmethod
+    def __from_yaml_dict__(cls, dct: dict[str, Any], yaml_tag: str) -> "ShardedBackendResult":
+        properties = dct.get("properties", {})
+        shards_data = dct.get("shards", [])
+        shards = [ShardedMeasurement(**shard_dct) for shard_dct in shards_data]
+        return cls(properties=properties, shards=shards)
 
-@yaml_info("benchmark_results")
-class PerBenchmarkResults(Generic[T], YamlAble):
-    def __init__(self, backends: dict[str, T], properties: dict[str, Any]) -> None:
+
+@yaml_info("sharded_benchmark_results")
+class PerBenchmarkShardedResults(YamlAble):
+    def __init__(self, backends: dict[str, ShardedBackendResult], properties: dict[str, Any]) -> None:
         self.backends = backends
         self.properties = properties
 
     def __repr__(self) -> str:
-        return f"PerBenchmarkResults(backends={self.backends}, properties={self.properties})"
+        return f"PerBenchmarkShardedResults(backends={self.backends}, properties={self.properties})"
 
     @classmethod
-    def default(cls) -> "PerBenchmarkResults":
+    def default(cls) -> "PerBenchmarkShardedResults":
         return cls(backends={}, properties={})
+
+    @classmethod
+    def __from_yaml_dict__(cls, dct: dict[str, Any], yaml_tag: str) -> "PerBenchmarkShardedResults":
+        properties = dct.get("properties", {})
+        backends = dct.get("backends", {})
+        for backend_name, backend_result in backends.items():
+            if not isinstance(backend_result, ShardedBackendResult):
+                backends[backend_name] = ShardedBackendResult.__from_yaml_dict__(
+                    backend_result, yaml_tag="sharded_backend_result"
+                )
+        return cls(backends=backends, properties=properties)
+
+
+@yaml_info("shardless_benchmark_results")
+class PerBenchmarkShardlessResults(YamlAble):
+    def __init__(self, backends: dict[str, ShardlessBackendResult], properties: dict[str, Any]) -> None:
+        self.backends = backends
+        self.properties = properties
+
+    def __repr__(self) -> str:
+        return f"PerBenchmarkShardlessResults(backends={self.backends}, properties={self.properties})"
+
+    @classmethod
+    def default(cls) -> "PerBenchmarkShardlessResults":
+        return cls(backends={}, properties={})
+
+    @classmethod
+    def __from_yaml_dict__(cls, dct: dict[str, Any], yaml_tag: str) -> "PerBenchmarkShardlessResults":
+        properties = dct.get("properties", {})
+        backends = dct.get("backends", {})
+        for backend_name, backend_result in backends.items():
+            if not isinstance(backend_result, ShardlessBackendResult):
+                backends[backend_name] = ShardlessBackendResult.__from_yaml_dict__(
+                    backend_result, yaml_tag="shardless_backend_result"
+                )
+        return cls(backends=backends, properties=properties)
 
 
 @yaml_info("results")
 class Results(YamlAble):
     def __init__(
         self,
-        sharded_metrics: TreeDict[PerBenchmarkResults[ShardedBackendResult]],
-        shardless_metrics: TreeDict[PerBenchmarkResults[ShardlessBackendResult]],
+        sharded_metrics: TreeDict[PerBenchmarkShardedResults],
+        shardless_metrics: TreeDict[PerBenchmarkShardlessResults],
     ) -> None:
         self.sharded_metrics = sharded_metrics
         self.shardless_metrics = shardless_metrics
@@ -70,8 +125,32 @@ class Results(YamlAble):
         return f"Results(sharded_metrics={self.sharded_metrics}, shardless_metrics={self.shardless_metrics})"
 
     @classmethod
+    def __from_yaml_dict__(cls, dct: dict[str, Any], yaml_tag: str) -> "Results":
+        sharded_metrics = TreeDict[PerBenchmarkShardedResults]()
+        shardless_metrics = TreeDict[PerBenchmarkShardlessResults]()
+
+        if "sharded_metrics" in dct:
+            for key, value in dct["sharded_metrics"].items():
+                if not isinstance(value, PerBenchmarkShardedResults):
+                    sharded_metrics[key] = PerBenchmarkShardedResults.__from_yaml_dict__(
+                        value, yaml_tag="per_benchmark_sharded_results"
+                    )
+
+        if "shardless_metrics" in dct:
+            for key, value in dct["shardless_metrics"].items():
+                if not isinstance(value, PerBenchmarkShardlessResults):
+                    shardless_metrics[key] = PerBenchmarkShardlessResults.__from_yaml_dict__(
+                        value, yaml_tag="per_benchmark_shardless_results"
+                    )
+
+        return cls(sharded_metrics=sharded_metrics, shardless_metrics=shardless_metrics)
+
+    @classmethod
     def default(cls) -> "Results":
-        return cls(sharded_metrics=TreeDict(), shardless_metrics=TreeDict())
+        return cls(
+            sharded_metrics=TreeDict[PerBenchmarkShardedResults](),
+            shardless_metrics=TreeDict[PerBenchmarkShardlessResults](),
+        )
 
 
 @yaml_info("run_summary")
@@ -83,6 +162,19 @@ class RunSummary(YamlAble):
 
     def __repr__(self) -> str:
         return f"RunSummary(id={self.id}, properties={self.properties}, results={self.results})"
+
+    @classmethod
+    def __from_yaml_dict__(cls, dct: dict[str, Any], yaml_tag: str) -> "RunSummary":
+        id = int(dct["id"])
+        properties = dct["properties"]
+
+        results_dict = dct["results"]
+        if isinstance(results_dict, Results):
+            results = results_dict
+        else:
+            results = Results.__from_yaml_dict__(results_dict, yaml_tag="results")
+
+        return cls(id=id, properties=properties, results=results)
 
 
 @yaml_info("benchmark")
@@ -127,6 +219,20 @@ class Benchmark(YamlAble):
 
         raise TypeError(f"Cannot load benchmark: unexpected YAML document type {type(data)}")
 
+    @classmethod
+    def __from_yaml_dict__(cls, dct: dict[str, Any], yaml_tag: str) -> "Benchmark":
+        runs_data = dct.get("runs", [])
+        runs = [RunSummary.__from_yaml_dict__(run_dct, yaml_tag="run_summary") for run_dct in runs_data]
+
+        summary = dct.get("summary", {})
+        if not isinstance(summary, Stats):
+            raise TypeError(f"Expected 'summary' to be of type Stats, got {type(summary)}")
+
+        run_count = int(dct.get("run_count", len(runs)))
+        benchmark_info = dct.get("benchmark", {})
+
+        return cls(runs=runs, benchmark=benchmark_info, summary=summary, run_count=run_count)
+
     def __repr__(self) -> str:
         return f"Benchmark(runs={self.runs}, benchmark={self.benchmark}, summary={self.summary})"
 
@@ -158,7 +264,7 @@ def compute_benchmark_summary(
 
                 run_entry = runs_map[run_id]
                 backends_for_metric = run_entry.results.sharded_metrics.setdefault(
-                    metric_name, PerBenchmarkResults[ShardedBackendResult].default()
+                    metric_name, PerBenchmarkShardedResults.default()
                 ).backends
 
                 backends_for_metric.setdefault(
@@ -181,7 +287,7 @@ def compute_benchmark_summary(
 
                 run_entry = runs_map[run_id]
                 backends_for_metric = run_entry.results.shardless_metrics.setdefault(
-                    metric_name, PerBenchmarkResults[ShardlessBackendResult].default()
+                    metric_name, PerBenchmarkShardlessResults.default()
                 ).backends[backend_name] = ShardlessBackendResult(properties={}, value=value)
 
     # prepare final summary
