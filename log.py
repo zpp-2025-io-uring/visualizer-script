@@ -22,17 +22,27 @@ class ColoredLogger(logging.Formatter):
         return f"{color}{message}{Fore.RESET}"
 
 
-def _get_logger(name: str | None) -> logging.Logger:
+_DEFAULT_LOGGER_NAME = "io_tester_visualizer"
+
+
+def _get_logger() -> logging.Logger:
+    logger = logging.getLogger(_DEFAULT_LOGGER_NAME)
+
     handler = logging.StreamHandler()
     handler.setFormatter(ColoredLogger("%(levelname)s: %(message)s"))
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.NOTSET)
     logger.addHandler(handler)
+
+    logger.setLevel(logging.NOTSET)
+
+    # Prevent our logger from propagating to ancestor/root loggers
+    # — this avoids influencing other libraries such as `kaleido`.
+    logger.propagate = False
+
     return logger
 
 
 class __Logger:
-    logger = _get_logger(None)
+    logger = _get_logger()
 
 
 def set_level(new_level: str):
