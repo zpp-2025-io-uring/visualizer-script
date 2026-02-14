@@ -5,7 +5,10 @@ from pathlib import Path
 
 from yaml import safe_dump, safe_load
 
-from benchmark import compute_benchmark_summary
+from benchmark import (
+    Benchmark,
+    compute_benchmark_summary,
+)
 from config_versioning import get_config_version, make_proportional_splitter, upgrade_version1_to_version2
 from generate import PlotGenerator
 from log import get_logger
@@ -106,12 +109,12 @@ class BenchmarkSuiteRunner:
                 [shardless_metrics, sharded_metrics] = join_metrics(backends_parsed)
                 metrics_runs.append({"run_id": i, "sharded": sharded_metrics, "shardless": shardless_metrics})
 
-                if self.generate_graphs:
-                    self.plot_generator.schedule_generate_graphs(sharded_metrics, shardless_metrics, run_output_dir)
-
             (combined_sharded, combined_shardless) = join_stats(metrics_runs)
             benchmark_info = {"id": test_name, "properties": {"iterations": iterations}}
             summary = compute_benchmark_summary(combined_sharded, combined_shardless, benchmark_info)
+
+            if self.generate_graphs:
+                _plot_runs(summary, test_output_dir, self.plot_generator)
 
             if self.generate_summary_graph:
                 logger.info("Generating summary graphs")
@@ -143,6 +146,15 @@ class BenchmarkSuiteRunner:
         if self.generate_pdf and per_benchmark_pdfs:
             logger.info("Merging pdfs")
             merge_pdfs(input_pdfs=per_benchmark_pdfs, output_pdf=self.output_dir / SUITE_SUMMARY_PDF_FILENAME)
+
+
+def _plot_runs(benchmark: Benchmark, output_dir: Path, plot_generator: PlotGenerator) -> None:
+    for run in benchmark.runs:
+        run_id = run.id
+        run_output_dir = output_dir / f"run_{run_id}"
+        run_output_dir.mkdir(exist_ok=True, parents=True)
+
+        plot_generator.schedule_graphs_for_run(run.results, run_output_dir)
 
 
 def dump_summary(benchmark_output_dir: Path, summary: dict):
