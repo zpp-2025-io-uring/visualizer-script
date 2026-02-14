@@ -9,7 +9,20 @@ from tree import TreeDict
 
 logger = get_logger()
 
-T = TypeVar("T")
+T = TypeVar("T", bound=YamlAble)
+
+
+def try_deserialize_yaml(t: type[T], data: Any, yaml_tag: str) -> T:
+    """Attempt to deserialize a YAML document into an instance of type T.
+
+    This helper is used in the __from_yaml_dict__ methods to handle cases where
+    nested objects may already be deserialized by the YAML loader, or may still
+    be in raw mapping form. It tries to be permissive to support both cases.
+    """
+    if isinstance(data, t):
+        return data
+    else:
+        return t.__from_yaml_dict__(data, yaml_tag=yaml_tag)
 
 
 @yaml_info("shardless_backend_result")
@@ -56,8 +69,13 @@ class ShardedBackendResult(YamlAble):
     @classmethod
     def __from_yaml_dict__(cls, dct: dict[str, Any], yaml_tag: str) -> "ShardedBackendResult":
         properties = dct.get("properties", {})
+
         shards_data = dct.get("shards", [])
-        shards = [ShardedMeasurement(**shard_dct) for shard_dct in shards_data]
+        shards = [
+            try_deserialize_yaml(ShardedMeasurement, shard_item, yaml_tag="sharded_measurement")
+            for shard_item in shards_data
+        ]
+
         return cls(properties=properties, shards=shards)
 
 
@@ -79,10 +97,9 @@ class PerBenchmarkShardedResults(YamlAble):
         properties = dct.get("properties", {})
         backends = dct.get("backends", {})
         for backend_name, backend_result in backends.items():
-            if not isinstance(backend_result, ShardedBackendResult):
-                backends[backend_name] = ShardedBackendResult.__from_yaml_dict__(
-                    backend_result, yaml_tag="sharded_backend_result"
-                )
+            backends[backend_name] = try_deserialize_yaml(
+                ShardedBackendResult, backend_result, yaml_tag="sharded_backend_result"
+            )
         return cls(backends=backends, properties=properties)
 
 
@@ -104,10 +121,9 @@ class PerBenchmarkShardlessResults(YamlAble):
         properties = dct.get("properties", {})
         backends = dct.get("backends", {})
         for backend_name, backend_result in backends.items():
-            if not isinstance(backend_result, ShardlessBackendResult):
-                backends[backend_name] = ShardlessBackendResult.__from_yaml_dict__(
-                    backend_result, yaml_tag="shardless_backend_result"
-                )
+            backends[backend_name] = try_deserialize_yaml(
+                ShardlessBackendResult, backend_result, yaml_tag="shardless_backend_result"
+            )
         return cls(backends=backends, properties=properties)
 
 
@@ -131,17 +147,15 @@ class Results(YamlAble):
 
         if "sharded_metrics" in dct:
             for key, value in dct["sharded_metrics"].items():
-                if not isinstance(value, PerBenchmarkShardedResults):
-                    sharded_metrics[key] = PerBenchmarkShardedResults.__from_yaml_dict__(
-                        value, yaml_tag="per_benchmark_sharded_results"
-                    )
+                sharded_metrics[key] = try_deserialize_yaml(
+                    PerBenchmarkShardedResults, value, yaml_tag="per_benchmark_sharded_results"
+                )
 
         if "shardless_metrics" in dct:
             for key, value in dct["shardless_metrics"].items():
-                if not isinstance(value, PerBenchmarkShardlessResults):
-                    shardless_metrics[key] = PerBenchmarkShardlessResults.__from_yaml_dict__(
-                        value, yaml_tag="per_benchmark_shardless_results"
-                    )
+                shardless_metrics[key] = try_deserialize_yaml(
+                    PerBenchmarkShardlessResults, value, yaml_tag="per_benchmark_shardless_results"
+                )
 
         return cls(sharded_metrics=sharded_metrics, shardless_metrics=shardless_metrics)
 
@@ -168,12 +182,7 @@ class RunSummary(YamlAble):
         id = int(dct["id"])
         properties = dct["properties"]
 
-        results_dict = dct["results"]
-        if isinstance(results_dict, Results):
-            results = results_dict
-        else:
-            results = Results.__from_yaml_dict__(results_dict, yaml_tag="results")
-
+        results = try_deserialize_yaml(Results, dct["results"], yaml_tag="results")
         return cls(id=id, properties=properties, results=results)
 
 
@@ -222,11 +231,9 @@ class Benchmark(YamlAble):
     @classmethod
     def __from_yaml_dict__(cls, dct: dict[str, Any], yaml_tag: str) -> "Benchmark":
         runs_data = dct.get("runs", [])
-        runs = [RunSummary.__from_yaml_dict__(run_dct, yaml_tag="run_summary") for run_dct in runs_data]
+        runs = [try_deserialize_yaml(RunSummary, run_dct, yaml_tag="run_summary") for run_dct in runs_data]
 
-        summary = dct.get("summary", {})
-        if not isinstance(summary, Stats):
-            raise TypeError(f"Expected 'summary' to be of type Stats, got {type(summary)}")
+        summary = try_deserialize_yaml(Stats, dct.get("summary", {}), yaml_tag="stats")
 
         run_count = int(dct.get("run_count", len(runs)))
         benchmark_info = dct.get("benchmark", {})
