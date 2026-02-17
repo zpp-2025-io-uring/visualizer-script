@@ -1,5 +1,5 @@
-from collections.abc import Callable, Iterator
-from typing import Generic, TypeVar
+from collections.abc import Callable, Hashable, Iterator
+from typing import Any, Generic, TypeVar
 
 import yaml
 from yamlable import YamlAble, yaml_info
@@ -142,7 +142,7 @@ class TreeDict(Generic[T], YamlAble):
 
 
 class NoDuplicateLoader(yaml.SafeLoader):
-    def construct_mapping(self, node, deep=False):
+    def construct_mapping(self, node: yaml.nodes.MappingNode, deep: bool = False) -> dict[Hashable, Any]:
         seen = set()
         mapping = []
         for key_node, value_node in node.value:
