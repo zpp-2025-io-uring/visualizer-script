@@ -11,7 +11,7 @@ logger = get_logger()
 class RpcTestRunner:
     def __init__(
         self, rpc_runner_config: dict, config_path: Path, run_output_dir: Path, backends, skip_async_workers_cpuset
-    ):
+    ) -> None:
         self.tester_path: Path = Path(rpc_runner_config["tester_path"]).expanduser().resolve()
         self.config_path: Path = config_path.resolve()
         self.run_output_dir: Path = run_output_dir.resolve()
@@ -40,6 +40,9 @@ class RpcTestRunner:
     def __run_server(
         self, backend: str, server_cpuset: str, server_async_worker_cpuset: str | None
     ) -> subprocess.Popen[str] | RemoteProcess:  # Creates a process
+        logger.info(
+            f"Running rpc_tester with backend {backend}, server cpuset: {server_cpuset}, server async worker cpuset: {server_async_worker_cpuset}, client cpuset: {client_cpuset}, client async worker cpuset: {client_async_worker_cpuset}"
+        )
         if self.server_remote is None:
             argv = [
                 self.tester_path,

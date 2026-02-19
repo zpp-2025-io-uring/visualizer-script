@@ -120,10 +120,10 @@ BenchmarkType = str
 
 
 class BenchmarkMetadataHolder:
-    def __init__(self):
-        self._metadata = {}
+    def __init__(self) -> None:
+        self._metadata: dict[BenchmarkType, BenchmarkMetadata] = {}
 
-    def set_metadata(self, benchmark_type: BenchmarkType, metadata: BenchmarkMetadata):
+    def set_metadata(self, benchmark_type: BenchmarkType, metadata: BenchmarkMetadata) -> None:
         self._metadata[benchmark_type] = metadata
 
     def get_metadata_or_default(self, benchmark_type: BenchmarkType | None) -> BenchmarkMetadata:
@@ -131,7 +131,7 @@ class BenchmarkMetadataHolder:
             return BenchmarkMetadata()
         return self._metadata.get(benchmark_type, BenchmarkMetadata())
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._metadata)
 
 

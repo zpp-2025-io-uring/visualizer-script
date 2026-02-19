@@ -41,7 +41,7 @@ class BenchmarkSuiteRunner:
         plot_generator: PlotGenerator,
         benchmarks,
         config: dict,
-    ):
+    ) -> None:
         self.output_dir: Path = Path(config["output_dir"]).resolve()
         self.backends = config["backends"]
         self.params = config["params"]
@@ -57,7 +57,7 @@ class BenchmarkSuiteRunner:
             f"Initialized benchmark suite runner with output_dir={self.output_dir}, backends={self.backends}, params={self.params}, io_config={self.io_config}, rpc_config={self.rpc_config}, scylla_config={self.scylla_config}, benchmarks={self.benchmarks}, genetare_graphs={self.plotting_config.generate_graphs}, generate_summary_graph={self.plotting_config.generate_summary_graph}, generate_pdf={self.plotting_config.generate_pdf}"
         )
 
-    def run(self):
+    def run(self) -> None:
         per_benchmark_pdfs: list[Path] = []
 
         for benchmark in self.benchmarks:
@@ -168,7 +168,7 @@ def _plot_runs(benchmark: Benchmark, output_dir: Path, plot_generator: PlotGener
         plot_generator.schedule_graphs_for_run(run.results, run_output_dir, type=benchmark.get_info().type)
 
 
-def dump_summary(benchmark_output_dir: Path, summary: dict):
+def dump_summary(benchmark_output_dir: Path, summary: Benchmark) -> None:
     """
     Dumps the benchmark summary into benchmark_output_dir/metrics_summary.yaml
     """
@@ -177,7 +177,7 @@ def dump_summary(benchmark_output_dir: Path, summary: dict):
         f.write(safe_dump(summary))
 
 
-def dump_environment(dir_for_config: Path, dir_to_seastar: Path):
+def dump_environment(dir_for_config: Path, dir_to_seastar: Path) -> None:
     """
     Dumps environment information into files in dir_for_config.
     dir_to_seastar is the path to the seastar repository, used to get git log.
@@ -255,7 +255,7 @@ def dump_environment(dir_for_config: Path, dir_to_seastar: Path):
         raise Exception("git_status failed")
 
 
-def run_benchmark_suite_args(args, metadata_holder: BenchmarkMetadataHolder):
+def run_benchmark_suite_args(args: argparse.Namespace, metadata_holder: BenchmarkMetadataHolder) -> None:
     timestamp_for_suite: str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 
     benchmark_path = Path(args.benchmark).resolve()
@@ -325,7 +325,7 @@ def run_benchmark_suite_args(args, metadata_holder: BenchmarkMetadataHolder):
         runner.run()
 
 
-def configure_run_benchmark_suite_parser(parser: argparse.ArgumentParser):
+def configure_run_benchmark_suite_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--benchmark", help="path to .yaml file with the benchmark suite", required=True)
     parser.add_argument(
         "--config", help="path to .yaml file with configuration for the test suite", required=True, nargs="+"

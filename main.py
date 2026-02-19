@@ -14,7 +14,7 @@ def _cli_key_for_benchmark_type(type: str) -> str:
     return f"{type}-metadata"
 
 
-def _configure_metadata_parser(parser: argparse.ArgumentParser):
+def _configure_metadata_parser(parser: argparse.ArgumentParser) -> None:
     default_metadata_dir = str(pathlib.Path(__file__).resolve().parent / "configuration" / "plots")
     for type in SUPPORTED_BENCHMARK_TYPES:
         parser.add_argument(

@@ -21,7 +21,7 @@ logger = get_logger()
 class PlotGenerator:
     """Generates plots for sharded and shardless metrics."""
 
-    def __init__(self, metadata_holder: BenchmarkMetadataHolder):
+    def __init__(self, metadata_holder: BenchmarkMetadataHolder) -> None:
         self.metadata_holder = metadata_holder
         self.figs: list[Figure] = []
         self.file_paths: list[pathlib.Path] = []
@@ -57,7 +57,7 @@ class PlotGenerator:
 
     def schedule_graphs_for_summary(
         self, stats: Stats, build_dir: pathlib.Path, type: BenchmarkType | None = None, image_format: str = "svg"
-    ):
+    ) -> None:
         build_dir = pathlib.Path(build_dir)
         build_dir.mkdir(parents=True, exist_ok=True)
 
@@ -105,12 +105,12 @@ class PlotGenerator:
             self.figs.append(fig)
             self.file_paths.append(file_path)
 
-    def plot(self):
+    def plot(self) -> None:
         pio.write_images(fig=self.figs, file=self.file_paths)
         self.figs = []
         self.file_paths = []
 
-    def __del__(self):
+    def __del__(self) -> None:
         # If there are any pending plots, generate them
         # No need for giving possibility to skip it for now
         if self.figs or self.file_paths:
@@ -184,7 +184,9 @@ class PlotData:
     data: dict[str, Any]
     value_axis_label: str
 
-    def __init__(self, type: PlotType, display_name: str, data: dict[str, Any], value_axis_label: str | None = None):
+    def __init__(
+        self, type: PlotType, display_name: str, data: dict[str, Any], value_axis_label: str | None = None
+    ) -> None:
         self.type = type
         self.display_name = display_name
         self.data = data
@@ -249,7 +251,7 @@ class PlotDataWithError(PlotData):
         display_name: str,
         df: pd.DataFrame,
         value_axis_label: str | None = None,
-    ):
+    ) -> None:
         self.type = type
         self.display_name = display_name
         self.df = df

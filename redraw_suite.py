@@ -11,12 +11,10 @@ logger = get_logger()
 
 
 class RedrawSuiteRunner:
-    def __init__(self, metadata_holder: BenchmarkMetadataHolder):
+    def __init__(self, metadata_holder: BenchmarkMetadataHolder) -> None:
         self.plot_generator = PlotGenerator(metadata_holder)
 
-    def run_redraw_suite(self, dir):
-        dir = Path(dir)
-
+    def run_redraw_suite(self, dir: Path) -> None:
         for benchmark_dir in dir.iterdir():
             if not benchmark_dir.is_dir():
                 continue
@@ -43,11 +41,11 @@ class RedrawSuiteRunner:
             self.plot_generator.schedule_graphs_for_run(run.results, run_output_dir)
 
 
-def run_redraw_suite_args(args, metadata_holder: BenchmarkMetadataHolder):
+def run_redraw_suite_args(args: argparse.Namespace, metadata_holder: BenchmarkMetadataHolder) -> None:
     runner = RedrawSuiteRunner(metadata_holder)
-    runner.run_redraw_suite(args.dir)
+    runner.run_redraw_suite(Path(args.dir))
 
 
-def configure_redraw_suite_parser(parser: argparse.ArgumentParser):
+def configure_redraw_suite_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--dir", help="directory to save the output to", required=True)
     parser.set_defaults(func=run_redraw_suite_args)
