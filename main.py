@@ -1,4 +1,5 @@
 import argparse
+import pathlib
 
 from benchmarks import SUPPORTED_BENCHMARK_TYPES, configure_run_benchmark_suite_parser
 from log import get_logger, set_level
@@ -14,7 +15,7 @@ def _cli_key_for_benchmark_type(type: str) -> str:
 
 
 def _configure_metadata_parser(parser: argparse.ArgumentParser):
-    default_metadata_dir = f"{__file__.__dir__()}/configuration/plots"
+    default_metadata_dir = str(pathlib.Path(__file__).resolve().parent / "configuration" / "plots")
     for type in SUPPORTED_BENCHMARK_TYPES:
         parser.add_argument(
             f"--{_cli_key_for_benchmark_type(type)}",
@@ -25,19 +26,23 @@ def _configure_metadata_parser(parser: argparse.ArgumentParser):
 
 def _load_metadata_from_args(args: argparse.Namespace) -> BenchmarkMetadataHolder:
     args_dict = vars(args)
+    print(args_dict)
 
     metadata_holder = BenchmarkMetadataHolder()
     for type in SUPPORTED_BENCHMARK_TYPES:
-        key = _cli_key_for_benchmark_type(type)
-        if key not in args_dict or args_dict[key] is None:
-            continue
-        with open(args_dict[key]) as f:
-            metadata = BenchmarkMetadata.load_from_yaml(f)
-        logger.info(f"Loaded metadata for benchmark type {type} from {args_dict[key]}")
-        metadata_holder.set_metadata(type, metadata)
+        # argparse converts flag names with '-' into attribute names with '_'
+        cli_key = _cli_key_for_benchmark_type(type)  # e.g. "io-metadata"
+        arg_key = cli_key.replace("-", "_")  # e.g. "io_metadata"
 
-    if len(metadata_holder) == 0:
-        logger.warning("No metadata files provided, using empty metadata for all benchmarks")
+        if arg_key not in args_dict or args_dict[arg_key] is None:
+            logger.warning(f"No metadata file provided for benchmark type {type}, using empty metadata")
+            continue
+
+        metadata_path = args_dict[arg_key]
+        with open(metadata_path) as f:
+            metadata = BenchmarkMetadata.load_from_yaml(f)
+        logger.info(f"Loaded metadata for benchmark type {type} from {metadata_path}")
+        metadata_holder.set_metadata(type, metadata)
 
     return metadata_holder
 
