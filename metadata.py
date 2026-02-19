@@ -109,7 +109,7 @@ class BenchmarkMetadata(YamlAble):
         return value.get_plot_metadata()
 
     @staticmethod
-    def load_from_file(yaml) -> "BenchmarkMetadata":
+    def load_from_yaml(yaml) -> "BenchmarkMetadata":
         obj = safe_load(yaml)
         if not isinstance(obj, BenchmarkMetadata):
             raise ValueError(f"Expected a Metadata object in the metadata file, got {type(obj)}")

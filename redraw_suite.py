@@ -5,13 +5,14 @@ from benchmark import Benchmark
 from benchmarks import BENCHMARK_SUMMARY_FILENAME
 from generate import PlotGenerator
 from log import get_logger
+from metadata import BenchmarkMetadataHolder
 
 logger = get_logger()
 
 
 class RedrawSuiteRunner:
     def __init__(self):
-        self.plot_generator = PlotGenerator()
+        self.plot_generator = PlotGenerator(BenchmarkMetadataHolder())
 
     def run_redraw_suite(self, dir):
         dir = Path(dir)
