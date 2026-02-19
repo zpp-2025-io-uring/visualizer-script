@@ -134,3 +134,16 @@ def test_len() -> None:
     for path, value in VALUES:
         increment_len(path, value)
         assert len(tm) == current_len
+
+
+def test_yaml_deserialize_with_duplicate_keys() -> None:
+    yaml_str = """
+    a:
+      b: 1
+      b: 2
+    """
+    try:
+        safe_load(yaml_str)
+        assert False, "Expected ValueError for duplicate keys, but no exception was raised."
+    except ValueError as e:
+        assert "Duplicate key 'b'" in str(e), f"Unexpected error message: {str(e)}"
