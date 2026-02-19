@@ -26,7 +26,6 @@ def _configure_metadata_parser(parser: argparse.ArgumentParser) -> None:
 
 def _load_metadata_from_args(args: argparse.Namespace) -> BenchmarkMetadataHolder:
     args_dict = vars(args)
-    print(args_dict)
 
     metadata_holder = BenchmarkMetadataHolder()
     for type in SUPPORTED_BENCHMARK_TYPES:
