@@ -25,6 +25,8 @@ BENCHMARK_SUMMARY_FILENAME = "metrics_summary.yaml"
 
 logger = get_logger()
 
+SUPPORTED_BENCHMARK_TYPES = ["io", "rpc", "simple-query"]
+
 
 class BenchmarkSuiteRunner:
     class PlottingConfig:
@@ -256,7 +258,7 @@ def dump_environment(dir_for_config: Path, dir_to_seastar: Path):
         raise Exception("git_status failed")
 
 
-def run_benchmark_suite_args(args):
+def run_benchmark_suite_args(args, metadata_holder: BenchmarkMetadataHolder):
     timestamp_for_suite: str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 
     benchmark_path = Path(args.benchmark).resolve()
@@ -320,7 +322,7 @@ def run_benchmark_suite_args(args):
             generate_pdf=args.pdf,
         )
         runner = BenchmarkSuiteRunner(
-            plotting_config, PlotGenerator(BenchmarkMetadataHolder()), safe_load(benchmark_yaml), config
+            plotting_config, PlotGenerator(metadata_holder), safe_load(benchmark_yaml), config
         )
 
         runner.run()
