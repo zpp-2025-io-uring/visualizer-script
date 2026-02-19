@@ -424,9 +424,5 @@ def plot_total_metric(
     )
 
 
-def make_metric_name_for_plot(name: tuple[str, ...]) -> str:
-    return "_".join(name)
-
-
 def sanitize_filename(name: str) -> str:
     return escape(name)
