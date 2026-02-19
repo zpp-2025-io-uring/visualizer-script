@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 
-from benchmark import compute_benchmark_summary
+from benchmark import BenchmarkInfo, compute_benchmark_summary
 from generate import PlotGenerator
 from metadata import BACKENDS_NAMES, BenchmarkMetadataHolder
 from parse import auto_generate_data_points, join_metrics, load_data
@@ -26,7 +26,7 @@ def run_redraw(metadata_holder: BenchmarkMetadataHolder, backend_paths: dict, ou
     metrics_runs = [{"run_id": 0, "sharded": sharded_metrics, "shardless": shardless_metrics}]
 
     (combined_sharded, combined_shardless) = join_stats(metrics_runs)
-    benchmark_info = {"id": "redraw", "properties": {"iterations": 1}}
+    benchmark_info = BenchmarkInfo(id="redraw")
     summary = compute_benchmark_summary(combined_sharded, combined_shardless, benchmark_info)
 
     plot_generator = PlotGenerator(metadata_holder)

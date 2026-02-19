@@ -5,10 +5,7 @@ from pathlib import Path
 
 from yaml import safe_dump, safe_load
 
-from benchmark import (
-    Benchmark,
-    compute_benchmark_summary,
-)
+from benchmark import Benchmark, BenchmarkInfo, compute_benchmark_summary
 from config_versioning import get_config_version, make_proportional_splitter, upgrade_version1_to_version2
 from generate import PlotGenerator
 from log import get_logger
@@ -124,7 +121,7 @@ class BenchmarkSuiteRunner:
                 metrics_runs.append({"run_id": i, "sharded": sharded_metrics, "shardless": shardless_metrics})
 
             (combined_sharded, combined_shardless) = join_stats(metrics_runs)
-            benchmark_info = {"id": test_name, "properties": {"iterations": iterations}}
+            benchmark_info = BenchmarkInfo(id=test_name, type=benchmark["type"], properties={"iterations": iterations})
             summary = compute_benchmark_summary(combined_sharded, combined_shardless, benchmark_info)
 
             if self.plotting_config.generate_graphs:
@@ -133,13 +130,13 @@ class BenchmarkSuiteRunner:
             if self.plotting_config.generate_summary_graph:
                 logger.info("Generating summary graphs")
                 self.plot_generator.schedule_graphs_for_summary(
-                    summary.get_stats(), test_output_dir, image_format="svg"
+                    summary.get_stats(), test_output_dir, type=benchmark_info.type, image_format="svg"
                 )
 
             if self.plotting_config.generate_pdf:
                 logger.info("Generating pdf graphs")
                 self.plot_generator.schedule_graphs_for_summary(
-                    summary.get_stats(), test_output_dir, image_format="png"
+                    summary.get_stats(), test_output_dir, type=benchmark_info.type, image_format="png"
                 )
 
             # We need to plot now, to have at least the plots for the .pdfs
@@ -168,7 +165,7 @@ def _plot_runs(benchmark: Benchmark, output_dir: Path, plot_generator: PlotGener
         run_output_dir = output_dir / f"run_{run_id}"
         run_output_dir.mkdir(exist_ok=True, parents=True)
 
-        plot_generator.schedule_graphs_for_run(run.results, run_output_dir)
+        plot_generator.schedule_graphs_for_run(run.results, run_output_dir, type=benchmark.get_info().type)
 
 
 def dump_summary(benchmark_output_dir: Path, summary: dict):
