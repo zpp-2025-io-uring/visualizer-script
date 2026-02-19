@@ -32,15 +32,13 @@ class RedrawSuiteRunner:
 
         with open(summary_file) as file:
             summary = Benchmark.load_from_file(file)
-        self.plot_generator.schedule_graphs_for_summary(
-            summary.get_stats(), output_dir, type=summary.get_benchmark().type
-        )
+        self.plot_generator.schedule_graphs_for_summary(summary.get_stats(), output_dir, type=summary.get_info().type)
 
         for run in summary.get_runs():
             run_id = run.id
             run_output_dir = output_dir / f"run_{run_id}"
             run_output_dir.mkdir(exist_ok=True, parents=True)
-            self.plot_generator.schedule_graphs_for_run(run.results, run_output_dir, type=summary.get_benchmark().type)
+            self.plot_generator.schedule_graphs_for_run(run.results, run_output_dir, type=summary.get_info().type)
 
 
 def run_redraw_suite_args(args: argparse.Namespace, metadata_holder: BenchmarkMetadataHolder) -> None:

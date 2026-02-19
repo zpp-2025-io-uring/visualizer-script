@@ -34,7 +34,6 @@ class PlotGenerator:
     ) -> None:
         """Schedule generating per run"""
         benchmark_metadata = self.metadata_holder.get_metadata_or_default(type)
-        print(f"Generating plots for results {results} with metadata {benchmark_metadata}")
 
         for metric_name, metric_by_backend in results.sharded_metrics.items():
             plot_metric_data = benchmark_metadata.get_sharded_metric_metadata_or_default(metric_name)

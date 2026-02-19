@@ -214,6 +214,7 @@ class Benchmark(YamlAble):
         self.benchmark = info
         self.summary = summary
         self.run_count = run_count if run_count is not None else len(runs)
+        logger.debug(f"Initialized benchmark with benchmark={info}")
         logger.debug(
             f"Initialized benchmark with runs={self.runs}, benchmark={self.benchmark}, summary={self.summary}, run_count={self.run_count}"
         )
