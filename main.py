@@ -14,9 +14,12 @@ def _cli_key_for_benchmark_type(type: str) -> str:
 
 
 def _configure_metadata_parser(parser: argparse.ArgumentParser):
+    default_metadata_dir = f"{__file__.__dir__()}/configuration/plots"
     for type in SUPPORTED_BENCHMARK_TYPES:
         parser.add_argument(
-            f"--{_cli_key_for_benchmark_type(type)}", help=f"path to {type} benchmark metadata file", default=None
+            f"--{_cli_key_for_benchmark_type(type)}",
+            help=f"path to {type} benchmark metadata file",
+            default=f"{default_metadata_dir}/{type}.yaml",
         )
 
 
