@@ -26,8 +26,20 @@ logger = get_logger()
 
 
 class BenchmarkSuiteRunner:
+    class PlottingConfig:
+        def __init__(self, generate_graphs: bool, generate_summary_graph: bool, generate_pdf: bool) -> None:
+            self.generate_graphs = generate_graphs
+            self.generate_summary_graph = generate_summary_graph
+            self.generate_pdf = generate_pdf
+
+        def __repr__(self) -> str:
+            return f"PlottingConfig(generate_graphs={self.generate_graphs}, generate_summary_graph={self.generate_summary_graph}, generate_pdf={self.generate_pdf})"
+
     def __init__(
-        self, benchmarks, config: dict, generate_graphs: bool, generate_summary_graphs: bool, generate_pdf: bool
+        self,
+        plotting_config: PlottingConfig,
+        benchmarks,
+        config: dict,
     ):
         self.output_dir: Path = Path(config["output_dir"]).resolve()
         self.backends = config["backends"]
@@ -37,13 +49,11 @@ class BenchmarkSuiteRunner:
         self.rpc_config = config["rpc"]
         self.scylla_config = config["scylla"]
 
+        self.plotting_config = plotting_config
         self.benchmarks = benchmarks
-        self.generate_graphs = generate_graphs
-        self.generate_summary_graph = generate_summary_graphs
-        self.generate_pdf = generate_pdf
         self.plot_generator = PlotGenerator()
         logger.debug(
-            f"Initialized benchmark suite runner with output_dir={self.output_dir}, backends={self.backends}, params={self.params}, io_config={self.io_config}, rpc_config={self.rpc_config}, scylla_config={self.scylla_config}, benchmarks={self.benchmarks}, genetare_graphs={self.generate_graphs}, generate_summary_graph={self.generate_summary_graph}, generate_pdf={self.generate_pdf}"
+            f"Initialized benchmark suite runner with output_dir={self.output_dir}, backends={self.backends}, params={self.params}, io_config={self.io_config}, rpc_config={self.rpc_config}, scylla_config={self.scylla_config}, benchmarks={self.benchmarks}, genetare_graphs={self.plotting_config.generate_graphs}, generate_summary_graph={self.plotting_config.generate_summary_graph}, generate_pdf={self.plotting_config.generate_pdf}"
         )
 
     def run(self):
@@ -113,16 +123,16 @@ class BenchmarkSuiteRunner:
             benchmark_info = {"id": test_name, "properties": {"iterations": iterations}}
             summary = compute_benchmark_summary(combined_sharded, combined_shardless, benchmark_info)
 
-            if self.generate_graphs:
+            if self.plotting_config.generate_graphs:
                 _plot_runs(summary, test_output_dir, self.plot_generator)
 
-            if self.generate_summary_graph:
+            if self.plotting_config.generate_summary_graph:
                 logger.info("Generating summary graphs")
                 self.plot_generator.schedule_graphs_for_summary(
                     summary.get_stats(), test_output_dir, image_format="svg"
                 )
 
-            if self.generate_pdf:
+            if self.plotting_config.generate_pdf:
                 logger.info("Generating pdf graphs")
                 self.plot_generator.schedule_graphs_for_summary(
                     summary.get_stats(), test_output_dir, image_format="png"
@@ -131,7 +141,7 @@ class BenchmarkSuiteRunner:
             # We need to plot now, to have at least the plots for the .pdfs
             self.plot_generator.plot()
 
-            if self.generate_pdf:
+            if self.plotting_config.generate_pdf:
                 logger.info("Generating pdf")
                 summary_images = sorted(test_output_dir.glob("*.png"))
                 pdf_path = generate_benchmark_summary_pdf(
@@ -143,7 +153,7 @@ class BenchmarkSuiteRunner:
 
             dump_summary(test_output_dir, summary)
 
-        if self.generate_pdf and per_benchmark_pdfs:
+        if self.plotting_config.generate_pdf and per_benchmark_pdfs:
             logger.info("Merging pdfs")
             merge_pdfs(input_pdfs=per_benchmark_pdfs, output_pdf=self.output_dir / SUITE_SUMMARY_PDF_FILENAME)
 
@@ -302,9 +312,12 @@ def run_benchmark_suite_args(args):
             config["backends"] = ["asymmetric_io_uring", "io_uring"]
             logger.warning(f"backends selecton not detected, assuming {config['backends']}")
 
-        runner = BenchmarkSuiteRunner(
-            safe_load(benchmark_yaml), config, args.generate_graphs, args.generate_summary_graphs, args.pdf
+        plotting_config = BenchmarkSuiteRunner.PlottingConfig(
+            generate_graphs=args.generate_graphs,
+            generate_summary_graph=args.generate_summary_graphs,
+            generate_pdf=args.pdf,
         )
+        runner = BenchmarkSuiteRunner(plotting_config, safe_load(benchmark_yaml), config)
 
         runner.run()
 
