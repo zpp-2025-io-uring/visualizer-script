@@ -52,7 +52,7 @@ class TestMetricPlotMetadata:
             (("path", "to", "metric"), "path_to_metric"),
         ],
     )
-    def test_make_file_name_for_plot(self, name, expected) -> None:
+    def test_make_file_name_for_plot(self, name: tuple[str, ...], expected: str) -> None:
         assert MetricPlotMetadata.make_file_name_for_plot(name) == expected
 
     def test_default(self) -> None:
@@ -103,7 +103,7 @@ class TestMetadata:
         expected = f"BenchmarkMetadata(sharded_metrics={sharded}, shardless_metrics={TreeDict[MetricMetadata]()})"
         assert repr(obj) == expected
 
-    def test_get_sharded_metric_metadata_or_default_present(self, sample_tree_dict) -> None:
+    def test_get_sharded_metric_metadata_or_default_present(self, sample_tree_dict: TreeDict[MetricMetadata]) -> None:
         obj = BenchmarkMetadata(sharded_metrics=sample_tree_dict)
         plot_meta = obj.get_sharded_metric_metadata_or_default(("path", "metric1"))
         assert plot_meta.title == "metric1"
@@ -115,7 +115,7 @@ class TestMetadata:
         assert plot_meta.value_axis_title == "Value"
         assert plot_meta.unit is None
 
-    def test_get_shardless_metric_metadata_or_default_present(self, sample_tree_dict) -> None:
+    def test_get_shardless_metric_metadata_or_default_present(self, sample_tree_dict: TreeDict[MetricMetadata]) -> None:
         obj = BenchmarkMetadata(shardless_metrics=sample_tree_dict)
         plot_meta = obj.get_shardless_metric_metadata_or_default(("path", "metric1"))
         assert plot_meta.title == "metric1"

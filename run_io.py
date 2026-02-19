@@ -14,7 +14,7 @@ class IOTestRunner:
         run_output_dir: Path,
         backends: list[str],
         skip_async_workers_cpuset: bool,
-    ):
+    ) -> None:
         self.tester_path: Path = Path(io_runner_config["tester_path"]).expanduser().resolve()
         self.config_path: Path = config_path.resolve()
         self.run_output_dir = run_output_dir.resolve()
@@ -27,7 +27,7 @@ class IOTestRunner:
 
         warn_if_not_release(self.tester_path)
 
-    def __run_test(self, backend: str, output_filename: str, cpuset: str, async_worker_cpuset: str | None):
+    def __run_test(self, backend: str, output_filename: str, cpuset: str, async_worker_cpuset: str | None) -> str:
         logger.info(
             f"Running io_tester with backend {backend}, cpuset: {cpuset}, async worker cpuset: {async_worker_cpuset}"
         )

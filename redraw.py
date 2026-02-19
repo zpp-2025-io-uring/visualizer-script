@@ -8,9 +8,7 @@ from parse import auto_generate_data_points, join_metrics, load_data
 from stats import join_stats
 
 
-def run_redraw(metadata_holder: BenchmarkMetadataHolder, backend_paths: dict, output_dir):
-    output_dir = Path(output_dir)
-
+def run_redraw(metadata_holder: BenchmarkMetadataHolder, backend_paths: dict, output_dir: Path) -> None:
     backends_data_raw = {}
     for backend, path in backend_paths.items():
         with open(Path(path)) as f:
@@ -34,7 +32,7 @@ def run_redraw(metadata_holder: BenchmarkMetadataHolder, backend_paths: dict, ou
     plot_generator.plot()
 
 
-def run_redraw_args(args, metadata_holder: BenchmarkMetadataHolder):
+def run_redraw_args(args: argparse.Namespace, metadata_holder: BenchmarkMetadataHolder) -> None:
     backend_paths = {}
 
     args_dict = vars(args)
@@ -42,10 +40,10 @@ def run_redraw_args(args, metadata_holder: BenchmarkMetadataHolder):
         if backend in args_dict and args_dict[backend] is not None:
             backend_paths[backend] = args_dict[backend]
 
-    run_redraw(metadata_holder, backend_paths, args.output_dir)
+    run_redraw(metadata_holder, backend_paths, Path(args.output_dir))
 
 
-def configure_redraw_parser(parser: argparse.ArgumentParser):
+def configure_redraw_parser(parser: argparse.ArgumentParser) -> None:
     for backend in BACKENDS_NAMES:
         parser.add_argument(f"--{backend}", help=f"path to {backend} results", default=None)
     parser.add_argument("--output-dir", help="directory to save the output to", required=True)

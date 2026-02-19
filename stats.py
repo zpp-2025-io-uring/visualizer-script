@@ -8,7 +8,7 @@ from tree import TreeDict
 
 
 class ShardlessMetricRunMeasurement:
-    def __init__(self, run_id: int, value: Any):
+    def __init__(self, run_id: int, value: Any) -> None:
         self.run_id = run_id
         self.value = value
 
@@ -17,7 +17,7 @@ class ShardlessMetricRunMeasurement:
 
 
 class ShardedMetricRunMeasurement:
-    def __init__(self, run_id: int, shard: int, value: Any):
+    def __init__(self, run_id: int, shard: int, value: Any) -> None:
         self.run_id = run_id
         self.value = value
         self.shard = shard
@@ -71,7 +71,7 @@ def join_stats(
 _SAMPLES_FOR_STDEV_AND_VARIANCE = 2
 
 
-def compute_stats(samples: Iterable[Any]):
+def compute_stats(samples: Iterable[Any]) -> dict[str, Any] | None:
     nums = []
     for s in samples:
         try:
@@ -103,7 +103,7 @@ def compute_stats(samples: Iterable[Any]):
 class Stats(YamlAble):
     def __init__(
         self, sharded_metrics: TreeDict[dict[str, dict[int, Any]]], shardless_metrics: TreeDict[dict[str, Any]]
-    ):
+    ) -> None:
         self.sharded_metrics = sharded_metrics
         self.shardless_metrics = shardless_metrics
 
