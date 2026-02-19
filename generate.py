@@ -12,7 +12,7 @@ from plotly.graph_objs import Figure
 
 from benchmark import PerBenchmarkShardedResults, PerBenchmarkShardlessResults, Results
 from log import get_logger
-from metadata import BACKEND_COLORS, BACKENDS_NAMES
+from metadata import BACKEND_COLORS, BACKENDS_NAMES, BenchmarkMetadataHolder, BenchmarkType, MetricPlotMetadata
 from stats import Stats
 
 logger = get_logger()
@@ -21,34 +21,43 @@ logger = get_logger()
 class PlotGenerator:
     """Generates plots for sharded and shardless metrics."""
 
-    def __init__(self):
-        self.figs = []
-        self.file_paths = []
+    def __init__(self, metadata_holder: BenchmarkMetadataHolder):
+        self.metadata_holder = metadata_holder
+        self.figs: list[Figure] = []
+        self.file_paths: list[pathlib.Path] = []
 
     def schedule_graphs_for_run(
         self,
         results: Results,
         build_dir: pathlib.Path,
+        type: BenchmarkType | None = None,
     ) -> None:
         """Schedule generating per run"""
+        benchmark_metadata = self.metadata_holder.get_metadata_or_default(type)
 
         for metric_name, metric_by_backend in results.sharded_metrics.items():
-            plot_metric_name = make_metric_name_for_plot(metric_name)
-            (metric_file_path, plot) = plot_sharded_metric(plot_metric_name, metric_by_backend, build_dir)
+            plot_metric_data = benchmark_metadata.get_sharded_metric_metadata_or_default(metric_name)
+            (metric_file_path, plot) = plot_sharded_metric(metric_name, plot_metric_data, metric_by_backend, build_dir)
             self.figs.append(plot)
             self.file_paths.append(metric_file_path)
 
-            (total_file_path, total_plot) = plot_total_metric(plot_metric_name, metric_by_backend, build_dir)
+            (total_file_path, total_plot) = plot_total_metric(
+                metric_name, plot_metric_data, metric_by_backend, build_dir
+            )
             self.figs.append(total_plot)
             self.file_paths.append(total_file_path)
 
         for metric_name, shardless_metric_by_backend in results.shardless_metrics.items():
-            plot_metric_name = make_metric_name_for_plot(metric_name)
-            (metric_file_path, plot) = plot_shardless_metric(plot_metric_name, shardless_metric_by_backend, build_dir)
+            plot_metric_data = benchmark_metadata.get_shardless_metric_metadata_or_default(metric_name)
+            (metric_file_path, plot) = plot_shardless_metric(
+                metric_name, plot_metric_data, shardless_metric_by_backend, build_dir
+            )
             self.figs.append(plot)
             self.file_paths.append(metric_file_path)
 
-    def schedule_graphs_for_summary(self, stats: Stats, build_dir: pathlib.Path, image_format: str = "svg"):
+    def schedule_graphs_for_summary(
+        self, stats: Stats, build_dir: pathlib.Path, type: BenchmarkType | None = None, image_format: str = "svg"
+    ):
         build_dir = pathlib.Path(build_dir)
         build_dir.mkdir(parents=True, exist_ok=True)
 
@@ -80,7 +89,10 @@ class PlotGenerator:
         for metric, per_backend_shardless_metrics in stats.get_shardless_metrics().items():
             rows = summarize_shardless_metrics_by_backend(per_backend_shardless_metrics, stat_to_plot, stat_as_error)
             df = pd.DataFrame(rows)
-            plot_metric_name = make_metric_name_for_plot(metric)
+            plot_metric_data = self.metadata_holder.get_metadata_or_default(
+                type
+            ).get_shardless_metric_metadata_or_default(metric)
+            plot_metric_name = plot_metric_data.get_title_with_unit()
             file_path = build_dir / pathlib.Path(f"{sanitize_filename(plot_metric_name)}.{image_format}")
             fig = make_plot_with_error(
                 PlotDataWithError(
@@ -301,9 +313,12 @@ def find_width_for_min_bar(number_of_groups: int, number_of_bars_per_group: int)
 
 
 def plot_sharded_metric(
-    metric_name: str, sharded_metric_by_backend: PerBenchmarkShardedResults, build_dir: pathlib.Path
+    metric_path: tuple[str, ...],
+    metric_plot: MetricPlotMetadata,
+    sharded_metric_by_backend: PerBenchmarkShardedResults,
+    build_dir: pathlib.Path,
 ) -> tuple[pathlib.Path, Figure]:
-    file_basename = sanitize_filename(metric_name)
+    file_basename = sanitize_filename(MetricPlotMetadata.make_file_name_for_plot(metric_path))
 
     # determine max shard index
     max_shard = -1
@@ -312,7 +327,7 @@ def plot_sharded_metric(
             max_shard = max(max_shard, measurement.shard)
 
     if max_shard == -1:
-        raise ValueError(f"No sharded data found for metric {metric_name}")
+        raise ValueError(f"No sharded data found for metric {metric_plot.get_title()}")
 
     num_shards = max_shard + 1
 
@@ -327,14 +342,24 @@ def plot_sharded_metric(
     logger.debug(f"Plotting sharded {file_path}")
     return (
         file_path,
-        make_plot(PlotData(type=PlotType.Sharded, display_name=metric_name, data=per_backend)),
+        make_plot(
+            PlotData(
+                type=PlotType.Sharded,
+                display_name=metric_plot.get_title_with_unit(),
+                data=per_backend,
+                value_axis_label=metric_plot.get_value_axis_title(),
+            )
+        ),
     )
 
 
 def plot_shardless_metric(
-    metric_name: str, shardless_metric_by_backend: PerBenchmarkShardlessResults, build_dir: pathlib.Path
+    metric_path: tuple[str, ...],
+    metric_plot: MetricPlotMetadata,
+    shardless_metric_by_backend: PerBenchmarkShardlessResults,
+    build_dir: pathlib.Path,
 ) -> tuple[pathlib.Path, Figure]:
-    file_basename = sanitize_filename(metric_name)
+    file_basename = sanitize_filename(MetricPlotMetadata.make_file_name_for_plot(metric_path))
 
     per_backend = {}
     for backend, measurement in shardless_metric_by_backend.backends.items():
@@ -344,18 +369,28 @@ def plot_shardless_metric(
     logger.debug(f"Plotting shardless metric {file_path}")
     return (
         file_path,
-        make_plot(PlotData(type=PlotType.Shardless, display_name=metric_name, data=per_backend)),
+        make_plot(
+            PlotData(
+                type=PlotType.Shardless,
+                display_name=metric_plot.get_title_with_unit(),
+                data=per_backend,
+                value_axis_label=metric_plot.get_value_axis_title(),
+            )
+        ),
     )
 
 
 def plot_total_metric(
-    metric_name: str, sharded_metric_by_backend: PerBenchmarkShardedResults, build_dir: pathlib.Path
+    metric_path: tuple[str, ...],
+    metric_plot: MetricPlotMetadata,
+    sharded_metric_by_backend: PerBenchmarkShardedResults,
+    build_dir: pathlib.Path,
 ) -> tuple[pathlib.Path, Figure]:
     """Plot a sharded metric as total values per backend.
 
     Produces a single bar chart.
     """
-    file_basename = sanitize_filename(metric_name)
+    file_basename = sanitize_filename(MetricPlotMetadata.make_file_name_for_plot(metric_path))
 
     per_backend = {}
     for backend, result_by_shard in sharded_metric_by_backend.backends.items():
@@ -368,7 +403,14 @@ def plot_total_metric(
     logger.debug(f"Plotting total metric {file_path}")
     return (
         file_path,
-        make_plot(PlotData(type=PlotType.Shardless, display_name=f"Total {metric_name}", data=per_backend)),
+        make_plot(
+            PlotData(
+                type=PlotType.Shardless,
+                display_name=f"{metric_plot.get_title_with_unit()} - Total",
+                data=per_backend,
+                value_axis_label=metric_plot.get_value_axis_title(),
+            )
+        ),
     )
 
 

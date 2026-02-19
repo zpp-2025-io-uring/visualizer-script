@@ -3,7 +3,7 @@ from pathlib import Path
 
 from benchmark import compute_benchmark_summary
 from generate import PlotGenerator
-from metadata import BACKENDS_NAMES
+from metadata import BACKENDS_NAMES, BenchmarkMetadataHolder
 from parse import auto_generate_data_points, join_metrics, load_data
 from stats import join_stats
 
@@ -29,7 +29,7 @@ def run_redraw(backend_paths: dict, output_dir):
     benchmark_info = {"id": "redraw", "properties": {"iterations": 1}}
     summary = compute_benchmark_summary(combined_sharded, combined_shardless, benchmark_info)
 
-    plot_generator = PlotGenerator()
+    plot_generator = PlotGenerator(BenchmarkMetadataHolder())
     plot_generator.schedule_graphs_for_run(summary.runs[0].results, output_dir)
     plot_generator.plot()
 
