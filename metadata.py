@@ -131,6 +131,9 @@ class BenchmarkMetadataHolder:
             return BenchmarkMetadata()
         return self._metadata.get(benchmark_type, BenchmarkMetadata())
 
+    def __len__(self):
+        return len(self._metadata)
+
 
 def _asterix_compare(a: str, b: str) -> bool:
     """Compare two strings, treating '*' as a wildcard that matches any string."""

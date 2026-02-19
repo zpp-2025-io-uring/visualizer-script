@@ -8,7 +8,7 @@ from parse import auto_generate_data_points, join_metrics, load_data
 from stats import join_stats
 
 
-def run_redraw(backend_paths: dict, output_dir):
+def run_redraw(metadata_holder: BenchmarkMetadataHolder, backend_paths: dict, output_dir):
     output_dir = Path(output_dir)
 
     backends_data_raw = {}
@@ -29,12 +29,12 @@ def run_redraw(backend_paths: dict, output_dir):
     benchmark_info = {"id": "redraw", "properties": {"iterations": 1}}
     summary = compute_benchmark_summary(combined_sharded, combined_shardless, benchmark_info)
 
-    plot_generator = PlotGenerator(BenchmarkMetadataHolder())
+    plot_generator = PlotGenerator(metadata_holder)
     plot_generator.schedule_graphs_for_run(summary.runs[0].results, output_dir)
     plot_generator.plot()
 
 
-def run_redraw_args(args):
+def run_redraw_args(args, metadata_holder: BenchmarkMetadataHolder):
     backend_paths = {}
 
     args_dict = vars(args)
@@ -42,7 +42,7 @@ def run_redraw_args(args):
         if backend in args_dict and args_dict[backend] is not None:
             backend_paths[backend] = args_dict[backend]
 
-    run_redraw(backend_paths, args.output_dir)
+    run_redraw(metadata_holder, backend_paths, args.output_dir)
 
 
 def configure_redraw_parser(parser: argparse.ArgumentParser):

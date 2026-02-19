@@ -11,8 +11,8 @@ logger = get_logger()
 
 
 class RedrawSuiteRunner:
-    def __init__(self):
-        self.plot_generator = PlotGenerator(BenchmarkMetadataHolder())
+    def __init__(self, metadata_holder: BenchmarkMetadataHolder):
+        self.plot_generator = PlotGenerator(metadata_holder)
 
     def run_redraw_suite(self, dir):
         dir = Path(dir)
@@ -43,8 +43,8 @@ class RedrawSuiteRunner:
             self.plot_generator.schedule_graphs_for_run(run.results, run_output_dir)
 
 
-def run_redraw_suite_args(args):
-    runner = RedrawSuiteRunner()
+def run_redraw_suite_args(args, metadata_holder: BenchmarkMetadataHolder):
+    runner = RedrawSuiteRunner(metadata_holder)
     runner.run_redraw_suite(args.dir)
 
 
