@@ -79,6 +79,7 @@ def generate_fake_benchmark_results(
     runs_count: int,
     sharded_metrics: list[list[str]],
     shardless_metrics: list[list[str]],
+    backends: list[str],
 ) -> None:
     suite_path = output_dir / suite_name
     suite_path.mkdir(parents=True, exist_ok=True)
@@ -88,27 +89,9 @@ def generate_fake_benchmark_results(
         run_path = suite_path / f"run_{run_idx}"
         run_path.mkdir(parents=True, exist_ok=True)
 
-        io_uring_results = generate_fake_output(
-            shards_count=4,
-            sharded_metrics=sharded_metrics,
-            shardless_metrics=shardless_metrics,
-            seed=run_idx * 1000 + 123,
+        backends_results, _ = generate_fake_run_results(
+            run_path, sharded_metrics, shardless_metrics, backends, shards_count=4, seed=run_idx * 1000 + 123
         )
-        io_uring_file_path = run_path / "io_uring.client.out"
-        dump_fake_output_to_file(io_uring_results, io_uring_file_path)
-
-        epoll_results = generate_fake_output(
-            shards_count=4,
-            sharded_metrics=sharded_metrics,
-            shardless_metrics=shardless_metrics,
-            seed=run_idx * 1000 + 456,
-        )
-        epoll_file_path = run_path / "epoll.client.out"
-        dump_fake_output_to_file(epoll_results, epoll_file_path)
-        backends_results = {
-            "io_uring": auto_generate_data_points(io_uring_results),
-            "epoll": auto_generate_data_points(epoll_results),
-        }
 
         [shardless, sharded] = join_metrics(backends_results)
         metrics_runs.append({"run_id": run_idx, "sharded": sharded, "shardless": shardless})
@@ -120,3 +103,32 @@ def generate_fake_benchmark_results(
     print(summary)
     with open(suite_path / BENCHMARK_SUMMARY_FILENAME, "w") as f:
         f.write(safe_dump(summary))
+
+
+def generate_fake_run_results(
+    output_dir: Path,
+    sharded_metrics: list[list[str]],
+    shardless_metrics: list[list[str]],
+    backends: list[str],
+    shards_count: int,
+    seed: int,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Generate fake results for a single run of a benchmark.
+
+    Returns: A dict containing the generated results for each backend.
+    """
+    backends_results = {}
+    backend_paths = {}
+    for backend in backends:
+        backend_results = generate_fake_output(
+            shards_count=shards_count,
+            sharded_metrics=sharded_metrics,
+            shardless_metrics=shardless_metrics,
+            seed=seed + hash(backend),
+        )
+        backend_file_path = output_dir / f"{backend}.client.out"
+        dump_fake_output_to_file(backend_results, backend_file_path)
+        backends_results[backend] = auto_generate_data_points(backend_results)
+        backend_paths[backend] = backend_file_path
+
+    return backends_results, backend_paths

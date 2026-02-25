@@ -1,3 +1,5 @@
+from typing import Any, TypeVar
+
 from yaml import safe_load
 from yamlable import YamlAble, yaml_info
 
@@ -7,10 +9,186 @@ from tree import TreeDict
 
 logger = get_logger()
 
+T = TypeVar("T", bound=YamlAble)
+
+
+def try_deserialize_yaml(t: type[T], data: Any, yaml_tag: str) -> T:
+    """Attempt to deserialize a YAML document into an instance of type T.
+
+    This helper is used in the __from_yaml_dict__ methods to handle cases where
+    nested objects may already be deserialized by the YAML loader, or may still
+    be in raw mapping form. It tries to be permissive to support both cases.
+    """
+    if isinstance(data, t):
+        return data
+    else:
+        return t.__from_yaml_dict__(data, yaml_tag=yaml_tag)
+
+
+@yaml_info("shardless_backend_result")
+class ShardlessBackendResult(YamlAble):
+    def __init__(self, properties: dict[str, Any], value: Any) -> None:
+        self.properties = properties
+        self.value = value
+
+    def __repr__(self) -> str:
+        return f"ShardlessBackendResult(properties={self.properties}, value={self.value})"
+
+    @classmethod
+    def __from_yaml_dict__(cls, dct: dict[str, Any], yaml_tag: str) -> "ShardlessBackendResult":
+        properties = dct.get("properties", {})
+        value = dct.get("value")
+        return cls(properties=properties, value=value)
+
+
+@yaml_info("sharded_measurement")
+class ShardedMeasurement(YamlAble):
+    def __init__(self, shard: int, value: Any) -> None:
+        self.value = value
+        self.shard = shard
+
+    def __repr__(self) -> str:
+        return f"ShardedMeasurement(shard={self.shard}, value={self.value})"
+
+    @classmethod
+    def __from_yaml_dict__(cls, dct: dict[str, Any], yaml_tag: str) -> "ShardedMeasurement":
+        shard = int(dct["shard"])
+        value = dct["value"]
+        return cls(shard=shard, value=value)
+
+
+@yaml_info("sharded_backend_result")
+class ShardedBackendResult(YamlAble):
+    def __init__(self, properties: dict[str, Any], shards: list[ShardedMeasurement]) -> None:
+        self.properties = properties
+        self.shards = shards
+
+    def __repr__(self) -> str:
+        return f"ShardedBackendResult(properties={self.properties}, shards={self.shards})"
+
+    @classmethod
+    def __from_yaml_dict__(cls, dct: dict[str, Any], yaml_tag: str) -> "ShardedBackendResult":
+        properties = dct.get("properties", {})
+
+        shards_data = dct.get("shards", [])
+        shards = [
+            try_deserialize_yaml(ShardedMeasurement, shard_item, yaml_tag="sharded_measurement")
+            for shard_item in shards_data
+        ]
+
+        return cls(properties=properties, shards=shards)
+
+
+@yaml_info("sharded_benchmark_results")
+class PerBenchmarkShardedResults(YamlAble):
+    def __init__(self, backends: dict[str, ShardedBackendResult], properties: dict[str, Any]) -> None:
+        self.backends = backends
+        self.properties = properties
+
+    def __repr__(self) -> str:
+        return f"PerBenchmarkShardedResults(backends={self.backends}, properties={self.properties})"
+
+    @classmethod
+    def default(cls) -> "PerBenchmarkShardedResults":
+        return cls(backends={}, properties={})
+
+    @classmethod
+    def __from_yaml_dict__(cls, dct: dict[str, Any], yaml_tag: str) -> "PerBenchmarkShardedResults":
+        properties = dct.get("properties", {})
+        backends = dct.get("backends", {})
+        for backend_name, backend_result in backends.items():
+            backends[backend_name] = try_deserialize_yaml(
+                ShardedBackendResult, backend_result, yaml_tag="sharded_backend_result"
+            )
+        return cls(backends=backends, properties=properties)
+
+
+@yaml_info("shardless_benchmark_results")
+class PerBenchmarkShardlessResults(YamlAble):
+    def __init__(self, backends: dict[str, ShardlessBackendResult], properties: dict[str, Any]) -> None:
+        self.backends = backends
+        self.properties = properties
+
+    def __repr__(self) -> str:
+        return f"PerBenchmarkShardlessResults(backends={self.backends}, properties={self.properties})"
+
+    @classmethod
+    def default(cls) -> "PerBenchmarkShardlessResults":
+        return cls(backends={}, properties={})
+
+    @classmethod
+    def __from_yaml_dict__(cls, dct: dict[str, Any], yaml_tag: str) -> "PerBenchmarkShardlessResults":
+        properties = dct.get("properties", {})
+        backends = dct.get("backends", {})
+        for backend_name, backend_result in backends.items():
+            backends[backend_name] = try_deserialize_yaml(
+                ShardlessBackendResult, backend_result, yaml_tag="shardless_backend_result"
+            )
+        return cls(backends=backends, properties=properties)
+
+
+@yaml_info("results")
+class Results(YamlAble):
+    def __init__(
+        self,
+        sharded_metrics: TreeDict[PerBenchmarkShardedResults],
+        shardless_metrics: TreeDict[PerBenchmarkShardlessResults],
+    ) -> None:
+        self.sharded_metrics = sharded_metrics
+        self.shardless_metrics = shardless_metrics
+
+    def __repr__(self) -> str:
+        return f"Results(sharded_metrics={self.sharded_metrics}, shardless_metrics={self.shardless_metrics})"
+
+    @classmethod
+    def __from_yaml_dict__(cls, dct: dict[str, Any], yaml_tag: str) -> "Results":
+        sharded_metrics = TreeDict[PerBenchmarkShardedResults]()
+        shardless_metrics = TreeDict[PerBenchmarkShardlessResults]()
+
+        if "sharded_metrics" in dct:
+            for key, value in dct["sharded_metrics"].items():
+                sharded_metrics[key] = try_deserialize_yaml(
+                    PerBenchmarkShardedResults, value, yaml_tag="per_benchmark_sharded_results"
+                )
+
+        if "shardless_metrics" in dct:
+            for key, value in dct["shardless_metrics"].items():
+                shardless_metrics[key] = try_deserialize_yaml(
+                    PerBenchmarkShardlessResults, value, yaml_tag="per_benchmark_shardless_results"
+                )
+
+        return cls(sharded_metrics=sharded_metrics, shardless_metrics=shardless_metrics)
+
+    @classmethod
+    def default(cls) -> "Results":
+        return cls(
+            sharded_metrics=TreeDict[PerBenchmarkShardedResults](),
+            shardless_metrics=TreeDict[PerBenchmarkShardlessResults](),
+        )
+
+
+@yaml_info("run_summary")
+class RunSummary(YamlAble):
+    def __init__(self, id: int, properties: dict, results: Results) -> None:
+        self.id = id
+        self.properties = properties
+        self.results = results
+
+    def __repr__(self) -> str:
+        return f"RunSummary(id={self.id}, properties={self.properties}, results={self.results})"
+
+    @classmethod
+    def __from_yaml_dict__(cls, dct: dict[str, Any], yaml_tag: str) -> "RunSummary":
+        id = int(dct["id"])
+        properties = dct["properties"]
+
+        results = try_deserialize_yaml(Results, dct["results"], yaml_tag="results")
+        return cls(id=id, properties=properties, results=results)
+
 
 @yaml_info("benchmark")
 class Benchmark(YamlAble):
-    def __init__(self, runs: list, benchmark: dict, summary: Stats, run_count: int = None):
+    def __init__(self, runs: list[RunSummary], benchmark: dict, summary: Stats, run_count: int | None = None) -> None:
         self.runs = runs
         self.benchmark = benchmark
         self.summary = summary
@@ -19,7 +197,7 @@ class Benchmark(YamlAble):
             f"Initialized benchmark with runs={self.runs}, benchmark={self.benchmark}, summary={self.summary}, run_count={self.run_count}"
         )
 
-    def get_runs(self) -> list:
+    def get_runs(self) -> list[RunSummary]:
         return self.runs
 
     def get_benchmark(self) -> dict:
@@ -50,8 +228,20 @@ class Benchmark(YamlAble):
 
         raise TypeError(f"Cannot load benchmark: unexpected YAML document type {type(data)}")
 
+    @classmethod
+    def __from_yaml_dict__(cls, dct: dict[str, Any], yaml_tag: str) -> "Benchmark":
+        runs_data = dct.get("runs", [])
+        runs = [try_deserialize_yaml(RunSummary, run_dct, yaml_tag="run_summary") for run_dct in runs_data]
+
+        summary = try_deserialize_yaml(Stats, dct.get("summary", {}), yaml_tag="stats")
+
+        run_count = int(dct.get("run_count", len(runs)))
+        benchmark_info = dct.get("benchmark", {})
+
+        return cls(runs=runs, benchmark=benchmark_info, summary=summary, run_count=run_count)
+
     def __repr__(self) -> str:
-        return f"Benchmark(runs={self.runs}, benchmark={self.benchmark}, summary={self.summary}, run_count={self.run_count})"
+        return f"Benchmark(runs={self.runs}, benchmark={self.benchmark}, summary={self.summary})"
 
 
 def compute_benchmark_summary(
@@ -60,7 +250,7 @@ def compute_benchmark_summary(
     benchmark_info: dict,
 ) -> Benchmark:
     # build map run_id -> run entry
-    runs_map: dict = {}
+    runs_map: dict[int, RunSummary] = {}
 
     logger.debug(f"Computing benchmark summary {sharded_metrics=}, {shardless_metrics=}, {benchmark_info=}")
 
@@ -73,21 +263,20 @@ def compute_benchmark_summary(
                 value = item.value
 
                 if run_id not in runs_map:
-                    runs_map[run_id] = {
-                        "id": run_id,
-                        "properties": {},
-                        "results": {"sharded_metrics": TreeDict(), "shardless_metrics": TreeDict()},
-                    }
+                    runs_map[run_id] = RunSummary(
+                        id=run_id,
+                        properties={},
+                        results=Results(sharded_metrics=TreeDict(), shardless_metrics=TreeDict()),
+                    )
 
                 run_entry = runs_map[run_id]
-                sharded_metrics_for_run = run_entry["results"]["sharded_metrics"]
-                sharded_metrics_for_run.setdefault(metric_name, {"properties": {}, "backends": {}})
+                backends_for_metric = run_entry.results.sharded_metrics.setdefault(
+                    metric_name, PerBenchmarkShardedResults.default()
+                ).backends
 
-                backends_for_metric = sharded_metrics_for_run[metric_name]["backends"]
-                if backend_name not in backends_for_metric:
-                    backends_for_metric[backend_name] = {"properties": {}, "shards": []}
-
-                backends_for_metric[backend_name]["shards"].append({"shard": shard, "value": value})
+                backends_for_metric.setdefault(
+                    backend_name, ShardedBackendResult(properties={}, shards=[])
+                ).shards.append(ShardedMeasurement(shard=shard, value=value))
 
     # process shardless metrics
     for metric_name, backends in (shardless_metrics or {}).items():
@@ -97,26 +286,18 @@ def compute_benchmark_summary(
                 value = item.value
 
                 if run_id not in runs_map:
-                    runs_map[run_id] = {
-                        "id": run_id,
-                        "properties": {},
-                        "results": {"sharded_metrics": TreeDict(), "shardless_metrics": TreeDict()},
-                    }
+                    runs_map[run_id] = RunSummary(
+                        id=run_id,
+                        properties={},
+                        results=Results(sharded_metrics=TreeDict(), shardless_metrics=TreeDict()),
+                    )
 
                 run_entry = runs_map[run_id]
-                shardless_metrics_for_run = run_entry["results"]["shardless_metrics"]
-                shardless_metrics_for_run.setdefault(metric_name, {"properties": {}, "backends": {}})
-
-                backends_for_metric = shardless_metrics_for_run[metric_name]["backends"]
-                # for shardless, we store a single value per backend per run
-                backends_for_metric[backend_name] = {"properties": {}, "value": value}
+                backends_for_metric = run_entry.results.shardless_metrics.setdefault(
+                    metric_name, PerBenchmarkShardlessResults.default()
+                ).backends[backend_name] = ShardlessBackendResult(properties={}, value=value)
 
     # prepare final summary
-    runs_list = [
-        runs_map[k]
-        for k in sorted(
-            runs_map.keys(), key=lambda x: int(x) if isinstance(x, (int, str)) and str(x).isdigit() else str(x)
-        )
-    ]
+    runs_list = [runs_map[k] for k in sorted(runs_map.keys())]
     summary_stats = summarize_stats(sharded_metrics, shardless_metrics)
     return Benchmark(runs=runs_list, benchmark=benchmark_info, summary=summary_stats)
