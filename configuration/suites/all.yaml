@@ -1,0 +1,171 @@
+# This suite is used to run all supported benchmarks.
+# Useful for regression testing.
+
+# IO TESTER
+
+- type: io
+  name: io_overwrite
+  config:
+  - name: big_writes
+    shards: all
+    type: overwrite
+    shard_info:
+      parallelism: 10
+      reqsize: 256kB
+      shares: 10
+      think_time: 0
+
+- type: io
+  name: io_randread
+  config:
+  - name: latency_reads
+    shards: all
+    type: randread
+    data_size: 1GB
+    shard_info:
+      parallelism: 1
+      reqsize: 512
+      shares: 100
+      think_time: 1000us
+
+- type: io
+  name: io_cpu
+  config:
+  - name: cpu_hog
+    shards: all
+    type: cpu
+    shard_info:
+      parallelism: 1
+      execution_time: 90us
+      think_time: 10us
+
+- type: io
+  name: io_unlinking
+  config:
+  - name: unlinking
+    shards: all
+    type: unlink
+    data_size: 2GB
+    files_count: 5000
+    shard_info:
+      parallelism: 10
+      think_time: 10us
+
+# RPC TESTER
+
+- type: rpc
+  name: rpc_write
+  config:
+    client:
+      nodelay: true
+    server:
+      nodelay: true
+    jobs:
+      - name: rpc_write
+        type: rpc
+        verb: write
+        parallelism: 5
+        shares: 100
+        payload: 4kB
+
+- type: rpc
+  name: rpc_echo
+  config:
+    client:
+      nodelay: true
+    server:
+      nodelay: true
+    jobs:
+      - name: rpc_echo
+        type: rpc
+        verb: echo
+        parallelism: 5
+        shares: 100
+        payload: 4kB
+
+- type: rpc
+  name: rpc_vecho
+  config:
+    client:
+      nodelay: true
+    server:
+      nodelay: true
+    jobs:
+      - name: rpc_vecho
+        type: rpc
+        verb: vecho
+        parallelism: 5
+        shares: 100
+        payload: 4kB
+
+- type: rpc
+  name: rpc_cpu
+  config:
+    client:
+      nodelay: true
+    server:
+      nodelay: true
+    jobs:
+      - name: rpc_cpu
+        type: cpu
+        execution_time: 90us
+        parallelism: 1
+
+
+- type: rpc
+  name: rpc_streaming_unidirectional
+  config:
+    client:
+      nodelay: true
+    server:
+      nodelay: true
+    jobs:
+      - name: rpc_throughput_uni_128kB
+        type: rpc_streaming
+        verb: unidirectional
+        parallelism: 1
+        shares: 100
+        payload: 128kB
+
+- type: rpc
+  name: rpc_streaming_bidirectional
+  config:
+    client:
+      nodelay: true
+    server:
+      nodelay: true
+    jobs:
+      - name: rpc_throughput_uni_128kB
+        type: rpc_streaming
+        verb: unidirectional
+        parallelism: 1
+        shares: 100
+        payload: 128kB
+
+- type: simple-query
+  name: scylla_simple-query
+  config:
+    random-seed: 1             # Random number generator seed
+    partitions: 10000          # number of partitions
+    duration: 5                # test duration in seconds
+    concurrency: 100           # workers per core
+    operations-per-shard: 1000 # run this many operations per shard (overrides 
+                                #  duration)
+    initial-tablets:  128      # initial number of tablets
+    memtable-partitions: 3  # apply this number of partitions to memtable, 
+                                #  then flush
+    enable-cache: 1            # enable row cache
+    stop-on-error: 1           # stop after encountering the first error
+    # timeout:  #arg             # use timeout
+    # audit: #arg                # value for audit config entry
+    # audit-keyspaces: #arg      # value for audit_keyspaces config entry
+    # audit-tables: #arg         # value for audit_tables config entry
+    # audit-categories: #arg     # value for audit_categories config entry
+    flags:
+    - write                      # test write path instead of read path
+    - delete                     # test delete path instead of read path
+    - query-single-key           # test reading with a single key instead of random keys
+    - counters                   # test counters
+    - tablets                    # use tablets
+    - flush                      # flush memtables before test
+    - bypass-cache               # use bypass cache when querying
