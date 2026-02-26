@@ -4,6 +4,7 @@ from yaml import safe_load
 from yamlable import YamlAble, yaml_info
 
 from log import get_logger
+from metadata import BenchmarkType
 from stats import ShardedMetricRunMeasurement, ShardlessMetricRunMeasurement, Stats, summarize_stats
 from tree import TreeDict
 
@@ -186,13 +187,34 @@ class RunSummary(YamlAble):
         return cls(id=id, properties=properties, results=results)
 
 
+@yaml_info("benchmark_info")
+class BenchmarkInfo(YamlAble):
+    def __init__(self, id: str, type: BenchmarkType | None = None, properties: dict[str, Any] | None = None) -> None:
+        self.id = id
+        self.type = type
+        self.properties = properties if properties is not None else {}
+
+    def __repr__(self) -> str:
+        return f"BenchmarkInfo(id={self.id}, type={self.type}, properties={self.properties})"
+
+    @classmethod
+    def __from_yaml_dict__(cls, dct: dict[str, Any], yaml_tag: str) -> "BenchmarkInfo":
+        id = dct["id"]
+        type = dct.get("type")
+        properties = dct.get("properties")
+        return cls(id=id, type=type, properties=properties)
+
+
 @yaml_info("benchmark")
 class Benchmark(YamlAble):
-    def __init__(self, runs: list[RunSummary], benchmark: dict, summary: Stats, run_count: int | None = None) -> None:
+    def __init__(
+        self, runs: list[RunSummary], info: BenchmarkInfo, summary: Stats, run_count: int | None = None
+    ) -> None:
         self.runs = runs
-        self.benchmark = benchmark
+        self.benchmark = info
         self.summary = summary
         self.run_count = run_count if run_count is not None else len(runs)
+        logger.debug(f"Initialized benchmark with benchmark={info}")
         logger.debug(
             f"Initialized benchmark with runs={self.runs}, benchmark={self.benchmark}, summary={self.summary}, run_count={self.run_count}"
         )
@@ -200,7 +222,7 @@ class Benchmark(YamlAble):
     def get_runs(self) -> list[RunSummary]:
         return self.runs
 
-    def get_benchmark(self) -> dict:
+    def get_info(self) -> BenchmarkInfo:
         return self.benchmark
 
     def get_stats(self) -> Stats:
@@ -236,9 +258,9 @@ class Benchmark(YamlAble):
         summary = try_deserialize_yaml(Stats, dct.get("summary", {}), yaml_tag="stats")
 
         run_count = int(dct.get("run_count", len(runs)))
-        benchmark_info = dct.get("benchmark", {})
+        benchmark_info = try_deserialize_yaml(BenchmarkInfo, dct.get("benchmark", {}), yaml_tag="benchmark_info")
 
-        return cls(runs=runs, benchmark=benchmark_info, summary=summary, run_count=run_count)
+        return cls(runs=runs, info=benchmark_info, summary=summary, run_count=run_count)
 
     def __repr__(self) -> str:
         return f"Benchmark(runs={self.runs}, benchmark={self.benchmark}, summary={self.summary})"
@@ -247,7 +269,7 @@ class Benchmark(YamlAble):
 def compute_benchmark_summary(
     sharded_metrics: TreeDict[dict[str, list[ShardedMetricRunMeasurement]]],
     shardless_metrics: TreeDict[dict[str, list[ShardlessMetricRunMeasurement]]],
-    benchmark_info: dict,
+    benchmark_info: BenchmarkInfo,
 ) -> Benchmark:
     # build map run_id -> run entry
     runs_map: dict[int, RunSummary] = {}
@@ -300,4 +322,4 @@ def compute_benchmark_summary(
     # prepare final summary
     runs_list = [runs_map[k] for k in sorted(runs_map.keys())]
     summary_stats = summarize_stats(sharded_metrics, shardless_metrics)
-    return Benchmark(runs=runs_list, benchmark=benchmark_info, summary=summary_stats)
+    return Benchmark(runs=runs_list, info=benchmark_info, summary=summary_stats)

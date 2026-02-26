@@ -6,7 +6,7 @@ from yaml import safe_load
 from tree import TreeDict
 
 
-def load_data(raw_output: str):
+def load_data(raw_output: str) -> Any:
     """Extract embedded YAML from a client output text and parse it.
 
     The client output is expected to contain a YAML document separated by the

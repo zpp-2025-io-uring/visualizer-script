@@ -5,7 +5,7 @@ from colorama import Fore
 
 
 class ColoredLogger(logging.Formatter):
-    def format(self, record):
+    def format(self, record) -> str:
         match record.levelno:
             case logging.DEBUG:
                 color = Fore.WHITE
@@ -45,7 +45,7 @@ class __Logger:
     logger = _get_logger()
 
 
-def set_level(new_level: str):
+def set_level(new_level: str) -> None:
     match new_level:
         case "debug":
             __Logger.logger.setLevel(logging.DEBUG)
@@ -66,6 +66,6 @@ def get_logger() -> logging.Logger:
 logger = get_logger()
 
 
-def warn_if_not_release(path: Path):
+def warn_if_not_release(path: Path) -> None:
     if "release" not in path.parts:
         logger.warning(f"Path does not contain release: {path}")

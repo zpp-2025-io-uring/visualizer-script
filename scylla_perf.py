@@ -13,7 +13,9 @@ logger = get_logger()
 
 
 class OneExecutableTestRunner(ABC):
-    def __init__(self, test_config: dict, config_path: Path, run_output_dir: Path, backends, skip_async_workers_cpuset):
+    def __init__(
+        self, test_config: dict, config_path: Path, run_output_dir: Path, backends, skip_async_workers_cpuset
+    ) -> None:
         super().__init__()
 
         self.tester_path: Path = Path(test_config["path"]).expanduser().resolve()

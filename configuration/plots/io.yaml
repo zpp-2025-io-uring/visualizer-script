@@ -1,0 +1,148 @@
+!yamlable/metadata
+sharded_metrics: !yamlable/tree_dict
+  '*':
+     # writes, reads, unlinking,
+    IOPS: !yamlable/leaf
+        value: !yamlable/metric_metadata
+          plotting: !yamlable/metric_plot_metadata
+            title: IOPS per shard
+            unit: IO/s
+            value_axis_title: IOPS
+    latencies:
+        average: !yamlable/leaf
+          value: !yamlable/metric_metadata
+            plotting: !yamlable/metric_plot_metadata
+              title: Average latency per shard
+              unit: usec
+              value_axis_title: average latency
+        max: !yamlable/leaf
+          value: !yamlable/metric_metadata
+            plotting: !yamlable/metric_plot_metadata
+              title: Maximum latency per shard
+              unit: usec
+              value_axis_title: maximum latency
+
+    # writes, reads
+        p0.5: !yamlable/leaf
+          value: !yamlable/metric_metadata
+            plotting: !yamlable/metric_plot_metadata
+              title: 50th percentile latency per shard
+              unit: usec
+              value_axis_title: p0.5 latency
+        p0.95: !yamlable/leaf
+          value: !yamlable/metric_metadata
+            plotting: !yamlable/metric_plot_metadata
+              title: 95th percentile latency per shard
+              unit: usec
+              value_axis_title: p0.95 latency
+        p0.99: !yamlable/leaf
+          value: !yamlable/metric_metadata
+            plotting: !yamlable/metric_plot_metadata
+              title: 99th percentile latency per shard
+              unit: usec
+              value_axis_title: p0.99 latency
+        p0.999: !yamlable/leaf
+          value: !yamlable/metric_metadata
+            plotting: !yamlable/metric_plot_metadata
+              title: 99.9th percentile latency per shard
+              unit: usec
+              value_axis_title: p0.999 latency
+    stats:
+        disk_queue_length:
+          p0.5: !yamlable/leaf
+            value: !yamlable/metric_metadata
+              plotting: !yamlable/metric_plot_metadata
+                title: 50th percentile disk queue length per shard
+                unit: null
+                value_axis_title: p0.5 disk queue length
+          p0.9: !yamlable/leaf
+            value: !yamlable/metric_metadata
+              plotting: !yamlable/metric_plot_metadata
+                title: 90th percentile disk queue length per shard
+                unit: null
+                value_axis_title: p0.9 disk queue length
+          max: !yamlable/leaf
+            value: !yamlable/metric_metadata
+              plotting: !yamlable/metric_plot_metadata
+                title: Maximum disk queue length per shard
+                unit: null
+                value_axis_title: max disk queue length
+        file_size_overflows: !yamlable/leaf
+          value: !yamlable/metric_metadata
+            plotting: !yamlable/metric_plot_metadata
+              title: Number of file size overflows per shard
+              unit: null
+              value_axis_title: Number of file size overflows
+        io_queue_activations: !yamlable/leaf
+          value: !yamlable/metric_metadata
+            plotting: !yamlable/metric_plot_metadata
+              title: Number of io_queue activations per shard
+              unit: null
+              value_axis_title: Number of activations
+        io_queue_adjusted_consumption: !yamlable/leaf
+          value: !yamlable/metric_metadata
+            plotting: !yamlable/metric_plot_metadata
+              title: Adjusted io_queue consumption per shard
+              unit: null
+              value_axis_title: Adjusted consumption
+        io_queue_consumption: !yamlable/leaf
+          value: !yamlable/metric_metadata
+            plotting: !yamlable/metric_plot_metadata
+              title: io_queue consumption per shard
+              unit: null
+              value_axis_title: Consumption
+        io_queue_starvation_time_sec: !yamlable/leaf
+          value: !yamlable/metric_metadata
+            plotting: !yamlable/metric_plot_metadata
+              title: io_queue starvation time per shard
+              unit: sec
+              value_axis_title: starvation time
+        io_queue_total_delay_sec: !yamlable/leaf
+          value: !yamlable/metric_metadata
+            plotting: !yamlable/metric_plot_metadata
+              title: Total io_queue delay time per shard
+              unit: sec
+              value_axis_title: Total delay time
+        io_queue_total_exec_sec: !yamlable/leaf
+          value: !yamlable/metric_metadata
+            plotting: !yamlable/metric_plot_metadata
+              title: Total io_queue execution time per shard
+              unit: sec
+              value_axis_title: Total execution time
+        io_queue_total_operations: !yamlable/leaf
+          value: !yamlable/metric_metadata
+            plotting: !yamlable/metric_plot_metadata
+              title: Total number of io_queue operations per shard
+              unit: null
+              value_axis_title: Total number of operations
+        reactor_aio_outsizes: !yamlable/leaf
+          value: !yamlable/metric_metadata
+            plotting: !yamlable/metric_plot_metadata
+              title: Reactor AIO outsizes per shard
+              unit: null
+              value_axis_title: Reactor AIO outsizes
+        total_requests: !yamlable/leaf
+          value: !yamlable/metric_metadata
+            plotting: !yamlable/metric_plot_metadata
+              title: Total number of requests per shard
+              unit: null
+              value_axis_title: Total number of requests
+
+    # writes, reads, cpu_hog
+    throughput: !yamlable/leaf
+      value: !yamlable/metric_metadata
+        plotting: !yamlable/metric_plot_metadata
+          title: Throughput per shard
+          unit: kB/s
+          value_axis_title: throughput
+
+  statistics:
+    aio_retries: !yamlable/leaf
+      value: !yamlable/metric_metadata
+        plotting: !yamlable/metric_plot_metadata
+          title: Number of AIO retries per shard
+          unit: null
+          value_axis_title: Number of AIO retries
+
+
+shardless_metrics: !yamlable/tree_dict {}

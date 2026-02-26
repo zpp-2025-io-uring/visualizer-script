@@ -64,3 +64,86 @@ def test_contains() -> None:
     assert ("q",) not in tm
     assert ("p", "q", 42) not in tm
     assert ("x", "y") not in tm
+
+
+def test_get_with_default_comparator() -> None:
+    tm: TreeDict[int] = TreeDict()
+    value = 99
+    existing_path = ("foo", "bar")
+    nonexistent_path = ("foo", "baz")
+    tm[existing_path] = value
+
+    assert tm.get(existing_path) == value
+    assert tm.get(nonexistent_path) is None
+
+
+def test_get_with_custom_comparator() -> None:
+    tm: TreeDict[int] = TreeDict()
+
+    def case_insensitive_comparator(x: str, y: str) -> bool:
+        return x.lower() == y.lower()
+
+    value = 99
+    existing_path = ("Foo", "Bar")
+    tm[existing_path] = value
+
+    paths_to_test = [
+        ("foo", "bar"),
+        ("FOO", "BAR"),
+        ("FoO", "bAr"),
+    ]
+
+    # Healthcheck: default comparator should not find the value with different case
+    for path in paths_to_test:
+        assert tm.get(path) is None
+
+    # Custom comparator should find the value regardless of case
+    for path in paths_to_test:
+        assert tm.get(path, comparator=case_insensitive_comparator) == value
+
+
+def test_get_with_incomplete_path() -> None:
+    tm: TreeDict[int] = TreeDict()
+    value = 99
+    existing_path = ("foo", "bar", "baz")
+    tm[existing_path] = value
+
+    assert tm.get(existing_path) == value
+    for i in range(0, len(existing_path)):
+        assert tm.get(existing_path[:i]) is None
+
+
+def test_keys() -> None:
+    tm: TreeDict[int] = TreeDict()
+    for path, value in VALUES:
+        tm[path] = value
+
+    keys = tm.keys()
+    assert set(keys) == {path for path, _ in VALUES}
+
+
+def test_len() -> None:
+    tm: TreeDict[int] = TreeDict()
+    current_len = 0
+
+    def increment_len(path: tuple, value: int) -> None:
+        nonlocal current_len, tm
+        tm[path] = value
+        current_len += 1
+
+    for path, value in VALUES:
+        increment_len(path, value)
+        assert len(tm) == current_len
+
+
+def test_yaml_deserialize_with_duplicate_keys() -> None:
+    yaml_str = """
+    a:
+      b: 1
+      b: 2
+    """
+    try:
+        safe_load(yaml_str)
+        assert False, "Expected ValueError for duplicate keys, but no exception was raised."
+    except ValueError as e:
+        assert "Duplicate key 'b'" in str(e), f"Unexpected error message: {str(e)}"
