@@ -103,7 +103,7 @@ class BenchmarkMetadata(YamlAble):
     def _get_plot_metadata_or_default(
         tree: TreeDict[MetricMetadata], metric_name: tuple[str, ...]
     ) -> MetricPlotMetadata:
-        value = tree.get(metric_name, _asterix_compare)
+        value = tree.get(metric_name, _asterix_compare, _asterix_resolver)
         if value is None:
             return MetricPlotMetadata.default(metric_name)
         return value.get_plot_metadata()
@@ -140,6 +140,17 @@ def _asterix_compare(a: str, b: str) -> bool:
     if a == "*" or b == "*":
         return True
     return a == b
+
+
+def _asterix_resolver(path: tuple, candidates: list) -> str | None:
+    """Resolve ambiguity when multiple keys match by preferring non-asterix keys, or returning None if all candidates are asterix."""
+    non_asterix_candidates = [k for k in candidates if k != "*"]
+    if len(non_asterix_candidates) == 1:
+        return non_asterix_candidates[0]
+    elif len(non_asterix_candidates) == 0:
+        return None
+    else:
+        raise ValueError(f"Multiple non-asterix candidates for {path}: {non_asterix_candidates}")
 
 
 def _get_name_from_path(path: tuple[str, ...]) -> str:
