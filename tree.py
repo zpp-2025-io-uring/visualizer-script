@@ -90,20 +90,26 @@ class TreeDict(Generic[T], YamlAble):
             else:
                 raise TypeError(f"Expected leaf at path {path}, found subtree.")
 
-    def get(self, path: tuple, comparator: Callable[[str, str], bool] = lambda x, y: x == y) -> T | None:
-        """Get the value at the given path if it exists and satisfies the comparator, else None."""
+    def get(
+        self,
+        path: tuple,
+        comparator: Callable[[str, str], bool] = lambda x, y: x == y,
+        ambiguity_resolver: Callable[[tuple, list], str | None] = lambda _a, _b: None,
+    ) -> T | None:
+        """Get the value at the given path if it exists and satisfies the comparator, else None.
+        If multiple keys match the comparator at any level it raises ValueError to avoid ambiguity.
+        """
         cur = self.metrics
         for part in path:
             if not isinstance(cur, dict):
                 return None
 
             matching_keys = [k for k in cur.keys() if comparator(k, part)]
-            if not matching_keys:
+            key = self.__resolve_next_key_or_throw(path, matching_keys, ambiguity_resolver)
+            if key is None:
                 return None
-            if len(matching_keys) > 1:
-                raise ValueError(f"Multiple matching keys for {part} at path {path}: {matching_keys}")
 
-            cur = cur[matching_keys[0]]
+            cur = cur[key]
 
         if isinstance(cur, _Leaf):
             return cur.value
@@ -133,6 +139,21 @@ class TreeDict(Generic[T], YamlAble):
 
     def __to_yaml_dict__(self) -> dict:
         return self.metrics
+
+    @staticmethod
+    def __resolve_next_key_or_throw(
+        path: tuple, candidates: list, ambiguity_resolver: Callable[[tuple, list], str | None]
+    ) -> str | None:
+        if not candidates:
+            return None
+
+        if len(candidates) == 1:
+            return candidates[0]
+
+        resolved_key = ambiguity_resolver(path, candidates)
+        if resolved_key is None:
+            raise ValueError(f"Multiple matching keys for at path {path}: {candidates}")
+        return resolved_key
 
     @classmethod
     def __from_yaml_dict__(cls, dct, yaml_tag) -> "TreeDict":
