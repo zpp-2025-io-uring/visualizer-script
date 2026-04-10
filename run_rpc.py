@@ -82,7 +82,7 @@ class RpcTestRunner:
             return CmdOutput(stdout=output.stdout, stderr=output.stderr, returncode=output.returncode)
         else:
             with open(self.config_path, "r") as f:
-                return self.server_remote.run_rpc_tester(f.read(), backend, "127.0.0.1", is_server=False, app_cpuset=client_cpuset, async_worker_cpuset=client_async_worker_cpuset).wait()
+                return self.client_remote.run_rpc_tester(f.read(), backend, "127.0.0.1", is_server=False, app_cpuset=client_cpuset, async_worker_cpuset=client_async_worker_cpuset).wait()
             
 
     def ___run_test(
@@ -111,18 +111,20 @@ class RpcTestRunner:
 
             raise
 
+        sleep(1)
+
         server_process.terminate()
 
         sleep(1)
 
-        if server_process.poll() is None:
+        if self.server_remote is None and server_process.poll() is None:
             server_process.kill()
 
-        server_process.wait()
-
-        server_stdout, server_stderr = server_process.communicate()
-
-        return client_output, CmdOutput(stdout=server_stdout, stderr=server_stderr, returncode=server_process.poll())
+        if self.server_remote is None:
+            server_stdout, server_stderr = server_process.communicate()
+            return client_output, CmdOutput(stdout=server_stdout, stderr=server_stderr, returncode=server_process.poll())
+        else:
+            return client_output, server_process.wait()
 
     def __run_test(
         self,

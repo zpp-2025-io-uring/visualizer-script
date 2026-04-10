@@ -22,7 +22,7 @@ class RemoteProcess:
     
     def wait(self) -> CmdOutput:
         response =  requests.post(f"http://{self.remote.address}/wait_and_output", json=self.pid)
-        print(response.json())
+        print(response.text)
         if response.ok:
             return CmdOutput.from_json(response.json())
         else:
@@ -44,10 +44,6 @@ class RemoteProcess:
             return response.json()
         else:
             raise RuntimeError(f"Remote failed with response {response.status_code}")
-        
-    def communicate(self): # Sending stdin unsupported, timeout unsupported
-        output = self.wait()
-        return output.stdout, output.stderr
 
 class Remote:
     def __init__(self, address: str):
@@ -77,7 +73,7 @@ class Remote:
             "async_worker_cpuset":async_worker_cpuset
         }
 
-        response =  requests.post(f"http://{self.address}/io_tester", json=params)
+        response =  requests.post(f"http://{self.address}/rpc_tester", json=params)
         if response.ok:
             return RemoteProcess(remote=self, pid=response.json())
         else:
