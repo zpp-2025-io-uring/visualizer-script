@@ -26,6 +26,10 @@ class RpcTestRunner:
         self.skip_async_workers_cpuset = skip_async_workers_cpuset
         self.server_remote: Remote = Remote(rpc_runner_config["server_remote"])
         self.client_remote: Remote = Remote(rpc_runner_config["client_remote"])
+        self.remote_listen_address: str = rpc_runner_config["remote_listen_address"]
+        self.remote_listen_port: str = rpc_runner_config["remote_listen_port"]
+        self.remote_connect_address: str = rpc_runner_config["remote_connect_address"]
+        self.remote_connect_port: str = rpc_runner_config["remote_connect_port"]
 
         warn_if_not_release(self.tester_path)
 
@@ -53,7 +57,7 @@ class RpcTestRunner:
             )
         else:
             with open(self.config_path, "r") as f:
-                server_process = self.server_remote.run_rpc_tester(f.read(), backend, "127.0.0.1", is_server=True, app_cpuset=server_cpuset, async_worker_cpuset=server_async_worker_cpuset)
+                server_process = self.server_remote.run_rpc_tester(f.read(), backend, self.remote_listen_address, self.remote_listen_port, is_server=True, app_cpuset=server_cpuset, async_worker_cpuset=server_async_worker_cpuset)
             
             return server_process
         
@@ -82,7 +86,7 @@ class RpcTestRunner:
             return CmdOutput(stdout=output.stdout, stderr=output.stderr, returncode=output.returncode)
         else:
             with open(self.config_path, "r") as f:
-                return self.client_remote.run_rpc_tester(f.read(), backend, "127.0.0.1", is_server=False, app_cpuset=client_cpuset, async_worker_cpuset=client_async_worker_cpuset).wait()
+                return self.client_remote.run_rpc_tester(f.read(), backend, self.remote_connect_address, self.remote_connect_port, is_server=False, app_cpuset=client_cpuset, async_worker_cpuset=client_async_worker_cpuset).wait()
             
 
     def ___run_test(
