@@ -59,7 +59,7 @@ class IOTestRunner:
             )
         else:
             with open(self.config_path, "r") as f:
-                result = self.remote.run_io_tester(config=f.read(), backend=backend, app_cpuset=cpuset, async_worker_cpuset=async_worker_cpuset)
+                result = self.remote.run_io_tester(config=f.read(), backend=backend, app_cpuset=cpuset, async_worker_cpuset=async_worker_cpuset).wait()                
 
         stdout_output_path: Path = self.run_output_dir / (output_filename + ".out")
 
