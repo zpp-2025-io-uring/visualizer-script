@@ -58,8 +58,14 @@ class IOTestRunner:
                 text=True,
             )
         else:
-            with open(self.config_path, "r") as f:
-                result = self.remote.run_io_tester(config=f.read(), backend=backend, app_cpuset=cpuset, async_worker_cpuset=async_worker_cpuset).wait()                
+            try:
+                with open(self.config_path, "r") as f:
+                    process = self.remote.run_io_tester(config=f.read(), backend=backend, app_cpuset=cpuset, async_worker_cpuset=async_worker_cpuset)           
+                result = process.wait()
+            except KeyboardInterrupt:
+                logger.warning("remote io_tester interrupted")
+                process.kill()
+
 
         stdout_output_path: Path = self.run_output_dir / (output_filename + ".out")
 

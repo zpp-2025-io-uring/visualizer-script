@@ -30,12 +30,12 @@ class RemoteProcess:
 
 
     def kill(self):
-        response =  requests.post(f"http://{self.address}/kill", json=self.pid)
+        response =  requests.post(f"http://{self.remote.address}/kill", json=self.pid)
         if not response.ok:
             raise RuntimeError(f"Remote failed with response {response.status_code}")
         
     def terminate(self):
-        response =  requests.post(f"http://{self.address}/terminate", json=self.pid)
+        response =  requests.post(f"http://{self.remote.address}/terminate", json=self.pid)
         if not response.ok:
             raise RuntimeError(f"Remote failed with response {response.status_code}")
 
