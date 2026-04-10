@@ -38,7 +38,7 @@ class RemoteProcess:
         if not response.ok:
             raise RuntimeError(f"Remote failed with response {response.status_code}")
         
-    def poll(self) -> int:
+    def poll(self) -> int | None:
         response =  requests.post(f"http://{self.remote.address}/poll", json=self.pid)
         if response.ok:
             return response.json()
@@ -53,6 +53,22 @@ class Remote:
         params = {
             "config":config,
             "backend":backend,
+            "app_cpuset":app_cpuset,
+            "async_worker_cpuset":async_worker_cpuset
+        }
+
+        response =  requests.post(f"http://{self.address}/io_tester", json=params)
+        if response.ok:
+            return RemoteProcess(remote=self, pid=response.json())
+        else:
+            raise RuntimeError(f"Remote failed with response {response.status_code}")
+
+    def run_rpc_tester(self, config: str, backend: str, ip_address: str, is_server: bool, app_cpuset: str, async_worker_cpuset: str | None) -> RemoteProcess:
+        params = {
+            "config":config,
+            "backend":backend,
+            "ip_address":ip_address,
+            "is_server":is_server,
             "app_cpuset":app_cpuset,
             "async_worker_cpuset":async_worker_cpuset
         }

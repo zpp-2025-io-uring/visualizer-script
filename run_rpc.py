@@ -3,7 +3,7 @@ from pathlib import Path
 from time import sleep
 
 from log import get_logger, warn_if_not_release
-from remote import CmdOutput
+from remote import CmdOutput, Remote
 
 logger = get_logger()
 
@@ -24,8 +24,39 @@ class RpcTestRunner:
         self.symmetric_client_cpuset = rpc_runner_config["symmetric_client_cpuset"]
         self.backends = backends
         self.skip_async_workers_cpuset = skip_async_workers_cpuset
+        self.server_remote: Remote = Remote(rpc_runner_config["server_remote"])
+        self.client_remote: Remote = Remote(rpc_runner_config["client_remote"])
 
         warn_if_not_release(self.tester_path)
+
+    def __run_server(self, backend: str,server_cpuset: str,server_async_worker_cpuset: str | None): # Creates a process
+        if self.server_remote is None:
+            argv = [
+                self.tester_path,
+                "--conf",
+                self.config_path,
+                "--listen",
+                self.ip_address,
+                "--reactor-backend",
+                backend,
+                "--cpuset",
+                server_cpuset,
+            ]
+            if server_async_worker_cpuset is not None:
+                argv.extend(["--async-workers-cpuset", server_async_worker_cpuset])
+
+            server_process = subprocess.Popen(
+                argv,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+        else:
+            with open(self.config_path, "r") as f:
+                server_process = self.server_remote.run_rpc_tester(f.read(), backend, "0.0.0.0", is_server=True, app_cpuset=server_cpuset, async_worker_cpuset=server_async_worker_cpuset)
+            
+            return server_process
+        
 
     def ___run_test(
         self,
@@ -35,26 +66,7 @@ class RpcTestRunner:
         client_cpuset: str,
         client_async_worker_cpuset: str | None,
     ) -> CmdOutput:
-        argv = [
-            self.tester_path,
-            "--conf",
-            self.config_path,
-            "--listen",
-            self.ip_address,
-            "--reactor-backend",
-            backend,
-            "--cpuset",
-            server_cpuset,
-        ]
-        if server_async_worker_cpuset is not None:
-            argv.extend(["--async-workers-cpuset", server_async_worker_cpuset])
-
-        server_process = subprocess.Popen(
-            argv,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
+        server_process = self.__run_server(backend, server_cpuset, server_async_worker_cpuset)
 
         sleep(1)
 
