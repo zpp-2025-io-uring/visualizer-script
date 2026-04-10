@@ -2,6 +2,7 @@ import subprocess
 from pathlib import Path
 
 from log import get_logger, warn_if_not_release
+from remote import Remote
 
 logger = get_logger()
 
@@ -24,6 +25,7 @@ class IOTestRunner:
         self.symmetric_cpuset = io_runner_config["symmetric_cpuset"]
         self.backends = backends
         self.skip_async_workers_cpuset = skip_async_workers_cpuset
+        self.remote: Remote = Remote(io_runner_config["remote"])
 
         warn_if_not_release(self.tester_path)
 
@@ -34,25 +36,30 @@ class IOTestRunner:
         self.run_output_dir.mkdir(parents=True, exist_ok=True)
         self.storage_dir.mkdir(parents=True, exist_ok=True)
 
-        argv = [
-            self.tester_path,
-            "--conf",
-            self.config_path,
-            "--storage",
-            self.storage_dir,
-            "--reactor-backend",
-            backend,
-            "--cpuset",
-            cpuset,
-        ]
-        if async_worker_cpuset is not None:
-            argv.extend(["--async-workers-cpuset", async_worker_cpuset])
+        if self.remote is None:
+            argv = [
+                self.tester_path,
+                "--conf",
+                self.config_path,
+                "--storage",
+                self.storage_dir,
+                "--reactor-backend",
+                backend,
+                "--cpuset",
+                cpuset,
+            ]
 
-        result = subprocess.run(
-            argv,
-            capture_output=True,
-            text=True,
-        )
+            if async_worker_cpuset is not None:
+                argv.extend(["--async-workers-cpuset", async_worker_cpuset])
+
+            result = subprocess.run(
+                argv,
+                capture_output=True,
+                text=True,
+            )
+        else:
+            with open(self.config_path, "r") as f:
+                result = self.remote.run_io_tester(config=f.read(), backend=backend, app_cpuset=cpuset, async_worker_cpuset=async_worker_cpuset)
 
         stdout_output_path: Path = self.run_output_dir / (output_filename + ".out")
 
@@ -66,7 +73,7 @@ class IOTestRunner:
 
         self.storage_dir.rmdir()
 
-        if err := result.returncode != 0:
+        if (err := result.returncode) != 0:
             raise RuntimeError(f"Tester failed with exit code {err}")
 
         return result.stdout
