@@ -3,6 +3,7 @@ from pathlib import Path
 from time import sleep
 
 from log import get_logger, warn_if_not_release
+from remote import CmdOutput
 
 logger = get_logger()
 
@@ -26,20 +27,14 @@ class RpcTestRunner:
 
         warn_if_not_release(self.tester_path)
 
-    def __run_test(
+    def ___run_test(
         self,
         backend: str,
-        output_filename: str,
         server_cpuset: str,
         server_async_worker_cpuset: str | None,
         client_cpuset: str,
         client_async_worker_cpuset: str | None,
-    ):
-        logger.info(
-            f"Running rpc_tester with backend {backend}, server cpuset: {server_cpuset}, server async worker cpuset: {server_async_worker_cpuset}, client cpuset: {client_cpuset}, client async worker cpuset: {client_async_worker_cpuset}"
-        )
-        self.run_output_dir.mkdir(parents=True, exist_ok=True)
-
+    ) -> CmdOutput:
         argv = [
             self.tester_path,
             "--conf",
@@ -106,15 +101,33 @@ class RpcTestRunner:
 
         server_stdout, server_stderr = server_process.communicate()
 
+        return CmdOutput()
+
+    def __run_test(
+        self,
+        backend: str,
+        output_filename: str,
+        server_cpuset: str,
+        server_async_worker_cpuset: str | None,
+        client_cpuset: str,
+        client_async_worker_cpuset: str | None,
+    ):
+        logger.info(
+            f"Running rpc_tester with backend {backend}, server cpuset: {server_cpuset}, server async worker cpuset: {server_async_worker_cpuset}, client cpuset: {client_cpuset}, client async worker cpuset: {client_async_worker_cpuset}"
+        )
+        self.run_output_dir.mkdir(parents=True, exist_ok=True)
+
+        client, server = self.___run_test(backend, server_cpuset, server_async_worker_cpuset, client_cpuset, client_async_worker_cpuset)
+
         server_stdout_output_path: Path = self.run_output_dir / (output_filename + ".server.out")
 
         with open(server_stdout_output_path, "w") as f:
-            print(server_stdout, file=f)
+            print(server.stdout, file=f)
 
         server_stderr_output_path: Path = self.run_output_dir / (output_filename + ".server.err")
 
         with open(server_stderr_output_path, "w") as f:
-            print(server_stderr, file=f)
+            print(server.stderr, file=f)
 
         client_stdout_output_path: Path = self.run_output_dir / (output_filename + ".client.out")
 
@@ -126,7 +139,7 @@ class RpcTestRunner:
         with open(client_stderr_output_path, "w") as f:
             print(client.stderr, file=f)
 
-        if (err := server_process.returncode) != 0:
+        if (err := server.returncode) != 0:
             raise RuntimeError(f"Server failed with exit code {err}")
 
         if err := client.returncode != 0:

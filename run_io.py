@@ -65,6 +65,7 @@ class IOTestRunner:
             except KeyboardInterrupt:
                 logger.warning("remote io_tester interrupted")
                 process.kill()
+                process.wait() # Clear zombie
 
 
         stdout_output_path: Path = self.run_output_dir / (output_filename + ".out")
