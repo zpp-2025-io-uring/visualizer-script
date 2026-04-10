@@ -3,6 +3,7 @@ build/*
 out/*
 .temp/*
 results/*
+.*
 
 # Python vnenv
 venv/
