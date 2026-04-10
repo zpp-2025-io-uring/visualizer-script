@@ -10,7 +10,7 @@ logger = get_logger()
 class CmdOutput:
     stdout: str
     stderr: str
-    returncode: int
+    returncode: int | None
 
     def from_json(data: dict) -> "CmdOutput":
         return CmdOutput(stdout=data["stdout"], stderr=data["stderr"], returncode=data["return_code"])
@@ -44,6 +44,10 @@ class RemoteProcess:
             return response.json()
         else:
             raise RuntimeError(f"Remote failed with response {response.status_code}")
+        
+    def communicate(self): # Sending stdin unsupported, timeout unsupported
+        output = self.wait()
+        return output.stdout, output.stderr
 
 class Remote:
     def __init__(self, address: str):
