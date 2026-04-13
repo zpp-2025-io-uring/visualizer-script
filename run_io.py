@@ -26,7 +26,7 @@ class IOTestRunner:
         self.backends = backends
         self.skip_async_workers_cpuset = skip_async_workers_cpuset
         if (remote := io_runner_config.get("remote", None)) is not None:
-            remote: Remote | None = Remote(remote)
+            remote = Remote(remote)
         self.remote: Remote | None = remote
 
 
@@ -64,7 +64,7 @@ class IOTestRunner:
             try:
                 with open(self.config_path) as f:
                     process = self.remote.run_io_tester(IoTesterParams(config=f.read(), backend=backend, app_cpuset=cpuset, async_worker_cpuset=async_worker_cpuset))
-                result: subprocess.CompletedProcess | CmdOutput = process.wait()
+                result = process.wait()
             except KeyboardInterrupt:
                 logger.warning("remote io_tester interrupted")
                 process.kill()
