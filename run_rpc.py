@@ -3,7 +3,7 @@ from pathlib import Path
 from time import sleep
 
 from log import get_logger, warn_if_not_release
-from remote import CmdOutput, Remote, RpcTesterParams
+from remote import CmdOutput, Remote, RemoteProcess, RpcTesterParams
 
 logger = get_logger()
 
@@ -39,7 +39,7 @@ class RpcTestRunner:
 
         warn_if_not_release(self.tester_path)
 
-    def __run_server(self, backend: str,server_cpuset: str,server_async_worker_cpuset: str | None): # Creates a process
+    def __run_server(self, backend: str,server_cpuset: str,server_async_worker_cpuset: str | None) -> subprocess.Popen[str] | RemoteProcess: # Creates a process
         if self.server_remote is None:
             argv = [
                 self.tester_path,
