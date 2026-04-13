@@ -58,12 +58,12 @@ class IOTestRunner:
 
             result = subprocess.run(
                 argv,
-                capture_output=True,
+                check=False, capture_output=True,
                 text=True,
             )
         else:
             try:
-                with open(self.config_path, "r") as f:
+                with open(self.config_path) as f:
                     process = self.remote.run_io_tester(IoTesterParams(config=f.read(), backend=backend, app_cpuset=cpuset, async_worker_cpuset=async_worker_cpuset))
                 result = process.wait()
             except KeyboardInterrupt:
