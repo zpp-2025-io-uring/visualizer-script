@@ -1,7 +1,6 @@
-from os import PathLike
 import subprocess
+from os import PathLike
 from pathlib import Path
-from typing import Sequence
 
 from log import get_logger, warn_if_not_release
 from remote import CmdOutput, IoTesterParams, Remote
@@ -36,7 +35,7 @@ class IOTestRunner:
 
     def __run_test_process(self, backend: str, cpuset: str, async_worker_cpuset: str | None) -> CmdOutput:
         if self.remote is None:
-            argv: Sequence[str | bytes | PathLike[str] | PathLike[bytes]] = [
+            argv: list[str | bytes | PathLike[str] | PathLike[bytes]] = [
                 self.tester_path,
                 "--conf",
                 self.config_path,
