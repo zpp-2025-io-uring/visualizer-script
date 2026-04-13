@@ -134,9 +134,11 @@ class RpcTestRunner:
             server_process.kill()
 
         if self.server_remote is None:
+            assert type(server_process) == subprocess.Popen[str]
             server_stdout, server_stderr = server_process.communicate()
             return client_output, CmdOutput(stdout=server_stdout, stderr=server_stderr, returncode=server_process.poll())
         else:
+            assert type(server_process) == RemoteProcess
             return client_output, server_process.wait()
 
     def __run_test(
