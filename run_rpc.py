@@ -24,8 +24,14 @@ class RpcTestRunner:
         self.symmetric_client_cpuset = rpc_runner_config["symmetric_client_cpuset"]
         self.backends = backends
         self.skip_async_workers_cpuset = skip_async_workers_cpuset
-        self.server_remote: Remote | None = Remote(rpc_runner_config.get("server_remote", None))
-        self.client_remote: Remote | None = Remote(rpc_runner_config.get("client_remote", None))
+        if (server_remote := rpc_runner_config.get("server_remote", None)) is not None:
+            self.server_remote: Remote | None = Remote(server_remote)
+        else:
+            self.server_remote: Remote | None = None
+        if (client_remote := rpc_runner_config.get("client_remote", None)) is not None:
+            self.client_remote: Remote | None = Remote(client_remote)
+        else:
+            self.client_remote: Remote | None = None
         self.remote_listen_address: str | None = rpc_runner_config.get("remote_listen_address", None)
         self.remote_listen_port: str | None = rpc_runner_config.get("remote_listen_port", None)
         self.remote_connect_address: str | None = rpc_runner_config.get("remote_connect_address", None)

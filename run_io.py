@@ -25,7 +25,11 @@ class IOTestRunner:
         self.symmetric_cpuset = io_runner_config["symmetric_cpuset"]
         self.backends = backends
         self.skip_async_workers_cpuset = skip_async_workers_cpuset
-        self.remote: Remote | None = Remote(io_runner_config.get("remote", None))
+        if (remote := io_runner_config.get("remote", None)) is not None:
+            self.remote: Remote | None = Remote(remote)
+        else:
+            self.remote: Remote | None = None
+
 
         warn_if_not_release(self.tester_path)
 
