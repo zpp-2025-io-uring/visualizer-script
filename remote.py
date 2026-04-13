@@ -60,9 +60,6 @@ class IoTesterParams:
         return {
             "config": self.config,
             "backend": self.backend,
-            "ip_address": self.ip_address,
-            "port": self.port,
-            "is_server": self.is_server,
             "app_cpuset": self.app_cpuset,
             "async_worker_cpuset": self.async_worker_cpuset,
         }
