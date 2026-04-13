@@ -40,7 +40,7 @@ class IOTestRunner:
         self.storage_dir.mkdir(parents=True, exist_ok=True)
 
         if self.remote is None:
-            argv: list[str | Path] = [
+            argv = [
                 self.tester_path,
                 "--conf",
                 self.config_path,

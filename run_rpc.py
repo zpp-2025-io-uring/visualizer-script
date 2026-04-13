@@ -25,7 +25,7 @@ class RpcTestRunner:
         self.backends = backends
         self.skip_async_workers_cpuset = skip_async_workers_cpuset
         if (server_remote := rpc_runner_config.get("server_remote", None)) is not None:
-            server_remote = Remote | None = Remote(server_remote)
+            server_remote: Remote | None = Remote(server_remote)
         self.server_remote: Remote | None = server_remote
         if (client_remote := rpc_runner_config.get("client_remote", None)) is not None:
             client_remote: Remote | None = Remote(client_remote)
@@ -62,7 +62,7 @@ class RpcTestRunner:
         else:
             with open(self.config_path) as f:
                 server_process: subprocess.Popen[str] | RemoteProcess = self.server_remote.run_rpc_tester(RpcTesterParams(f.read(), backend, self.remote_listen_address, self.remote_listen_port, is_server=True, app_cpuset=server_cpuset, async_worker_cpuset=server_async_worker_cpuset))
-            
+  
         return server_process
     def __run_client(self, backend: str,client_cpuset: str,client_async_worker_cpuset: str | None) -> CmdOutput:
         if self.client_remote is None:
