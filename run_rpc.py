@@ -24,12 +24,12 @@ class RpcTestRunner:
         self.symmetric_client_cpuset = rpc_runner_config["symmetric_client_cpuset"]
         self.backends = backends
         self.skip_async_workers_cpuset = skip_async_workers_cpuset
-        self.server_remote: Remote = Remote(rpc_runner_config["server_remote"])
-        self.client_remote: Remote = Remote(rpc_runner_config["client_remote"])
-        self.remote_listen_address: str = rpc_runner_config["remote_listen_address"]
-        self.remote_listen_port: str = rpc_runner_config["remote_listen_port"]
-        self.remote_connect_address: str = rpc_runner_config["remote_connect_address"]
-        self.remote_connect_port: str = rpc_runner_config["remote_connect_port"]
+        self.server_remote: Remote | None = Remote(rpc_runner_config.get("server_remote", None))
+        self.client_remote: Remote | None = Remote(rpc_runner_config.get("client_remote", None))
+        self.remote_listen_address: str | None = rpc_runner_config.get("remote_listen_address", None)
+        self.remote_listen_port: str | None = rpc_runner_config.get("remote_listen_port", None)
+        self.remote_connect_address: str | None = rpc_runner_config.get("remote_connect_address", None)
+        self.remote_connect_port: str | None = rpc_runner_config.get("remote_connect_port", None)
 
         warn_if_not_release(self.tester_path)
 
