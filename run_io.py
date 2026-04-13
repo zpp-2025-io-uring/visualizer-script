@@ -30,7 +30,6 @@ class IOTestRunner:
             remote = Remote(remote)
         self.remote: Remote | None = remote
 
-
         warn_if_not_release(self.tester_path)
 
     def __run_test_process(self, backend: str, cpuset: str, async_worker_cpuset: str | None) -> CmdOutput:
@@ -52,7 +51,8 @@ class IOTestRunner:
 
             result: subprocess.CompletedProcess | CmdOutput = subprocess.run(
                 argv,
-                check=False, capture_output=True,
+                check=False,
+                capture_output=True,
                 text=True,
             )
 
@@ -60,12 +60,16 @@ class IOTestRunner:
         else:
             try:
                 with open(self.config_path) as f:
-                    process = self.remote.run_io_tester(IoTesterParams(config=f.read(), backend=backend, app_cpuset=cpuset, async_worker_cpuset=async_worker_cpuset))
+                    process = self.remote.run_io_tester(
+                        IoTesterParams(
+                            config=f.read(), backend=backend, app_cpuset=cpuset, async_worker_cpuset=async_worker_cpuset
+                        )
+                    )
                 return process.wait()
             except KeyboardInterrupt:
                 logger.warning("remote io_tester interrupted")
                 process.kill()
-                process.wait() # Clear zombie
+                process.wait()  # Clear zombie
                 raise
 
     def __run_test(self, backend: str, output_filename: str, cpuset: str, async_worker_cpuset: str | None) -> str:
