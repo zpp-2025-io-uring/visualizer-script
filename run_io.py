@@ -32,13 +32,7 @@ class IOTestRunner:
 
         warn_if_not_release(self.tester_path)
 
-    def __run_test(self, backend: str, output_filename: str, cpuset: str, async_worker_cpuset: str | None) -> str:
-        logger.info(
-            f"Running io_tester with backend {backend}, cpuset: {cpuset}, async worker cpuset: {async_worker_cpuset}"
-        )
-        self.run_output_dir.mkdir(parents=True, exist_ok=True)
-        self.storage_dir.mkdir(parents=True, exist_ok=True)
-
+    def __run_test_process(self, backend: str, cpuset: str, async_worker_cpuset: str | None) -> CmdOutput:
         if self.remote is None:
             argv = [
                 self.tester_path,
@@ -60,16 +54,26 @@ class IOTestRunner:
                 check=False, capture_output=True,
                 text=True,
             )
+
+            return CmdOutput(stdout=result.stdout, stderr=result.stderr, returncode=result.returncode)
         else:
             try:
                 with open(self.config_path) as f:
                     process = self.remote.run_io_tester(IoTesterParams(config=f.read(), backend=backend, app_cpuset=cpuset, async_worker_cpuset=async_worker_cpuset))
-                result = process.wait()
+                return process.wait()
             except KeyboardInterrupt:
                 logger.warning("remote io_tester interrupted")
                 process.kill()
                 process.wait() # Clear zombie
 
+    def __run_test(self, backend: str, output_filename: str, cpuset: str, async_worker_cpuset: str | None) -> str:
+        logger.info(
+            f"Running io_tester with backend {backend}, cpuset: {cpuset}, async worker cpuset: {async_worker_cpuset}"
+        )
+        self.run_output_dir.mkdir(parents=True, exist_ok=True)
+        self.storage_dir.mkdir(parents=True, exist_ok=True)
+
+        result = self.__run_test_process(backend, cpuset, async_worker_cpuset)
 
         stdout_output_path: Path = self.run_output_dir / (output_filename + ".out")
 
