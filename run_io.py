@@ -2,7 +2,7 @@ import subprocess
 from pathlib import Path
 
 from log import get_logger, warn_if_not_release
-from remote import Remote
+from remote import IoTesterParams, Remote
 
 logger = get_logger()
 
@@ -60,7 +60,7 @@ class IOTestRunner:
         else:
             try:
                 with open(self.config_path, "r") as f:
-                    process = self.remote.run_io_tester(config=f.read(), backend=backend, app_cpuset=cpuset, async_worker_cpuset=async_worker_cpuset)           
+                    process = self.remote.run_io_tester(IoTesterParams(config=f.read(), backend=backend, app_cpuset=cpuset, async_worker_cpuset=async_worker_cpuset))
                 result = process.wait()
             except KeyboardInterrupt:
                 logger.warning("remote io_tester interrupted")

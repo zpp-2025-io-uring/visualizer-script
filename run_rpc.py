@@ -3,7 +3,7 @@ from pathlib import Path
 from time import sleep
 
 from log import get_logger, warn_if_not_release
-from remote import CmdOutput, Remote
+from remote import CmdOutput, Remote, RpcTesterParams
 
 logger = get_logger()
 
@@ -57,7 +57,7 @@ class RpcTestRunner:
             )
         else:
             with open(self.config_path, "r") as f:
-                server_process = self.server_remote.run_rpc_tester(f.read(), backend, self.remote_listen_address, self.remote_listen_port, is_server=True, app_cpuset=server_cpuset, async_worker_cpuset=server_async_worker_cpuset)
+                server_process = self.server_remote.run_rpc_tester(RpcTesterParams(f.read(), backend, self.remote_listen_address, self.remote_listen_port, is_server=True, app_cpuset=server_cpuset, async_worker_cpuset=server_async_worker_cpuset))
             
             return server_process
         
@@ -86,7 +86,7 @@ class RpcTestRunner:
             return CmdOutput(stdout=output.stdout, stderr=output.stderr, returncode=output.returncode)
         else:
             with open(self.config_path, "r") as f:
-                return self.client_remote.run_rpc_tester(f.read(), backend, self.remote_connect_address, self.remote_connect_port, is_server=False, app_cpuset=client_cpuset, async_worker_cpuset=client_async_worker_cpuset).wait()
+                return self.client_remote.run_rpc_tester(RpcTesterParams(f.read(), backend, self.remote_connect_address, self.remote_connect_port, is_server=False, app_cpuset=client_cpuset, async_worker_cpuset=client_async_worker_cpuset)).wait()
             
 
     def ___run_test(
