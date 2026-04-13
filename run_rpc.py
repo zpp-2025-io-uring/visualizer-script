@@ -65,6 +65,8 @@ class RpcTestRunner:
                     raise RuntimeError("Remote listen address not specified")
                 if self.remote_listen_port is None:
                     raise RuntimeError("Remote listen port not specified")
+                assert isinstance(self.remote_listen_address, str)
+                assert isinstance(self.remote_listen_port, str)
                 return self.server_remote.run_rpc_tester(RpcTesterParams(f.read(), backend, self.remote_listen_address, self.remote_listen_port, is_server=True, app_cpuset=server_cpuset, async_worker_cpuset=server_async_worker_cpuset))
 
     def __run_client(self, backend: str,client_cpuset: str,client_async_worker_cpuset: str | None) -> CmdOutput:
@@ -96,6 +98,8 @@ class RpcTestRunner:
                     raise RuntimeError("Remote connect address not specified")
                 if self.remote_connect_port is None:
                     raise RuntimeError("Remote connect port not specified")
+                assert isinstance(self.remote_connect_address, str)
+                assert isinstance(self.remote_connect_port, str)
                 return self.client_remote.run_rpc_tester(RpcTesterParams(f.read(), backend, self.remote_connect_address, self.remote_connect_port, is_server=False, app_cpuset=client_cpuset, async_worker_cpuset=client_async_worker_cpuset)).wait()
 
     def ___run_test(
@@ -134,11 +138,11 @@ class RpcTestRunner:
             server_process.kill()
 
         if self.server_remote is None:
-            assert server_process is subprocess.Popen[str]
+            assert isinstance(server_process, subprocess.Popen)
             server_stdout, server_stderr = server_process.communicate()
             return client_output, CmdOutput(stdout=server_stdout, stderr=server_stderr, returncode=server_process.poll())
         else:
-            assert server_process is RemoteProcess
+            assert isinstance(server_process, RemoteProcess)
             return client_output, server_process.wait()
 
     def __run_test(
