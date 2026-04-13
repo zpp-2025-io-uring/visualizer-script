@@ -2,7 +2,7 @@ import subprocess
 from pathlib import Path
 
 from log import get_logger, warn_if_not_release
-from remote import IoTesterParams, Remote
+from remote import CmdOutput, IoTesterParams, Remote
 
 logger = get_logger()
 
@@ -26,9 +26,8 @@ class IOTestRunner:
         self.backends = backends
         self.skip_async_workers_cpuset = skip_async_workers_cpuset
         if (remote := io_runner_config.get("remote", None)) is not None:
-            self.remote: Remote | None = Remote(remote)
-        else:
-            self.remote: Remote | None = None
+            remote: Remote | None = Remote(remote)
+        self.remote: Remote | None = remote
 
 
         warn_if_not_release(self.tester_path)
@@ -41,7 +40,7 @@ class IOTestRunner:
         self.storage_dir.mkdir(parents=True, exist_ok=True)
 
         if self.remote is None:
-            argv = [
+            argv: list[str | Path] = [
                 self.tester_path,
                 "--conf",
                 self.config_path,
@@ -56,7 +55,7 @@ class IOTestRunner:
             if async_worker_cpuset is not None:
                 argv.extend(["--async-workers-cpuset", async_worker_cpuset])
 
-            result = subprocess.run(
+            result: subprocess.CompletedProcess | CmdOutput = subprocess.run(
                 argv,
                 check=False, capture_output=True,
                 text=True,
@@ -65,7 +64,7 @@ class IOTestRunner:
             try:
                 with open(self.config_path) as f:
                     process = self.remote.run_io_tester(IoTesterParams(config=f.read(), backend=backend, app_cpuset=cpuset, async_worker_cpuset=async_worker_cpuset))
-                result = process.wait()
+                result: subprocess.CompletedProcess | CmdOutput = process.wait()
             except KeyboardInterrupt:
                 logger.warning("remote io_tester interrupted")
                 process.kill()
