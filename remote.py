@@ -24,25 +24,32 @@ class RemoteProcess:
         self.pid = pid
 
     def wait(self) -> CmdOutput:
+        logger.info(f"POST http://{self.remote.address}/wait_and_output, pid={self.pid}")
         response = requests.post(f"http://{self.remote.address}/wait_and_output", json=self.pid)
-        print(response.text)
+        logger.info(f"POST http://{self.remote.address}/wait_and_output, pid={self.pid} received: {response.json()}")
         if response.ok:
             return CmdOutput.from_json(response.json())
         else:
             raise RuntimeError(f"Remote failed with response {response.status_code}")
 
     def kill(self) -> None:
+        logger.info(f"POST http://{self.remote.address}/kill, pid={self.pid}")
         response = requests.post(f"http://{self.remote.address}/kill", json=self.pid)
+        logger.info(f"POST http://{self.remote.address}/kill, pid={self.pid} received: {response.json()}")
         if not response.ok:
             raise RuntimeError(f"Remote failed with response {response.status_code}")
 
     def terminate(self) -> None:
+        logger.info(f"POST http://{self.remote.address}/terminate, pid={self.pid}")
         response = requests.post(f"http://{self.remote.address}/terminate", json=self.pid)
+        logger.info(f"POST http://{self.remote.address}/terminate, pid={self.pid} received: {response.json()}")
         if not response.ok:
             raise RuntimeError(f"Remote failed with response {response.status_code}")
 
     def poll(self) -> int | None:
+        logger.info(f"POST http://{self.remote.address}/poll, pid={self.pid}")
         response = requests.post(f"http://{self.remote.address}/poll", json=self.pid)
+        logger.info(f"POST http://{self.remote.address}/poll, pid={self.pid} received: {response.json()}")
         if response.ok:
             return response.json()
         else:
