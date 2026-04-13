@@ -65,7 +65,7 @@ class RpcTestRunner:
             with open(self.config_path, "r") as f:
                 server_process = self.server_remote.run_rpc_tester(RpcTesterParams(f.read(), backend, self.remote_listen_address, self.remote_listen_port, is_server=True, app_cpuset=server_cpuset, async_worker_cpuset=server_async_worker_cpuset))
             
-            return server_process
+        return server_process
         
     def __run_client(self, backend: str,client_cpuset: str,client_async_worker_cpuset: str | None) -> CmdOutput:
         if self.client_remote is None:
