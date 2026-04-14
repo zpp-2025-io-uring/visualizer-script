@@ -36,7 +36,9 @@ class PlotGenerator:
         benchmark_metadata = self.metadata_holder.get_metadata_or_default(type)
 
         for metric_name, metric_by_backend in results.sharded_metrics.items():
-            plot_metric_data = benchmark_metadata.get_sharded_metric_metadata_or_default(metric_name).get_plot_metadata()
+            plot_metric_data = benchmark_metadata.get_sharded_metric_metadata_or_default(
+                metric_name
+            ).get_plot_metadata()
             (metric_file_path, plot) = plot_sharded_metric(metric_name, plot_metric_data, metric_by_backend, build_dir)
             self.figs.append(plot)
             self.file_paths.append(metric_file_path)
@@ -48,7 +50,9 @@ class PlotGenerator:
             self.file_paths.append(total_file_path)
 
         for metric_name, shardless_metric_by_backend in results.shardless_metrics.items():
-            plot_metric_data = benchmark_metadata.get_shardless_metric_metadata_or_default(metric_name).get_plot_metadata()
+            plot_metric_data = benchmark_metadata.get_shardless_metric_metadata_or_default(
+                metric_name
+            ).get_plot_metadata()
             (metric_file_path, plot) = plot_shardless_metric(
                 metric_name, plot_metric_data, shardless_metric_by_backend, build_dir
             )
@@ -72,9 +76,11 @@ class PlotGenerator:
             rows = summarize_sharded_metrics_by_backend(per_backend_sharded_metrics, stat_to_plot, stat_as_error)
             df_long = pd.DataFrame(rows)
 
-            plot_metric_data = self.metadata_holder.get_metadata_or_default(
-                type
-            ).get_sharded_metric_metadata_or_default(metric).get_plot_metadata()
+            plot_metric_data = (
+                self.metadata_holder.get_metadata_or_default(type)
+                .get_sharded_metric_metadata_or_default(metric)
+                .get_plot_metadata()
+            )
             file_path = build_dir / pathlib.Path(
                 f"{sanitize_filename(MetricPlotMetadata.make_file_name_for_plot(metric))}.{image_format}"
             )
@@ -95,9 +101,11 @@ class PlotGenerator:
             rows = summarize_shardless_metrics_by_backend(per_backend_shardless_metrics, stat_to_plot, stat_as_error)
             df = pd.DataFrame(rows)
 
-            plot_metric_data = self.metadata_holder.get_metadata_or_default(
-                type
-            ).get_shardless_metric_metadata_or_default(metric).get_plot_metadata()
+            plot_metric_data = (
+                self.metadata_holder.get_metadata_or_default(type)
+                .get_shardless_metric_metadata_or_default(metric)
+                .get_plot_metadata()
+            )
             file_path = build_dir / pathlib.Path(
                 f"{sanitize_filename(MetricPlotMetadata.make_file_name_for_plot(metric))}.{image_format}"
             )

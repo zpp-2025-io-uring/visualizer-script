@@ -102,9 +102,7 @@ class BenchmarkMetadata(YamlAble):
         return self._get_metadata_or_default(self.shardless_metrics, metric_name)
 
     @staticmethod
-    def _get_metadata_or_default(
-        tree: TreeDict[MetricMetadata], metric_name: tuple[str, ...]
-    ) -> MetricMetadata:
+    def _get_metadata_or_default(tree: TreeDict[MetricMetadata], metric_name: tuple[str, ...]) -> MetricMetadata:
         value = tree.get(metric_name, _asterix_compare, _asterix_resolver)
         if value is None:
             return MetricMetadata.default(metric_name)
