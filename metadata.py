@@ -51,12 +51,12 @@ class MetricPlotMetadata(YamlAble):
             return f"{self.value_axis_title} [{self.unit}]"
         return self.value_axis_title
 
-    @classmethod
-    def make_file_name_for_plot(cls, name: tuple[str, ...]) -> str:
+    @staticmethod
+    def make_file_name_for_plot(name: tuple[str, ...]) -> str:
         return "_".join(name)
 
-    @classmethod
-    def default(cls, path: tuple[str, ...]) -> "MetricPlotMetadata":
+    @staticmethod
+    def default(path: tuple[str, ...]) -> "MetricPlotMetadata":
         return MetricPlotMetadata(title=_get_name_from_path(path), value_axis_title="Value", unit=None)
 
 
