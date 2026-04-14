@@ -73,6 +73,10 @@ class MetricMetadata(YamlAble):
     def __repr__(self) -> str:
         return f"MetricMetadata(plot_metadata={self.plotting})"
 
+    @staticmethod
+    def default(path: tuple[str, ...]) -> "MetricMetadata":
+        return MetricMetadata(MetricPlotMetadata.default(path))
+
 
 @yaml_info("metadata")
 class BenchmarkMetadata(YamlAble):
@@ -90,20 +94,20 @@ class BenchmarkMetadata(YamlAble):
     def __repr__(self) -> str:
         return f"BenchmarkMetadata(sharded_metrics={self.sharded_metrics}, shardless_metrics={self.shardless_metrics})"
 
-    def get_sharded_metric_metadata_or_default(self, metric_name: tuple[str, ...]) -> MetricPlotMetadata:
-        return self._get_plot_metadata_or_default(self.sharded_metrics, metric_name)
+    def get_sharded_metric_metadata_or_default(self, metric_name: tuple[str, ...]) -> MetricMetadata:
+        return self._get_metadata_or_default(self.sharded_metrics, metric_name)
 
-    def get_shardless_metric_metadata_or_default(self, metric_name: tuple[str, ...]) -> MetricPlotMetadata:
-        return self._get_plot_metadata_or_default(self.shardless_metrics, metric_name)
+    def get_shardless_metric_metadata_or_default(self, metric_name: tuple[str, ...]) -> MetricMetadata:
+        return self._get_metadata_or_default(self.shardless_metrics, metric_name)
 
     @staticmethod
-    def _get_plot_metadata_or_default(
+    def _get_metadata_or_default(
         tree: TreeDict[MetricMetadata], metric_name: tuple[str, ...]
-    ) -> MetricPlotMetadata:
+    ) -> MetricMetadata:
         value = tree.get(metric_name, _asterix_compare, _asterix_resolver)
         if value is None:
-            return MetricPlotMetadata.default(metric_name)
-        return value.get_plot_metadata()
+            return MetricMetadata.default(metric_name)
+        return value
 
     @staticmethod
     def load_from_yaml(yaml) -> "BenchmarkMetadata":

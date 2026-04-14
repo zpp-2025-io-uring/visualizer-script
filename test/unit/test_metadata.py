@@ -102,24 +102,28 @@ class TestMetadata:
     def test_get_sharded_metric_metadata_or_default_present(self, sample_tree_dict: TreeDict[MetricMetadata]) -> None:
         obj = BenchmarkMetadata(sharded_metrics=sample_tree_dict)
         plot_meta = obj.get_sharded_metric_metadata_or_default(("path", "metric1"))
-        assert plot_meta.title == "metric1"
+        assert isinstance(plot_meta, MetricMetadata)
+        assert plot_meta.get_plot_metadata().title == "metric1"
 
     def test_get_sharded_metric_metadata_or_default_missing(self) -> None:
         obj = BenchmarkMetadata()
         plot_meta = obj.get_sharded_metric_metadata_or_default(("missing", "metric"))
-        assert plot_meta.title == "missing_metric"
-        assert plot_meta.value_axis_title == "Value"
-        assert plot_meta.unit is None
+
+        assert isinstance(plot_meta, MetricMetadata)
+        assert plot_meta.get_plot_metadata().title == "missing_metric"
+        assert plot_meta.get_plot_metadata().value_axis_title == "Value"
+        assert plot_meta.get_plot_metadata().unit is None
 
     def test_get_shardless_metric_metadata_or_default_present(self, sample_tree_dict: TreeDict[MetricMetadata]) -> None:
         obj = BenchmarkMetadata(shardless_metrics=sample_tree_dict)
         plot_meta = obj.get_shardless_metric_metadata_or_default(("path", "metric1"))
-        assert plot_meta.title == "metric1"
+        assert plot_meta.get_plot_metadata().title == "metric1"
 
     def test_get_shardless_metric_metadata_or_default_missing(self) -> None:
         obj = BenchmarkMetadata()
         plot_meta = obj.get_shardless_metric_metadata_or_default(("missing", "metric"))
-        assert plot_meta.title == "missing_metric"
+        assert isinstance(plot_meta, MetricMetadata)
+        assert plot_meta.get_plot_metadata().title == "missing_metric"
 
 
 def test_asterix_compare() -> None:
