@@ -33,17 +33,13 @@ class TestMetricPlotMetadata:
         obj = MetricPlotMetadata("Title", "Value")
         assert obj.get_title() == "Title"
 
-    def test_get_title_with_unit(self) -> None:
-        obj = MetricPlotMetadata("Title", "Value", "ms")
-        assert obj.get_title_with_unit() == "Title [ms]"
-
-    def test_get_title_without_unit(self) -> None:
-        obj = MetricPlotMetadata("Title", "Value")
-        assert obj.get_title_with_unit() == "Title"
-
     def test_get_value_axis_title(self) -> None:
         obj = MetricPlotMetadata("Title", "Value")
         assert obj.get_value_axis_title() == "Value"
+
+    def test_get_value_axis_title_with_unit(self) -> None:
+        obj = MetricPlotMetadata("Title", "Value", "ms")
+        assert obj.get_value_axis_title() == "Value [ms]"
 
     @pytest.mark.parametrize(
         "name, expected",

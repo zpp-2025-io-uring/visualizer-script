@@ -82,7 +82,7 @@ class PlotGenerator:
             fig = make_plot_with_error(
                 PlotDataWithError(
                     type=PlotType.Sharded,
-                    display_name=plot_metric_data.get_title_with_unit(),
+                    display_name=plot_metric_data.get_title(),
                     df=df_long,
                     value_axis_label=plot_metric_data.get_value_axis_title(),
                 )
@@ -105,7 +105,7 @@ class PlotGenerator:
             fig = make_plot_with_error(
                 PlotDataWithError(
                     type=PlotType.Shardless,
-                    display_name=plot_metric_data.get_title_with_unit(),
+                    display_name=plot_metric_data.get_title(),
                     df=df,
                     value_axis_label=plot_metric_data.get_value_axis_title(),
                 )
@@ -355,7 +355,7 @@ def plot_sharded_metric(
         make_plot(
             PlotData(
                 type=PlotType.Sharded,
-                display_name=metric_plot.get_title_with_unit(),
+                display_name=metric_plot.get_title(),
                 data=per_backend,
                 value_axis_label=metric_plot.get_value_axis_title(),
             )
@@ -382,7 +382,7 @@ def plot_shardless_metric(
         make_plot(
             PlotData(
                 type=PlotType.Shardless,
-                display_name=metric_plot.get_title_with_unit(),
+                display_name=metric_plot.get_title(),
                 data=per_backend,
                 value_axis_label=metric_plot.get_value_axis_title(),
             )
@@ -416,7 +416,7 @@ def plot_total_metric(
         make_plot(
             PlotData(
                 type=PlotType.Shardless,
-                display_name=f"{metric_plot.get_title_with_unit()} - Total",
+                display_name=f"{metric_plot.get_title()} - Total",
                 data=per_backend,
                 value_axis_label=metric_plot.get_value_axis_title(),
             )

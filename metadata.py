@@ -46,12 +46,9 @@ class MetricPlotMetadata(YamlAble):
     def get_title(self) -> str:
         return self.title
 
-    def get_title_with_unit(self) -> str:
-        if self.unit:
-            return f"{self.title} [{self.unit}]"
-        return self.title
-
     def get_value_axis_title(self) -> str:
+        if self.unit is not None:
+            return f"{self.value_axis_title} [{self.unit}]"
         return self.value_axis_title
 
     @classmethod
