@@ -69,9 +69,6 @@ class MetricMetadata(YamlAble):
     def __init__(self, plotting: MetricPlotMetadata) -> None:
         self.plotting = plotting
 
-    def get_plot_metadata(self) -> MetricPlotMetadata:
-        return self.plotting
-
     def __repr__(self) -> str:
         return f"MetricMetadata(plot_metadata={self.plotting})"
 
