@@ -1,6 +1,7 @@
+from typing import IO
+
 from yaml import safe_load
 from yamlable import YamlAble, yaml_info
-from typing import IO, Text, Union
 
 from tree import TreeDict
 
