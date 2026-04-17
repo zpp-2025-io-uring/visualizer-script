@@ -1,6 +1,7 @@
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from typing import Generic, TypeVar
 
+import yaml
 from yamlable import YamlAble, yaml_info
 
 T = TypeVar("T")
@@ -89,6 +90,37 @@ class TreeDict(Generic[T], YamlAble):
             else:
                 raise TypeError(f"Expected leaf at path {path}, found subtree.")
 
+    def get(
+        self,
+        path: tuple,
+        comparator: Callable[[str, str], bool] = lambda x, y: x == y,
+        ambiguity_resolver: Callable[[tuple, list], str | None] = lambda _a, _b: None,
+    ) -> T | None:
+        """Get the value at the given path if it exists and satisfies the comparator, else None.
+        If multiple keys match the comparator at any level it raises ValueError to avoid ambiguity.
+        """
+        cur = self.metrics
+        for part in path:
+            if not isinstance(cur, dict):
+                return None
+
+            matching_keys = [k for k in cur.keys() if comparator(k, part)]
+            key = self.__resolve_next_key_or_throw(path, matching_keys, ambiguity_resolver)
+            if key is None:
+                return None
+
+            cur = cur[key]
+
+        if isinstance(cur, _Leaf):
+            return cur.value
+        else:
+            # We reached a subtree instead of a leaf, so the path is incomplete
+            return None
+
+    def keys(self) -> list[tuple[str, ...]]:
+        """Return a list of all paths to leaf nodes in the metrics tree."""
+        return [path for path, _ in self.items()]
+
     def __contains__(self, path: tuple) -> bool:
         """Check if the given path exists in the metrics tree."""
         cur = self.metrics
@@ -98,14 +130,52 @@ class TreeDict(Generic[T], YamlAble):
             cur = cur[part]
         return isinstance(cur, _Leaf)
 
+    def __len__(self) -> int:
+        """Return the number of leaf nodes in the metrics tree."""
+        return sum(1 for _ in self.items())
+
     def __repr__(self) -> str:
         return f"TreeDict({self.metrics})"
 
     def __to_yaml_dict__(self) -> dict:
         return self.metrics
 
+    @staticmethod
+    def __resolve_next_key_or_throw(
+        path: tuple, candidates: list, ambiguity_resolver: Callable[[tuple, list], str | None]
+    ) -> str | None:
+        if not candidates:
+            return None
+
+        if len(candidates) == 1:
+            return candidates[0]
+
+        resolved_key = ambiguity_resolver(path, candidates)
+        if resolved_key is None:
+            raise ValueError(f"Multiple matching keys for at path {path}: {candidates}")
+        return resolved_key
+
     @classmethod
     def __from_yaml_dict__(cls, dct, yaml_tag) -> "TreeDict":
         obj = cls()
         obj.metrics = dct
         return obj
+
+
+class NoDuplicateLoader(yaml.SafeLoader):
+    def construct_mapping(self, node: yaml.nodes.MappingNode, deep: bool = False) -> dict:
+        seen = set()
+        mapping = []
+        for key_node, value_node in node.value:
+            key = self.construct_object(key_node, deep=deep)
+            if key in seen:
+                raise ValueError(f"Duplicate key '{key}' at {key_node.start_mark}")
+            seen.add(key)
+            mapping.append((key, self.construct_object(value_node, deep=deep)))
+        return dict(mapping)
+
+
+yaml.SafeLoader.add_constructor(
+    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+    NoDuplicateLoader.construct_mapping,
+)

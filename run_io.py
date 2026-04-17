@@ -16,7 +16,7 @@ class IOTestRunner:
         run_output_dir: Path,
         backends: list[str],
         skip_async_workers_cpuset: bool,
-    ):
+    ) -> None:
         self.tester_path: Path = Path(io_runner_config["tester_path"]).expanduser().resolve()
         self.config_path: Path = config_path.resolve()
         self.run_output_dir = run_output_dir.resolve()
