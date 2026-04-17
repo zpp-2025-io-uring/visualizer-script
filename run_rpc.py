@@ -3,6 +3,7 @@ from pathlib import Path
 from time import sleep
 
 from log import get_logger, warn_if_not_release
+from remote import CmdOutput, Remote, RemoteProcess, RpcTesterParams
 
 logger = get_logger()
 
@@ -23,47 +24,65 @@ class RpcTestRunner:
         self.symmetric_client_cpuset = rpc_runner_config["symmetric_client_cpuset"]
         self.backends = backends
         self.skip_async_workers_cpuset = skip_async_workers_cpuset
+        if (server_remote := rpc_runner_config.get("server_remote", None)) is not None:
+            server_remote = Remote(server_remote)
+        self.server_remote: Remote | None = server_remote
+        if (client_remote := rpc_runner_config.get("client_remote", None)) is not None:
+            client_remote = Remote(client_remote)
+        self.client_remote: Remote | None = client_remote
+        self.remote_listen_address: str | None = rpc_runner_config.get("remote_listen_address", None)
+        self.remote_listen_port: str | None = rpc_runner_config.get("remote_listen_port", None)
+        self.remote_connect_address: str | None = rpc_runner_config.get("remote_connect_address", None)
+        self.remote_connect_port: str | None = rpc_runner_config.get("remote_connect_port", None)
 
         warn_if_not_release(self.tester_path)
 
-    def __run_test(
-        self,
-        backend: str,
-        output_filename: str,
-        server_cpuset: str,
-        server_async_worker_cpuset: str | None,
-        client_cpuset: str,
-        client_async_worker_cpuset: str | None,
-    ):
-        logger.info(
-            f"Running rpc_tester with backend {backend}, server cpuset: {server_cpuset}, server async worker cpuset: {server_async_worker_cpuset}, client cpuset: {client_cpuset}, client async worker cpuset: {client_async_worker_cpuset}"
-        )
-        self.run_output_dir.mkdir(parents=True, exist_ok=True)
+    def __run_server(
+        self, backend: str, server_cpuset: str, server_async_worker_cpuset: str | None
+    ) -> subprocess.Popen[str] | RemoteProcess:  # Creates a process
+        if self.server_remote is None:
+            argv = [
+                self.tester_path,
+                "--conf",
+                self.config_path,
+                "--listen",
+                self.ip_address,
+                "--reactor-backend",
+                backend,
+                "--cpuset",
+                server_cpuset,
+            ]
+            if server_async_worker_cpuset is not None:
+                argv.extend(["--async-workers-cpuset", server_async_worker_cpuset])
 
-        argv = [
-            self.tester_path,
-            "--conf",
-            self.config_path,
-            "--listen",
-            self.ip_address,
-            "--reactor-backend",
-            backend,
-            "--cpuset",
-            server_cpuset,
-        ]
-        if server_async_worker_cpuset is not None:
-            argv.extend(["--async-workers-cpuset", server_async_worker_cpuset])
+            return subprocess.Popen(
+                argv,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+        else:
+            with open(self.config_path) as f:
+                if self.remote_listen_address is None:
+                    raise RuntimeError("Remote listen address not specified")
+                if self.remote_listen_port is None:
+                    raise RuntimeError("Remote listen port not specified")
+                assert isinstance(self.remote_listen_address, str)
+                assert isinstance(self.remote_listen_port, str)
+                return self.server_remote.run_rpc_tester(
+                    RpcTesterParams(
+                        f.read(),
+                        backend,
+                        self.remote_listen_address,
+                        self.remote_listen_port,
+                        is_server=True,
+                        app_cpuset=server_cpuset,
+                        async_worker_cpuset=server_async_worker_cpuset,
+                    )
+                )
 
-        server_process = subprocess.Popen(
-            argv,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-
-        sleep(1)
-
-        try:
+    def __run_client(self, backend: str, client_cpuset: str, client_async_worker_cpuset: str | None) -> CmdOutput:
+        if self.client_remote is None:
             argv = [
                 self.tester_path,
                 "--conf",
@@ -78,11 +97,48 @@ class RpcTestRunner:
             if client_async_worker_cpuset is not None:
                 argv.extend(["--async-workers-cpuset", client_async_worker_cpuset])
 
-            client = subprocess.run(
+            output = subprocess.run(
                 argv,
+                check=False,
                 capture_output=True,
                 text=True,
             )
+
+            return CmdOutput(stdout=output.stdout, stderr=output.stderr, returncode=output.returncode)
+        else:
+            with open(self.config_path) as f:
+                if self.remote_connect_address is None:
+                    raise RuntimeError("Remote connect address not specified")
+                if self.remote_connect_port is None:
+                    raise RuntimeError("Remote connect port not specified")
+                assert isinstance(self.remote_connect_address, str)
+                assert isinstance(self.remote_connect_port, str)
+                return self.client_remote.run_rpc_tester(
+                    RpcTesterParams(
+                        f.read(),
+                        backend,
+                        self.remote_connect_address,
+                        self.remote_connect_port,
+                        is_server=False,
+                        app_cpuset=client_cpuset,
+                        async_worker_cpuset=client_async_worker_cpuset,
+                    )
+                ).wait()
+
+    def ___run_test(
+        self,
+        backend: str,
+        server_cpuset: str,
+        server_async_worker_cpuset: str | None,
+        client_cpuset: str,
+        client_async_worker_cpuset: str | None,
+    ) -> tuple[CmdOutput, CmdOutput]:
+        server_process = self.__run_server(backend, server_cpuset, server_async_worker_cpuset)
+
+        sleep(1)
+
+        try:
+            client_output = self.__run_client(backend, client_cpuset, client_async_worker_cpuset)
         except KeyboardInterrupt:
             server_process.terminate()
 
@@ -95,26 +151,52 @@ class RpcTestRunner:
 
             raise
 
+        sleep(1)
+
         server_process.terminate()
 
         sleep(1)
 
-        if server_process.poll() is None:
+        if self.server_remote is None and server_process.poll() is None:
             server_process.kill()
 
-        server_process.wait()
+        if self.server_remote is None:
+            assert isinstance(server_process, subprocess.Popen)
+            server_stdout, server_stderr = server_process.communicate()
+            return client_output, CmdOutput(
+                stdout=server_stdout, stderr=server_stderr, returncode=server_process.poll()
+            )
+        else:
+            assert isinstance(server_process, RemoteProcess)
+            return client_output, server_process.wait()
 
-        server_stdout, server_stderr = server_process.communicate()
+    def __run_test(
+        self,
+        backend: str,
+        output_filename: str,
+        server_cpuset: str,
+        server_async_worker_cpuset: str | None,
+        client_cpuset: str,
+        client_async_worker_cpuset: str | None,
+    ) -> str:
+        logger.info(
+            f"Running rpc_tester with backend {backend}, server cpuset: {server_cpuset}, server async worker cpuset: {server_async_worker_cpuset}, client cpuset: {client_cpuset}, client async worker cpuset: {client_async_worker_cpuset}"
+        )
+        self.run_output_dir.mkdir(parents=True, exist_ok=True)
+
+        client, server = self.___run_test(
+            backend, server_cpuset, server_async_worker_cpuset, client_cpuset, client_async_worker_cpuset
+        )
 
         server_stdout_output_path: Path = self.run_output_dir / (output_filename + ".server.out")
 
         with open(server_stdout_output_path, "w") as f:
-            print(server_stdout, file=f)
+            print(server.stdout, file=f)
 
         server_stderr_output_path: Path = self.run_output_dir / (output_filename + ".server.err")
 
         with open(server_stderr_output_path, "w") as f:
-            print(server_stderr, file=f)
+            print(server.stderr, file=f)
 
         client_stdout_output_path: Path = self.run_output_dir / (output_filename + ".client.out")
 
@@ -126,7 +208,7 @@ class RpcTestRunner:
         with open(client_stderr_output_path, "w") as f:
             print(client.stderr, file=f)
 
-        if (err := server_process.returncode) != 0:
+        if (err := server.returncode) != 0:
             raise RuntimeError(f"Server failed with exit code {err}")
 
         if err := client.returncode != 0:

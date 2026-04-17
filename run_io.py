@@ -1,7 +1,9 @@
 import subprocess
+from os import PathLike
 from pathlib import Path
 
 from log import get_logger, warn_if_not_release
+from remote import CmdOutput, IoTesterParams, Remote
 
 logger = get_logger()
 
@@ -24,35 +26,60 @@ class IOTestRunner:
         self.symmetric_cpuset = io_runner_config["symmetric_cpuset"]
         self.backends = backends
         self.skip_async_workers_cpuset = skip_async_workers_cpuset
+        if (remote := io_runner_config.get("remote", None)) is not None:
+            remote = Remote(remote)
+        self.remote: Remote | None = remote
 
         warn_if_not_release(self.tester_path)
 
-    def __run_test(self, backend: str, output_filename: str, cpuset: str, async_worker_cpuset: str | None):
+    def __run_test_process(self, backend: str, cpuset: str, async_worker_cpuset: str | None) -> CmdOutput:
+        if self.remote is None:
+            argv: list[str | bytes | PathLike[str] | PathLike[bytes]] = [
+                self.tester_path,
+                "--conf",
+                self.config_path,
+                "--storage",
+                self.storage_dir,
+                "--reactor-backend",
+                backend,
+                "--cpuset",
+                cpuset,
+            ]
+
+            if async_worker_cpuset is not None:
+                argv.extend(["--async-workers-cpuset", async_worker_cpuset])
+
+            result: subprocess.CompletedProcess | CmdOutput = subprocess.run(
+                argv,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+
+            return CmdOutput(stdout=result.stdout, stderr=result.stderr, returncode=result.returncode)
+        else:
+            try:
+                with open(self.config_path) as f:
+                    process = self.remote.run_io_tester(
+                        IoTesterParams(
+                            config=f.read(), backend=backend, app_cpuset=cpuset, async_worker_cpuset=async_worker_cpuset
+                        )
+                    )
+                return process.wait()
+            except KeyboardInterrupt:
+                logger.warning("remote io_tester interrupted")
+                process.kill()
+                process.wait()  # Clear zombie
+                raise
+
+    def __run_test(self, backend: str, output_filename: str, cpuset: str, async_worker_cpuset: str | None) -> str:
         logger.info(
             f"Running io_tester with backend {backend}, cpuset: {cpuset}, async worker cpuset: {async_worker_cpuset}"
         )
         self.run_output_dir.mkdir(parents=True, exist_ok=True)
         self.storage_dir.mkdir(parents=True, exist_ok=True)
 
-        argv = [
-            self.tester_path,
-            "--conf",
-            self.config_path,
-            "--storage",
-            self.storage_dir,
-            "--reactor-backend",
-            backend,
-            "--cpuset",
-            cpuset,
-        ]
-        if async_worker_cpuset is not None:
-            argv.extend(["--async-workers-cpuset", async_worker_cpuset])
-
-        result = subprocess.run(
-            argv,
-            capture_output=True,
-            text=True,
-        )
+        result = self.__run_test_process(backend, cpuset, async_worker_cpuset)
 
         stdout_output_path: Path = self.run_output_dir / (output_filename + ".out")
 
@@ -66,7 +93,7 @@ class IOTestRunner:
 
         self.storage_dir.rmdir()
 
-        if err := result.returncode != 0:
+        if (err := result.returncode) != 0:
             raise RuntimeError(f"Tester failed with exit code {err}")
 
         return result.stdout
