@@ -28,7 +28,9 @@ def run_redraw(metadata_holder: BenchmarkMetadataHolder, backend_paths: dict, ou
     summary = compute_benchmark_summary(combined_sharded, combined_shardless, benchmark_info)
 
     plot_generator = PlotGenerator(metadata_holder)
-    plot_generator.schedule_graphs_for_run(summary.runs[0].results, output_dir)
+    plot_generator.schedule_graphs_for_run(
+        summary.get_info().id, summary.runs[0].results, output_dir, type=summary.get_info().type
+    )
     plot_generator.plot()
 
 

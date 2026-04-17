@@ -130,13 +130,21 @@ class BenchmarkSuiteRunner:
             if self.plotting_config.generate_summary_graph:
                 logger.info("Generating summary graphs")
                 self.plot_generator.schedule_graphs_for_summary(
-                    summary.get_stats(), test_output_dir, type=benchmark_info.type, image_format="svg"
+                    summary.get_info().id,
+                    summary.get_stats(),
+                    test_output_dir,
+                    type=benchmark_info.type,
+                    image_format="svg",
                 )
 
             if self.plotting_config.generate_pdf:
                 logger.info("Generating pdf graphs")
                 self.plot_generator.schedule_graphs_for_summary(
-                    summary.get_stats(), test_output_dir, type=benchmark_info.type, image_format="png"
+                    summary.get_info().id,
+                    summary.get_stats(),
+                    test_output_dir,
+                    type=benchmark_info.type,
+                    image_format="png",
                 )
 
             # We need to plot now, to have at least the plots for the .pdfs
@@ -165,7 +173,9 @@ def _plot_runs(benchmark: Benchmark, output_dir: Path, plot_generator: PlotGener
         run_output_dir = output_dir / f"run_{run_id}"
         run_output_dir.mkdir(exist_ok=True, parents=True)
 
-        plot_generator.schedule_graphs_for_run(run.results, run_output_dir, type=benchmark.get_info().type)
+        plot_generator.schedule_graphs_for_run(
+            benchmark.get_info().id, run.results, run_output_dir, type=benchmark.get_info().type
+        )
 
 
 def dump_summary(benchmark_output_dir: Path, summary: Benchmark) -> None:

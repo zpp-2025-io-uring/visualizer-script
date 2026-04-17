@@ -40,9 +40,6 @@ class RpcTestRunner:
     def __run_server(
         self, backend: str, server_cpuset: str, server_async_worker_cpuset: str | None
     ) -> subprocess.Popen[str] | RemoteProcess:  # Creates a process
-        logger.info(
-            f"Running rpc_tester with backend {backend}, server cpuset: {server_cpuset}, server async worker cpuset: {server_async_worker_cpuset}, client cpuset: {client_cpuset}, client async worker cpuset: {client_async_worker_cpuset}"
-        )
         if self.server_remote is None:
             argv = [
                 self.tester_path,
