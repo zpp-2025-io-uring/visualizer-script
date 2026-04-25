@@ -56,9 +56,7 @@ def main(argv=None):
     configure_redraw_suite_parser(
         subparsers.add_parser(name="redraw_suite", help="generate graphs for an existing run")
     )
-    configure_redraw_pdf_parser(
-        subparsers.add_parser(name="redraw-pdf", help="generate PDFs for an existing run")
-    )
+    configure_redraw_pdf_parser(subparsers.add_parser(name="redraw-pdf", help="generate PDFs for an existing run"))
     configure_run_benchmark_suite_parser(subparsers.add_parser(name="suite", help="run a benchmark suite"))
 
     _configure_metadata_parser(parser)
