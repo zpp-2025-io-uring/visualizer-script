@@ -208,11 +208,11 @@ class RpcTestRunner:
         with open(client_stderr_output_path, "w") as f:
             print(client.stderr, file=f)
 
-        if (err := server.returncode) != 0:
-            raise RuntimeError(f"Server failed with exit code {err}")
+        if server.returncode is not None and server.returncode != 0:
+            raise RuntimeError(f"Server failed with exit code {server.returncode}")
 
-        if err := client.returncode != 0:
-            raise RuntimeError(f"Client failed with exit code {err}")
+        if client.returncode is not None and client.returncode != 0:
+            raise RuntimeError(f"Client failed with exit code {client.returncode}")
 
         return client.stdout
 
