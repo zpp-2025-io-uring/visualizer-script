@@ -5,7 +5,6 @@ from test.output import generate_fake_benchmark_results, generate_fake_run_resul
 from test.smoketests.benchmark_should import (
     BenchmarkShould,
     assert_files,
-    get_expected_files_for_metrics_summary,
     get_expected_files_for_metrics_per_run_sharded,
     get_expected_files_for_metrics_per_run_shardless,
 )
@@ -82,32 +81,5 @@ def test_redraw_suite(invoke_main, tmp_path, suite_name: str, runs_count: int):
         benchmarks=[{"name": suite_name, "iterations": runs_count}],
         generate_graphs=True,
         generate_summary_graphs=True,
-        generate_pdf=False,  # PDF generation is not part of redraw_suite
+        generate_pdf=True,
     )
-
-
-def test_redraw_pdf(invoke_main, tmp_path):
-    dir_with_files = tmp_path
-    benchmarks = [("rpc_vecho", 3), ("rpc_64kB_stream_unidirectional", 2)]
-
-    for suite_name, runs_count in benchmarks:
-        generate_fake_benchmark_results(
-            dir_with_files, suite_name, runs_count, SHARDED_METRICS_PATHS, SHARDLESS_METRICS_PATHS, BACKENDS_NAMES
-        )
-
-    _, _ = invoke_main(["redraw-pdf", "--dir", str(dir_with_files)])
-
-    expected_png_files = [
-        f"{path.removesuffix('.svg')}.png"
-        for path in get_expected_files_for_metrics_summary(SHARDED_METRICS_PATHS + SHARDLESS_METRICS_PATHS)
-    ]
-
-    for suite_name, _ in benchmarks:
-        benchmark_dir = dir_with_files / suite_name
-        assert_files(benchmark_dir, expected_png_files)
-
-        pdf_file = benchmark_dir / "summary.pdf"
-        assert pdf_file.exists(), f"Expected PDF file {pdf_file} missing"
-
-    summary_pdf_file = dir_with_files / "suite_summary.pdf"
-    assert summary_pdf_file.exists(), f"Expected summary PDF file {summary_pdf_file} missing"

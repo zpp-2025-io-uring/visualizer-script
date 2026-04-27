@@ -5,7 +5,6 @@ from benchmarks import SUPPORTED_BENCHMARK_TYPES, configure_run_benchmark_suite_
 from log import get_logger, set_level
 from metadata import BenchmarkMetadata, BenchmarkMetadataHolder
 from redraw import configure_redraw_parser
-from redraw_pdf import configure_redraw_pdf_parser
 from redraw_suite import configure_redraw_suite_parser
 
 logger = get_logger()
@@ -56,7 +55,6 @@ def main(argv=None):
     configure_redraw_suite_parser(
         subparsers.add_parser(name="redraw_suite", help="generate graphs for an existing run")
     )
-    configure_redraw_pdf_parser(subparsers.add_parser(name="redraw-pdf", help="generate PDFs for an existing run"))
     configure_run_benchmark_suite_parser(subparsers.add_parser(name="suite", help="run a benchmark suite"))
 
     _configure_metadata_parser(parser)

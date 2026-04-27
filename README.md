@@ -13,8 +13,7 @@ See the [Benchmark suite](#benchmark-suite) section for more details.
 There are also other subcommands available:
 
 - `redraw` - redraw charts for single run of some benchmark
-- `redraw_suite` - redraw charts for some benchmark
-- `redraw-pdf` - regenerate PDFs for an existing suite run
+- `redraw_suite` - redraw charts and PDFs for some benchmark
 
 ### Help
 
@@ -94,22 +93,10 @@ python3 ./main.py redraw --io_uring results/<run_dir>/io_uring.out --epoll resul
 
 Path to a results directory for given (cpumask) config inside of timestamp-directory created during a benchmark suite run. Child directories (each storing results from different test) should each contain `metrics_summary.yaml`, as this file is the source of data for the graphs.
 
+This command regenerates per-run/summary images and per-benchmark summary PDFs, then merges them into `suite_summary.pdf`, without rerunning Seastar tests.
+
 ```bash
 python3 ./main.py redraw_suite --dir results/timestamp/config_name
-```
-
-### redraw-pdf
-
-Generate per-benchmark PDFs and a merged suite PDF from existing benchmark summaries.
-This does not run Seastar tests again.
-
-#### `--dir` (required)
-
-Path to a results directory for a given config inside a timestamp-directory created during a benchmark suite run.
-Each benchmark subdirectory should contain `metrics_summary.yaml`.
-
-```bash
-python3 ./main.py redraw-pdf --dir results/timestamp/config_name
 ```
 
 ### Configs
