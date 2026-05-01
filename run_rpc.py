@@ -33,10 +33,10 @@ class RpcTestRunner:
         if (client_remote := rpc_runner_config.get("client_remote", None)) is not None:
             client_remote = Remote(client_remote)
         self.client_remote: Remote | None = client_remote
-        self.remote_listen_address: str | None = rpc_runner_config.get("remote_listen_address", None)
-        self.remote_listen_port: str | None = rpc_runner_config.get("remote_listen_port", None)
-        self.remote_connect_address: str | None = rpc_runner_config.get("remote_connect_address", None)
-        self.remote_connect_port: str | None = rpc_runner_config.get("remote_connect_port", None)
+        self.remote_listen_address: str = rpc_runner_config["remote_listen_address"]
+        self.remote_listen_port: str = rpc_runner_config["remote_listen_port"]
+        self.remote_connect_address: str = rpc_runner_config["remote_connect_address"]
+        self.remote_connect_port: str = rpc_runner_config["remote_connect_port"]
         self.extra_server_options: list[str] = rpc_runner_config.get("extra_server_options", [])
         self.extra_client_options: list[str] = rpc_runner_config.get("extra_client_options", [])
 
