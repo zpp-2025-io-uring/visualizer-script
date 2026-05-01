@@ -95,7 +95,7 @@ class OneExecutableTestRunner(ABC):
 
 class PerfSimpleQueryTestRunner(OneExecutableTestRunner):
     @override
-    def _run_test(self, backend, cpuset, async_worker_cpuset) -> RawBackendData:
+    def _run_test(self, backend: str, cpuset: str, async_worker_cpuset: str | None) -> RawBackendData:
         json_output_path = self.run_output_dir / f"{backend}.json"
 
         with open(self.config_path) as f:

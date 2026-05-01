@@ -3,8 +3,8 @@ from pathlib import Path
 from time import sleep
 
 from log import get_logger, warn_if_not_release
-from remote import CmdOutput, Remote, RemoteProcess, RpcTesterParams
 from parse import RawBackendData, load_data
+from remote import CmdOutput, Remote, RemoteProcess, RpcTesterParams
 
 logger = get_logger()
 
@@ -249,6 +249,4 @@ class RpcTestRunner:
 def run_rpc_test(
     rpc_runner_config: dict, config_path: Path, run_output_dir: Path, backend: str, skip_async_workers_cpuset: bool
 ) -> RawBackendData:
-    return RpcTestRunner(
-        rpc_runner_config, config_path, run_output_dir, skip_async_workers_cpuset
-    ).run(backend)
+    return RpcTestRunner(rpc_runner_config, config_path, run_output_dir, skip_async_workers_cpuset).run(backend)

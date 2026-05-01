@@ -11,7 +11,7 @@ from config_versioning import get_config_version, make_proportional_splitter, up
 from generate import PlotGenerator
 from log import get_logger
 from metadata import BenchmarkMetadataHolder
-from parse import auto_generate_data_points, join_metrics
+from parse import RawBackendData, auto_generate_data_points, join_metrics
 from pdf_summary import generate_benchmark_summary_pdf, merge_pdfs
 from run_io import run_io_test
 from run_rpc import run_rpc_test
@@ -133,7 +133,7 @@ class BenchmarkSuiteRunner:
     def _run_iteration(
         self, benchmark: Benchmark, run_output_dir: Path, config_path: Path
     ) -> tuple[TreeDict[dict[str, Any]], TreeDict[dict[str, dict[int, Any]]]]:
-        result: dict[dict[str, Any]] = {}
+        result: dict[str, tuple[TreeDict[Any], TreeDict[dict[int, Any]]]] = {}
 
         for backend in self.backends:
             logger.info(f"Running iteration for backend {backend}")
@@ -146,7 +146,7 @@ class BenchmarkSuiteRunner:
 
     def _run_benchmark(
         self, benchmark: Benchmark, run_output_dir: Path, config_path: Path, backend: str
-    ) -> dict[str, Any]:
+    ) -> RawBackendData:
         if benchmark["type"] == "io":
             return run_io_test(
                 self.io_config,

@@ -3,8 +3,8 @@ from os import PathLike
 from pathlib import Path
 
 from log import get_logger, warn_if_not_release
-from remote import CmdOutput, IoTesterParams, Remote
 from parse import RawBackendData, load_data
+from remote import CmdOutput, IoTesterParams, Remote
 
 logger = get_logger()
 
@@ -71,7 +71,9 @@ class IOTestRunner:
                 process.wait()  # Clear zombie
                 raise
 
-    def __run_test(self, backend: str, output_filename: str, cpuset: str, async_worker_cpuset: str | None) -> str:
+    def __run_test(
+        self, backend: str, output_filename: str, cpuset: str, async_worker_cpuset: str | None
+    ) -> RawBackendData:
         logger.info(
             f"Running io_tester with backend {backend}, cpuset: {cpuset}, async worker cpuset: {async_worker_cpuset}"
         )
