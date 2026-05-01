@@ -29,7 +29,7 @@ def _read_png_size(path: Path) -> tuple[int, int]:
         sig = f.read(8)
         if sig != b"\x89PNG\r\n\x1a\n":
             raise ValueError(f"Not a PNG file: {path}")
-        ihdr_len = f.read(4)
+        _ = f.read(4)
         ihdr_type = f.read(4)
         if ihdr_type != b"IHDR":
             raise ValueError(f"Invalid PNG header (missing IHDR): {path}")
