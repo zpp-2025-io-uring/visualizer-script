@@ -37,6 +37,8 @@ class RpcTestRunner:
         self.remote_listen_port: str | None = rpc_runner_config.get("remote_listen_port", None)
         self.remote_connect_address: str | None = rpc_runner_config.get("remote_connect_address", None)
         self.remote_connect_port: str | None = rpc_runner_config.get("remote_connect_port", None)
+        self.extra_server_options: list[str] = rpc_runner_config.get("extra_server_options", [])
+        self.extra_client_options: list[str] = rpc_runner_config.get("extra_client_options", [])
 
         warn_if_not_release(self.tester_path)
 
@@ -48,7 +50,7 @@ class RpcTestRunner:
             "--port", self.remote_listen_port,
             "--reactor-backend", backend,
             "--cpuset", server_cpuset,
-        ]
+        ] + self.extra_server_options
 
         if server_async_worker_cpuset is not None:
             opts_argv.extend(["--async-workers-cpuset", server_async_worker_cpuset])
@@ -88,7 +90,7 @@ class RpcTestRunner:
             "--port", self.remote_connect_port,
             "--reactor-backend", backend,
             "--cpuset", client_cpuset,
-        ]
+        ] + self.extra_client_options
 
         if client_async_worker_cpuset is not None:
             opts_argv.extend(["--async-workers-cpuset", client_async_worker_cpuset])

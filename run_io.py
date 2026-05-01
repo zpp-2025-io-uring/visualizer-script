@@ -28,6 +28,7 @@ class IOTestRunner:
         if (remote := io_runner_config.get("remote", None)) is not None:
             remote = Remote(remote)
         self.remote: Remote | None = remote
+        self.extra_options: list[str] = io_runner_config.get("extra_options", [])
 
         warn_if_not_release(self.tester_path)
 
