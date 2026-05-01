@@ -5,8 +5,10 @@ from yaml import safe_load
 
 from tree import TreeDict
 
+type RawBackendData = list[dict]
 
-def load_data(raw_output: str) -> Any:
+
+def load_data(raw_output: str) -> RawBackendData:
     """Extract embedded YAML from a client output text and parse it.
 
     The client output is expected to contain a YAML document separated by the
@@ -24,14 +26,18 @@ def load_data(raw_output: str) -> Any:
 
     yaml_part = raw_output.split("---\n")[1]
     yaml_part = yaml_part.removesuffix("...\n")
-    return safe_load(yaml_part)
+
+    loaded = safe_load(yaml_part)
+    if not isinstance(loaded, list):
+        raise ValueError("Expected the YAML payload to be a list of dicts")
+    return loaded
 
 
 SHARD_KEY = "shard"
 
 
 def auto_generate_data_points(
-    backend_data: list[dict],
+    backend_data: RawBackendData,
 ) -> tuple[TreeDict[Any], TreeDict[dict[int, Any]]]:
     """
     Parse backend data and separate sharded and shardless metrics.
