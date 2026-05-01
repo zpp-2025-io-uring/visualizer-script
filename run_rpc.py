@@ -9,6 +9,8 @@ from remote import CmdOutput, Remote, RemoteProcess, RpcTesterParams
 logger = get_logger()
 
 DEFAULT_PORT = "9123"
+
+
 class RpcTestRunner:
     def __init__(
         self,
