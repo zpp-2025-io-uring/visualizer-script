@@ -64,11 +64,19 @@ class IoTesterParams:
     async_worker_cpuset: str | None
 
     def to_dict(self) -> dict:
+        argv = [
+            "--reactor-backend",
+            self.backend,
+            "--cpuset",
+            self.app_cpuset,
+        ]
+
+        if self.async_worker_cpuset is not None:
+            argv.extend(["--async_worker_cpuset", self.async_worker_cpuset])
+
         return {
             "config": self.config,
-            "backend": self.backend,
-            "app_cpuset": self.app_cpuset,
-            "async_worker_cpuset": self.async_worker_cpuset,
+            "argv": argv,
         }
 
 
@@ -83,15 +91,23 @@ class RpcTesterParams:
     async_worker_cpuset: str | None
 
     def to_dict(self) -> dict:
-        return {
-            "config": self.config,
-            "backend": self.backend,
-            "ip_address": self.ip_address,
-            "port": self.port,
-            "is_server": self.is_server,
-            "app_cpuset": self.app_cpuset,
-            "async_worker_cpuset": self.async_worker_cpuset,
-        }
+        argv = [
+            "--reactor-backend",
+            self.backend,
+            "--port",
+            self.port,
+            "--cpuset",
+            self.app_cpuset,
+        ]
+
+        if self.async_worker_cpuset is not None:
+            argv.extend(["--async_worker_cpuset", self.async_worker_cpuset])
+        if self.is_server:
+            argv.extend(["--listen", self.ip_address])
+        else:
+            argv.extend(["--connect", self.ip_address])
+
+        return {"config": self.config, "argv": argv}
 
 
 class Remote:
