@@ -81,9 +81,7 @@ class BenchmarkSuiteRunner:
 
                 run_output_dir: Path = test_output_dir / f"run_{i}"
                 run_output_dir.mkdir(exist_ok=True, parents=True)
-                [shardless_metrics, sharded_metrics] = self._run_iteration(
-                    benchmark, run_output_dir, config_path, self.plot_generator
-                )
+                [shardless_metrics, sharded_metrics] = self._run_iteration(benchmark, run_output_dir, config_path)
                 metrics_runs.append({"run_id": i, "sharded": sharded_metrics, "shardless": shardless_metrics})
 
             (combined_sharded, combined_shardless) = join_stats(metrics_runs)
@@ -133,7 +131,7 @@ class BenchmarkSuiteRunner:
             merge_pdfs(input_pdfs=per_benchmark_pdfs, output_pdf=self.output_dir / SUITE_SUMMARY_PDF_FILENAME)
 
     def _run_iteration(
-        self, benchmark: Benchmark, run_output_dir: Path, config_path: Path, plot_generator: PlotGenerator
+        self, benchmark: Benchmark, run_output_dir: Path, config_path: Path
     ) -> tuple[TreeDict[dict[str, Any]], TreeDict[dict[str, dict[int, Any]]]]:
         result: dict[dict[str, Any]] = {}
 
