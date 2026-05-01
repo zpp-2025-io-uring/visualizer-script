@@ -15,7 +15,6 @@ class IOTestRunner:
         io_runner_config: dict,
         config_path: Path,
         run_output_dir: Path,
-        backend: str,
         skip_async_workers_cpuset: bool,
     ) -> None:
         self.tester_path: Path = Path(io_runner_config["tester_path"]).expanduser().resolve()
@@ -25,7 +24,6 @@ class IOTestRunner:
         self.asymmetric_app_cpuset = io_runner_config["asymmetric_app_cpuset"]
         self.asymmetric_async_worker_cpuset = io_runner_config["asymmetric_async_worker_cpuset"]
         self.symmetric_cpuset = io_runner_config["symmetric_cpuset"]
-        self.backend = backend
         self.skip_async_workers_cpuset = skip_async_workers_cpuset
         if (remote := io_runner_config.get("remote", None)) is not None:
             remote = Remote(remote)
@@ -99,19 +97,19 @@ class IOTestRunner:
 
         return load_data(result.stdout)
 
-    def run(self) -> RawBackendData:
-        if self.backend == "asymmetric_io_uring":
+    def run(self, backend: str) -> RawBackendData:
+        if backend == "asymmetric_io_uring":
             if self.skip_async_workers_cpuset:
-                return self.__run_test(self.backend, self.backend, self.asymmetric_app_cpuset, None)
+                return self.__run_test(backend, backend, self.asymmetric_app_cpuset, None)
             else:
                 return self.__run_test(
-                    self.backend, self.backend, self.asymmetric_app_cpuset, self.asymmetric_async_worker_cpuset
+                    backend, backend, self.asymmetric_app_cpuset, self.asymmetric_async_worker_cpuset
                 )
         else:
-            return self.__run_test(self.backend, self.backend, self.symmetric_cpuset, None)
+            return self.__run_test(backend, backend, self.symmetric_cpuset, None)
 
 
 def run_io_test(
-    io_runner_config: dict, config_path, run_output_dir: Path, backend: str, skip_async_workers_cpuset: bool
+    io_runner_config: dict, config_path: Path, run_output_dir: Path, backend: str, skip_async_workers_cpuset: bool
 ) -> RawBackendData:
-    return IOTestRunner(io_runner_config, Path(config_path), run_output_dir, backend, skip_async_workers_cpuset).run()
+    return IOTestRunner(io_runner_config, config_path, run_output_dir, skip_async_workers_cpuset).run(backend)

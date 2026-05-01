@@ -19,7 +19,6 @@ class OneExecutableTestRunner(ABC):
         test_config: dict,
         config_path: Path,
         run_output_dir: Path,
-        backend: str,
         skip_async_workers_cpuset: bool,
     ) -> None:
         super().__init__()
@@ -30,13 +29,12 @@ class OneExecutableTestRunner(ABC):
         self.asymmetric_app_cpuset = test_config["asymmetric_app_cpuset"]
         self.asymmetric_async_worker_cpuset = test_config["asymmetric_async_worker_cpuset"]
         self.symmetric_cpuset = test_config["symmetric_cpuset"]
-        self.backend = backend
         self.skip_async_workers_cpuset = skip_async_workers_cpuset
 
         warn_if_not_release(self.tester_path)
 
         logger.debug(
-            f"Initialized single executable test runner with tester_path={self.tester_path}, config_path={self.config_path}, run_output_dir={self.run_output_dir}, asymmetric_app_cpuset={self.asymmetric_app_cpuset}, asymmetric_async_worker_cpuset={self.asymmetric_async_worker_cpuset}, symmetric_cpuset={self.symmetric_cpuset}, backend={self.backend}, skip_async_workers_cpuset={self.skip_async_workers_cpuset}"
+            f"Initialized single executable test runner with tester_path={self.tester_path}, config_path={self.config_path}, run_output_dir={self.run_output_dir}, asymmetric_app_cpuset={self.asymmetric_app_cpuset}, asymmetric_async_worker_cpuset={self.asymmetric_async_worker_cpuset}, symmetric_cpuset={self.symmetric_cpuset}, skip_async_workers_cpuset={self.skip_async_workers_cpuset}"
         )
 
     def run_tester_with_additional_args(
@@ -85,8 +83,7 @@ class OneExecutableTestRunner(ABC):
     def _run_test(self, backend: str, cpuset: str, async_worker_cpuset: str | None):
         pass
 
-    def run(self) -> RawBackendData:
-        backend = self.backend
+    def run(self, backend: str) -> RawBackendData:
         if backend == "asymmetric_io_uring":
             if self.skip_async_workers_cpuset:
                 return self._run_test(backend, self.asymmetric_app_cpuset, None)
