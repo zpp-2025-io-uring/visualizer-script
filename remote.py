@@ -73,6 +73,7 @@ class IoTesterParams:
             ret["--async_worker_cpuset"] = self.async_worker_cpuset
         return ret
 
+
 @dataclass
 class RpcTesterParams:
     config: str
@@ -93,9 +94,9 @@ class RpcTesterParams:
         if self.async_worker_cpuset is not None:
             ret["--async_worker_cpuset"] = self.async_worker_cpuset
         if self.is_server:
-            ret['--listen'] = self.ip_address
+            ret["--listen"] = self.ip_address
         else:
-            ret['--connect'] = self.ip_address
+            ret["--connect"] = self.ip_address
         return ret
 
 
