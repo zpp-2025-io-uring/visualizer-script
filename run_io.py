@@ -63,11 +63,7 @@ class IOTestRunner:
         else:
             try:
                 with open(self.config_path) as f:
-                    process = self.remote.run_io_tester(
-                        IoTesterParams(
-                            config=f.read(), argv=opts_argv
-                        )
-                    )
+                    process = self.remote.run_io_tester(IoTesterParams(config=f.read(), argv=opts_argv))
                 return process.wait()
             except KeyboardInterrupt:
                 logger.warning("remote io_tester interrupted")

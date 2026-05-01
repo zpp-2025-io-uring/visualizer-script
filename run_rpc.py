@@ -46,10 +46,14 @@ class RpcTestRunner:
         self, backend: str, server_cpuset: str, server_async_worker_cpuset: str | None
     ) -> subprocess.Popen[str] | RemoteProcess:  # Creates a process
         opts_argv = [
-            "--listen", self.remote_listen_address,
-            "--port", self.remote_listen_port,
-            "--reactor-backend", backend,
-            "--cpuset", server_cpuset,
+            "--listen",
+            self.remote_listen_address,
+            "--port",
+            self.remote_listen_port,
+            "--reactor-backend",
+            backend,
+            "--cpuset",
+            server_cpuset,
         ] + self.extra_server_options
 
         if server_async_worker_cpuset is not None:
@@ -61,7 +65,6 @@ class RpcTestRunner:
                 "--conf",
                 self.config_path,
             ] + opts_argv
-
 
             return subprocess.Popen(
                 argv,
@@ -77,19 +80,18 @@ class RpcTestRunner:
                     raise RuntimeError("Remote listen port not specified")
                 assert isinstance(self.remote_listen_address, str)
                 assert isinstance(self.remote_listen_port, str)
-                return self.server_remote.run_rpc_tester(
-                    RpcTesterParams(
-                        f.read(),
-                        opts_argv
-                    )
-                )
+                return self.server_remote.run_rpc_tester(RpcTesterParams(f.read(), opts_argv))
 
     def __run_client(self, backend: str, client_cpuset: str, client_async_worker_cpuset: str | None) -> CmdOutput:
         opts_argv = [
-            "--connect", self.remote_connect_address,
-            "--port", self.remote_connect_port,
-            "--reactor-backend", backend,
-            "--cpuset", client_cpuset,
+            "--connect",
+            self.remote_connect_address,
+            "--port",
+            self.remote_connect_port,
+            "--reactor-backend",
+            backend,
+            "--cpuset",
+            client_cpuset,
         ] + self.extra_client_options
 
         if client_async_worker_cpuset is not None:
@@ -118,12 +120,7 @@ class RpcTestRunner:
                     raise RuntimeError("Remote connect port not specified")
                 assert isinstance(self.remote_connect_address, str)
                 assert isinstance(self.remote_connect_port, str)
-                return self.client_remote.run_rpc_tester(
-                    RpcTesterParams(
-                        f.read(),
-                        opts_argv
-                    )
-                ).wait()
+                return self.client_remote.run_rpc_tester(RpcTesterParams(f.read(), opts_argv)).wait()
 
     def ___run_test(
         self,
