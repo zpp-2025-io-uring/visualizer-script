@@ -8,7 +8,7 @@ from remote import CmdOutput, Remote, RemoteProcess, RpcTesterParams
 
 logger = get_logger()
 
-
+DEFAULT_PORT = "9123"
 class RpcTestRunner:
     def __init__(
         self,
@@ -20,6 +20,7 @@ class RpcTestRunner:
         self.tester_path: Path = Path(rpc_runner_config["tester_path"]).expanduser().resolve()
         self.config_path: Path = config_path.resolve()
         self.run_output_dir: Path = run_output_dir.resolve()
+        self.ip_address = rpc_runner_config.get("ip_address", None)
         self.asymmetric_server_app_cpuset = rpc_runner_config["asymmetric_server_app_cpuset"]
         self.asymmetric_server_async_worker_cpuset = rpc_runner_config["asymmetric_server_async_worker_cpuset"]
         self.symmetric_server_cpuset = rpc_runner_config["symmetric_server_cpuset"]
@@ -33,10 +34,10 @@ class RpcTestRunner:
         if (client_remote := rpc_runner_config.get("client_remote", None)) is not None:
             client_remote = Remote(client_remote)
         self.client_remote: Remote | None = client_remote
-        self.remote_listen_address: str = rpc_runner_config["remote_listen_address"]
-        self.remote_listen_port: str = rpc_runner_config["remote_listen_port"]
-        self.remote_connect_address: str = rpc_runner_config["remote_connect_address"]
-        self.remote_connect_port: str = rpc_runner_config["remote_connect_port"]
+        self.remote_listen_address: str = rpc_runner_config.get("remote_listen_address", self.ip_address)
+        self.remote_listen_port: str = rpc_runner_config.get("remote_listen_port", DEFAULT_PORT)
+        self.remote_connect_address: str = rpc_runner_config.get("remote_connect_address", self.ip_address)
+        self.remote_connect_port: str = rpc_runner_config.get("remote_connect_port", DEFAULT_PORT)
         self.extra_server_options: list[str] = rpc_runner_config.get("extra_server_options", [])
         self.extra_client_options: list[str] = rpc_runner_config.get("extra_client_options", [])
 
