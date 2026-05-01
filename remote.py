@@ -59,55 +59,19 @@ class RemoteProcess:
 @dataclass
 class IoTesterParams:
     config: str
-    backend: str
-    app_cpuset: str
-    async_worker_cpuset: str | None
+    argv: list[str]
 
     def to_dict(self) -> dict:
-        argv = [
-            "--reactor-backend",
-            self.backend,
-            "--cpuset",
-            self.app_cpuset,
-        ]
-
-        if self.async_worker_cpuset is not None:
-            argv.extend(["--async_worker_cpuset", self.async_worker_cpuset])
-
-        return {
-            "config": self.config,
-            "argv": argv,
-        }
+        return {"config": self.config, "argv": self.argv}
 
 
 @dataclass
 class RpcTesterParams:
     config: str
-    backend: str
-    ip_address: str
-    port: str
-    is_server: bool
-    app_cpuset: str
-    async_worker_cpuset: str | None
+    argv: list[str]
 
     def to_dict(self) -> dict:
-        argv = [
-            "--reactor-backend",
-            self.backend,
-            "--port",
-            self.port,
-            "--cpuset",
-            self.app_cpuset,
-        ]
-
-        if self.async_worker_cpuset is not None:
-            argv.extend(["--async_worker_cpuset", self.async_worker_cpuset])
-        if self.is_server:
-            argv.extend(["--listen", self.ip_address])
-        else:
-            argv.extend(["--connect", self.ip_address])
-
-        return {"config": self.config, "argv": argv}
+        return {"config": self.config, "argv": self.argv}
 
 
 class Remote:
