@@ -11,7 +11,7 @@ from config_versioning import get_config_version, make_proportional_splitter, up
 from generate import PlotGenerator
 from log import get_logger
 from metadata import BenchmarkMetadataHolder
-from parse import auto_generate_data_points, join_metrics, load_data
+from parse import auto_generate_data_points, join_metrics
 from pdf_summary import generate_benchmark_summary_pdf, merge_pdfs
 from run_io import run_io_test
 from run_rpc import run_rpc_test
@@ -135,43 +135,46 @@ class BenchmarkSuiteRunner:
     def _run_iteration(
         self, benchmark: Benchmark, run_output_dir: Path, config_path: Path, plot_generator: PlotGenerator
     ) -> tuple[TreeDict[dict[str, Any]], TreeDict[dict[str, dict[int, Any]]]]:
-        result: dict = None
+        result: dict[dict[str, Any]] = {}
+
+        for backend in self.backends:
+            logger.info(f"Running iteration for backend {backend}")
+            raw_results = self._run_benchmark(benchmark, run_output_dir, config_path, backend)
+            if raw_results is None:
+                raise Exception(f"Backend {backend} did not return any result")
+            result[backend] = auto_generate_data_points(raw_results)
+
+        return join_metrics(result)
+
+    def _run_benchmark(
+        self, benchmark: Benchmark, run_output_dir: Path, config_path: Path, backend: str
+    ) -> dict[str, Any]:
         if benchmark["type"] == "io":
-            result = run_io_test(
+            return run_io_test(
                 self.io_config,
                 config_path,
                 run_output_dir,
-                self.backends,
+                backend,
                 self.params["skip_async_workers_cpuset"],
             )
         elif benchmark["type"] == "rpc":
-            result = run_rpc_test(
+            return run_rpc_test(
                 self.rpc_config,
                 config_path,
                 run_output_dir,
-                self.backends,
+                backend,
                 self.params["skip_async_workers_cpuset"],
             )
         elif benchmark["type"] == "simple-query":
-            result = PerfSimpleQueryTestRunner(
+            return PerfSimpleQueryTestRunner(
                 self.scylla_config,
                 config_path,
                 run_output_dir,
-                self.backends,
+                backend,
                 self.params["skip_async_workers_cpuset"],
             ).run()
         else:
             raise Exception(f"Unknown benchmark type {benchmark['type']}")
-
-        backends_parsed = {}
-        for backend, raw in result.items():
-            if benchmark["type"] in ["rpc", "io"]:
-                parsed = load_data(raw)
-            else:
-                parsed = raw
-            backends_parsed[backend] = auto_generate_data_points(parsed)
-
-        return join_metrics(backends_parsed)
 
 
 def _plot_runs(benchmark: Benchmark, output_dir: Path, plot_generator: PlotGenerator) -> None:

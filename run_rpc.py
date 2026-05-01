@@ -4,13 +4,19 @@ from time import sleep
 
 from log import get_logger, warn_if_not_release
 from remote import CmdOutput, Remote, RemoteProcess, RpcTesterParams
+from parse import RawBackendData, load_data
 
 logger = get_logger()
 
 
 class RpcTestRunner:
     def __init__(
-        self, rpc_runner_config: dict, config_path: Path, run_output_dir: Path, backends, skip_async_workers_cpuset
+        self,
+        rpc_runner_config: dict,
+        config_path: Path,
+        run_output_dir: Path,
+        backend: str,
+        skip_async_workers_cpuset: bool,
     ) -> None:
         self.tester_path: Path = Path(rpc_runner_config["tester_path"]).expanduser().resolve()
         self.config_path: Path = config_path.resolve()
@@ -22,7 +28,7 @@ class RpcTestRunner:
         self.asymmetric_client_app_cpuset = rpc_runner_config["asymmetric_client_app_cpuset"]
         self.asymmetric_client_async_worker_cpuset = rpc_runner_config["asymmetric_client_async_worker_cpuset"]
         self.symmetric_client_cpuset = rpc_runner_config["symmetric_client_cpuset"]
-        self.backends = backends
+        self.backend = backend
         self.skip_async_workers_cpuset = skip_async_workers_cpuset
         if (server_remote := rpc_runner_config.get("server_remote", None)) is not None:
             server_remote = Remote(server_remote)
@@ -178,7 +184,7 @@ class RpcTestRunner:
         server_async_worker_cpuset: str | None,
         client_cpuset: str,
         client_async_worker_cpuset: str | None,
-    ) -> str:
+    ) -> RawBackendData:
         logger.info(
             f"Running rpc_tester with backend {backend}, server cpuset: {server_cpuset}, server async worker cpuset: {server_async_worker_cpuset}, client cpuset: {client_cpuset}, client async worker cpuset: {client_async_worker_cpuset}"
         )
@@ -214,40 +220,37 @@ class RpcTestRunner:
         if client.returncode is not None and client.returncode != 0:
             raise RuntimeError(f"Client failed with exit code {client.returncode}")
 
-        return client.stdout
+        return load_data(client.stdout)
 
-    def run(self) -> dict:
-        backends_data_raw = {}
-
-        for backend in self.backends:
-            if backend == "asymmetric_io_uring":
-                if self.skip_async_workers_cpuset:
-                    backends_data_raw[backend] = self.__run_test(
-                        backend,
-                        backend,
-                        self.asymmetric_server_app_cpuset,
-                        None,
-                        self.asymmetric_client_app_cpuset,
-                        None,
-                    )
-                else:
-                    backends_data_raw[backend] = self.__run_test(
-                        backend,
-                        backend,
-                        self.asymmetric_server_app_cpuset,
-                        self.asymmetric_server_async_worker_cpuset,
-                        self.asymmetric_client_app_cpuset,
-                        self.asymmetric_client_async_worker_cpuset,
-                    )
-            else:
-                backends_data_raw[backend] = self.__run_test(
-                    backend, backend, self.symmetric_server_cpuset, None, self.symmetric_client_cpuset, None
+    def run(self) -> RawBackendData:
+        if self.backend == "asymmetric_io_uring":
+            if self.skip_async_workers_cpuset:
+                return self.__run_test(
+                    self.backend,
+                    self.backend,
+                    self.asymmetric_server_app_cpuset,
+                    None,
+                    self.asymmetric_client_app_cpuset,
+                    None,
                 )
+            else:
+                return self.__run_test(
+                    self.backend,
+                    self.backend,
+                    self.asymmetric_server_app_cpuset,
+                    self.asymmetric_server_async_worker_cpuset,
+                    self.asymmetric_client_app_cpuset,
+                    self.asymmetric_client_async_worker_cpuset,
+                )
+        else:
+            return self.__run_test(
+                self.backend, self.backend, self.symmetric_server_cpuset, None, self.symmetric_client_cpuset, None
+            )
 
-        return backends_data_raw
 
-
-def run_rpc_test(rpc_runner_config: dict, config_path, run_output_dir, backends, skip_async_workers_cpuset) -> dict:
+def run_rpc_test(
+    rpc_runner_config: dict, config_path, run_output_dir, backends, skip_async_workers_cpuset
+) -> RawBackendData:
     return RpcTestRunner(
         rpc_runner_config, Path(config_path), Path(run_output_dir), backends, skip_async_workers_cpuset
     ).run()
