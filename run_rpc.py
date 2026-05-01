@@ -2,7 +2,6 @@ import subprocess
 from pathlib import Path
 from time import sleep
 from yaml import safe_dump, safe_load
-
 from log import get_logger, warn_if_not_release
 from parse import RawBackendData, load_data
 from remote import CmdOutput, Remote, RemoteProcess, RpcTesterParams
@@ -23,7 +22,7 @@ class RpcTestRunner:
         self.tester_path: Path = Path(rpc_runner_config["tester_path"]).expanduser().resolve()
 
         config_path: Path = config_path.resolve()
-        with open(config_path, "r") as f:
+        with open(config_path) as f:
             config_dict = safe_load(f.read())
 
         if "server" in config_dict and "client" in config_dict:
