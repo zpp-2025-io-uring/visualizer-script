@@ -42,6 +42,8 @@ class RpcTestRunner:
         self.remote_connect_port: str = rpc_runner_config.get("remote_connect_port", DEFAULT_PORT)
         self.extra_server_options: list[str] = rpc_runner_config.get("extra_server_options", [])
         self.extra_client_options: list[str] = rpc_runner_config.get("extra_client_options", [])
+        self.server_backend_override: str | None = rpc_runner_config.get("server_backend_override", None)
+        self.client_backend_override: str | None = rpc_runner_config.get("client_backend_override", None)
 
         warn_if_not_release(self.tester_path)
 
@@ -54,7 +56,7 @@ class RpcTestRunner:
             "--port",
             self.remote_listen_port,
             "--reactor-backend",
-            backend,
+            self.server_backend_override if self.server_backend_override is not None else backend,
             "--cpuset",
             server_cpuset,
         ] + self.extra_server_options
@@ -92,7 +94,7 @@ class RpcTestRunner:
             "--port",
             self.remote_connect_port,
             "--reactor-backend",
-            backend,
+            self.client_backend_override if self.client_backend_override is not None else backend,
             "--cpuset",
             client_cpuset,
         ] + self.extra_client_options
