@@ -1,7 +1,9 @@
 import subprocess
 from pathlib import Path
 from time import sleep
+
 from yaml import safe_dump, safe_load
+
 from log import get_logger, warn_if_not_release
 from parse import RawBackendData, load_data
 from remote import CmdOutput, Remote, RemoteProcess, RpcTesterParams
