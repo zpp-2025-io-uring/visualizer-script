@@ -168,9 +168,8 @@ class BenchmarkSuiteRunner:
                 self.scylla_config,
                 config_path,
                 run_output_dir,
-                backend,
                 self.params["skip_async_workers_cpuset"],
-            ).run()
+            ).run(backend)
         else:
             raise Exception(f"Unknown benchmark type {benchmark['type']}")
 
