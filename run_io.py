@@ -38,7 +38,7 @@ class IOTestRunner:
             backend,
             "--cpuset",
             cpuset,
-        ]
+        ] + self.extra_options
 
         if async_worker_cpuset is not None:
             opts_argv.extend(["--async-workers-cpuset", async_worker_cpuset])
