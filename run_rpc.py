@@ -21,13 +21,13 @@ class RpcTestRunner:
     ) -> None:
         self.tester_path: Path = Path(rpc_runner_config["tester_path"]).expanduser().resolve()
 
-        config_path: Path = config_path.resolve()
-        with open(config_path) as f:
+        combined_config_path: Path = config_path.resolve()
+        with open(combined_config_path) as f:
             config_dict = safe_load(f.read())
 
         if "server" in config_dict and "client" in config_dict:
-            self.server_config_path = run_output_dir / "server_config.yaml"
-            self.client_config_path = run_output_dir / "client_config.yaml"
+            self.server_config_path: Path = run_output_dir / "server_config.yaml"
+            self.client_config_path: Path = run_output_dir / "client_config.yaml"
 
             with open(self.server_config_path, "w") as f:
                 print(safe_dump(config_dict["server"]), file=f)
@@ -35,8 +35,8 @@ class RpcTestRunner:
             with open(self.client_config_path, "w") as f:
                 print(safe_dump(config_dict["client"]), file=f)
         else:
-            self.server_config_path: Path = config_path
-            self.client_config_path: Path = config_path
+            self.server_config_path: Path = combined_config_path
+            self.client_config_path: Path = combined_config_path
 
         self.run_output_dir: Path = run_output_dir.resolve()
         self.ip_address: str | None = rpc_runner_config.get("ip_address", None)
