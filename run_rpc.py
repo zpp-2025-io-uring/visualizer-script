@@ -61,9 +61,9 @@ class RpcTestRunner:
 
         if self.server_remote is None:
             argv = [
-                self.tester_path,
+                str(self.tester_path),
                 "--conf",
-                self.config_path,
+                str(self.config_path),
             ] + opts_argv
 
             return subprocess.Popen(
@@ -99,9 +99,9 @@ class RpcTestRunner:
 
         if self.client_remote is None:
             argv = [
-                self.tester_path,
+                str(self.tester_path),
                 "--conf",
-                self.config_path,
+                str(self.config_path),
             ] + opts_argv
 
             output = subprocess.run(
