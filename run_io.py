@@ -32,6 +32,16 @@ class IOTestRunner:
         warn_if_not_release(self.tester_path)
 
     def __run_test_process(self, backend: str, cpuset: str, async_worker_cpuset: str | None) -> CmdOutput:
+        opts_argv = [
+            "--reactor-backend",
+            backend,
+            "--cpuset",
+            cpuset,
+        ]
+
+        if async_worker_cpuset is not None:
+            opts_argv.extend(["--async-workers-cpuset", async_worker_cpuset])
+
         if self.remote is None:
             argv: list[str | bytes | PathLike[str] | PathLike[bytes]] = [
                 self.tester_path,
@@ -39,14 +49,7 @@ class IOTestRunner:
                 self.config_path,
                 "--storage",
                 self.storage_dir,
-                "--reactor-backend",
-                backend,
-                "--cpuset",
-                cpuset,
-            ]
-
-            if async_worker_cpuset is not None:
-                argv.extend(["--async-workers-cpuset", async_worker_cpuset])
+            ] + opts_argv
 
             result: subprocess.CompletedProcess | CmdOutput = subprocess.run(
                 argv,
@@ -61,7 +64,7 @@ class IOTestRunner:
                 with open(self.config_path) as f:
                     process = self.remote.run_io_tester(
                         IoTesterParams(
-                            config=f.read(), backend=backend, app_cpuset=cpuset, async_worker_cpuset=async_worker_cpuset
+                            config=f.read(), argv=opts_argv
                         )
                     )
                 return process.wait()
