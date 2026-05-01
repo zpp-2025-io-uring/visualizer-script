@@ -97,7 +97,6 @@ class RpcTesterParams:
         else:
             ret['--connect'] = self.ip_address
         return ret
-            
 
 
 class Remote:
