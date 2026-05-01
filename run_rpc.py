@@ -22,7 +22,7 @@ class RpcTestRunner:
         self.tester_path: Path = Path(rpc_runner_config["tester_path"]).expanduser().resolve()
         self.config_path: Path = config_path.resolve()
         self.run_output_dir: Path = run_output_dir.resolve()
-        self.ip_address = rpc_runner_config.get("ip_address", None)
+        self.ip_address: str | None = rpc_runner_config.get("ip_address", None)
         self.asymmetric_server_app_cpuset = rpc_runner_config["asymmetric_server_app_cpuset"]
         self.asymmetric_server_async_worker_cpuset = rpc_runner_config["asymmetric_server_async_worker_cpuset"]
         self.symmetric_server_cpuset = rpc_runner_config["symmetric_server_cpuset"]
