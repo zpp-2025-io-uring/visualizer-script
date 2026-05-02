@@ -2,6 +2,8 @@ import subprocess
 from pathlib import Path
 from time import sleep
 
+from yaml import safe_dump, safe_load
+
 from log import get_logger, warn_if_not_release
 from parse import RawBackendData, load_data
 from remote import CmdOutput, Remote, RemoteProcess, RpcTesterParams
@@ -20,7 +22,24 @@ class RpcTestRunner:
         skip_async_workers_cpuset: bool,
     ) -> None:
         self.tester_path: Path = Path(rpc_runner_config["tester_path"]).expanduser().resolve()
-        self.config_path: Path = config_path.resolve()
+
+        combined_config_path: Path = config_path.resolve()
+        with open(combined_config_path) as f:
+            config_dict = safe_load(f.read())
+
+        if "server" in config_dict and "client" in config_dict:
+            self.server_config_path: Path = run_output_dir / "server_config.yaml"
+            self.client_config_path: Path = run_output_dir / "client_config.yaml"
+
+            with open(self.server_config_path, "w") as f:
+                print(safe_dump(config_dict["server"]), file=f)
+
+            with open(self.client_config_path, "w") as f:
+                print(safe_dump(config_dict["client"]), file=f)
+        else:
+            self.server_config_path: Path = combined_config_path
+            self.client_config_path: Path = combined_config_path
+
         self.run_output_dir: Path = run_output_dir.resolve()
         self.ip_address: str | None = rpc_runner_config.get("ip_address", None)
         self.asymmetric_server_app_cpuset = rpc_runner_config["asymmetric_server_app_cpuset"]
@@ -68,7 +87,7 @@ class RpcTestRunner:
             argv = [
                 str(self.tester_path),
                 "--conf",
-                str(self.config_path),
+                str(self.server_config_path),
             ] + opts_argv
 
             return subprocess.Popen(
@@ -78,7 +97,7 @@ class RpcTestRunner:
                 text=True,
             )
         else:
-            with open(self.config_path) as f:
+            with open(self.server_config_path) as f:
                 if self.remote_listen_address is None:
                     raise RuntimeError("Remote listen address not specified")
                 if self.remote_listen_port is None:
@@ -106,7 +125,7 @@ class RpcTestRunner:
             argv = [
                 str(self.tester_path),
                 "--conf",
-                str(self.config_path),
+                str(self.client_config_path),
             ] + opts_argv
 
             output = subprocess.run(
@@ -118,7 +137,7 @@ class RpcTestRunner:
 
             return CmdOutput(stdout=output.stdout, stderr=output.stderr, returncode=output.returncode)
         else:
-            with open(self.config_path) as f:
+            with open(self.client_config_path) as f:
                 if self.remote_connect_address is None:
                     raise RuntimeError("Remote connect address not specified")
                 if self.remote_connect_port is None:
