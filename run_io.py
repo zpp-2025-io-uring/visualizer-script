@@ -3,6 +3,7 @@ from os import PathLike
 from pathlib import Path
 
 from log import get_logger, warn_if_not_release
+from parse import RawBackendData, load_data
 from remote import CmdOutput, IoTesterParams, Remote
 
 logger = get_logger()
@@ -14,7 +15,6 @@ class IOTestRunner:
         io_runner_config: dict,
         config_path: Path,
         run_output_dir: Path,
-        backends: list[str],
         skip_async_workers_cpuset: bool,
     ) -> None:
         self.tester_path: Path = Path(io_runner_config["tester_path"]).expanduser().resolve()
@@ -24,15 +24,25 @@ class IOTestRunner:
         self.asymmetric_app_cpuset = io_runner_config["asymmetric_app_cpuset"]
         self.asymmetric_async_worker_cpuset = io_runner_config["asymmetric_async_worker_cpuset"]
         self.symmetric_cpuset = io_runner_config["symmetric_cpuset"]
-        self.backends = backends
         self.skip_async_workers_cpuset = skip_async_workers_cpuset
         if (remote := io_runner_config.get("remote", None)) is not None:
             remote = Remote(remote)
         self.remote: Remote | None = remote
+        self.extra_options: list[str] = io_runner_config.get("extra_options", [])
 
         warn_if_not_release(self.tester_path)
 
     def __run_test_process(self, backend: str, cpuset: str, async_worker_cpuset: str | None) -> CmdOutput:
+        opts_argv = [
+            "--reactor-backend",
+            backend,
+            "--cpuset",
+            cpuset,
+        ] + self.extra_options
+
+        if async_worker_cpuset is not None:
+            opts_argv.extend(["--async-workers-cpuset", async_worker_cpuset])
+
         if self.remote is None:
             argv: list[str | bytes | PathLike[str] | PathLike[bytes]] = [
                 self.tester_path,
@@ -40,14 +50,7 @@ class IOTestRunner:
                 self.config_path,
                 "--storage",
                 self.storage_dir,
-                "--reactor-backend",
-                backend,
-                "--cpuset",
-                cpuset,
-            ]
-
-            if async_worker_cpuset is not None:
-                argv.extend(["--async-workers-cpuset", async_worker_cpuset])
+            ] + opts_argv
 
             result: subprocess.CompletedProcess | CmdOutput = subprocess.run(
                 argv,
@@ -60,11 +63,7 @@ class IOTestRunner:
         else:
             try:
                 with open(self.config_path) as f:
-                    process = self.remote.run_io_tester(
-                        IoTesterParams(
-                            config=f.read(), backend=backend, app_cpuset=cpuset, async_worker_cpuset=async_worker_cpuset
-                        )
-                    )
+                    process = self.remote.run_io_tester(IoTesterParams(config=f.read(), argv=opts_argv))
                 return process.wait()
             except KeyboardInterrupt:
                 logger.warning("remote io_tester interrupted")
@@ -72,7 +71,9 @@ class IOTestRunner:
                 process.wait()  # Clear zombie
                 raise
 
-    def __run_test(self, backend: str, output_filename: str, cpuset: str, async_worker_cpuset: str | None) -> str:
+    def __run_test(
+        self, backend: str, output_filename: str, cpuset: str, async_worker_cpuset: str | None
+    ) -> RawBackendData:
         logger.info(
             f"Running io_tester with backend {backend}, cpuset: {cpuset}, async worker cpuset: {async_worker_cpuset}"
         )
@@ -96,26 +97,21 @@ class IOTestRunner:
         if (err := result.returncode) != 0:
             raise RuntimeError(f"Tester failed with exit code {err}")
 
-        return result.stdout
+        return load_data(result.stdout)
 
-    def run(self) -> dict:
-        backends_data_raw = {}
-
-        for backend in self.backends:
-            if backend == "asymmetric_io_uring":
-                if self.skip_async_workers_cpuset:
-                    backends_data_raw[backend] = self.__run_test(backend, backend, self.asymmetric_app_cpuset, None)
-                else:
-                    backends_data_raw[backend] = self.__run_test(
-                        backend, backend, self.asymmetric_app_cpuset, self.asymmetric_async_worker_cpuset
-                    )
+    def run(self, backend: str) -> RawBackendData:
+        if backend == "asymmetric_io_uring":
+            if self.skip_async_workers_cpuset:
+                return self.__run_test(backend, backend, self.asymmetric_app_cpuset, None)
             else:
-                backends_data_raw[backend] = self.__run_test(backend, backend, self.symmetric_cpuset, None)
+                return self.__run_test(
+                    backend, backend, self.asymmetric_app_cpuset, self.asymmetric_async_worker_cpuset
+                )
+        else:
+            return self.__run_test(backend, backend, self.symmetric_cpuset, None)
 
-        return backends_data_raw
 
-
-def run_io_test(io_runner_config: dict, config_path, run_output_dir, backends, skip_async_workers_cpuset: bool) -> dict:
-    return IOTestRunner(
-        io_runner_config, Path(config_path), Path(run_output_dir), backends, skip_async_workers_cpuset
-    ).run()
+def run_io_test(
+    io_runner_config: dict, config_path: Path, run_output_dir: Path, backend: str, skip_async_workers_cpuset: bool
+) -> RawBackendData:
+    return IOTestRunner(io_runner_config, config_path, run_output_dir, skip_async_workers_cpuset).run(backend)

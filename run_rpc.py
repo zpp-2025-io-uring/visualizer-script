@@ -3,26 +3,32 @@ from pathlib import Path
 from time import sleep
 
 from log import get_logger, warn_if_not_release
+from parse import RawBackendData, load_data
 from remote import CmdOutput, Remote, RemoteProcess, RpcTesterParams
 
 logger = get_logger()
 
+DEFAULT_PORT = "9123"
+
 
 class RpcTestRunner:
     def __init__(
-        self, rpc_runner_config: dict, config_path: Path, run_output_dir: Path, backends, skip_async_workers_cpuset
+        self,
+        rpc_runner_config: dict,
+        config_path: Path,
+        run_output_dir: Path,
+        skip_async_workers_cpuset: bool,
     ) -> None:
         self.tester_path: Path = Path(rpc_runner_config["tester_path"]).expanduser().resolve()
         self.config_path: Path = config_path.resolve()
         self.run_output_dir: Path = run_output_dir.resolve()
-        self.ip_address = rpc_runner_config["ip_address"]
+        self.ip_address: str | None = rpc_runner_config.get("ip_address", None)
         self.asymmetric_server_app_cpuset = rpc_runner_config["asymmetric_server_app_cpuset"]
         self.asymmetric_server_async_worker_cpuset = rpc_runner_config["asymmetric_server_async_worker_cpuset"]
         self.symmetric_server_cpuset = rpc_runner_config["symmetric_server_cpuset"]
         self.asymmetric_client_app_cpuset = rpc_runner_config["asymmetric_client_app_cpuset"]
         self.asymmetric_client_async_worker_cpuset = rpc_runner_config["asymmetric_client_async_worker_cpuset"]
         self.symmetric_client_cpuset = rpc_runner_config["symmetric_client_cpuset"]
-        self.backends = backends
         self.skip_async_workers_cpuset = skip_async_workers_cpuset
         if (server_remote := rpc_runner_config.get("server_remote", None)) is not None:
             server_remote = Remote(server_remote)
@@ -30,30 +36,40 @@ class RpcTestRunner:
         if (client_remote := rpc_runner_config.get("client_remote", None)) is not None:
             client_remote = Remote(client_remote)
         self.client_remote: Remote | None = client_remote
-        self.remote_listen_address: str | None = rpc_runner_config.get("remote_listen_address", None)
-        self.remote_listen_port: str | None = rpc_runner_config.get("remote_listen_port", None)
-        self.remote_connect_address: str | None = rpc_runner_config.get("remote_connect_address", None)
-        self.remote_connect_port: str | None = rpc_runner_config.get("remote_connect_port", None)
+        self.remote_listen_address: str = rpc_runner_config.get("remote_listen_address", self.ip_address)
+        self.remote_listen_port: str = rpc_runner_config.get("remote_listen_port", DEFAULT_PORT)
+        self.remote_connect_address: str = rpc_runner_config.get("remote_connect_address", self.ip_address)
+        self.remote_connect_port: str = rpc_runner_config.get("remote_connect_port", DEFAULT_PORT)
+        self.extra_server_options: list[str] = rpc_runner_config.get("extra_server_options", [])
+        self.extra_client_options: list[str] = rpc_runner_config.get("extra_client_options", [])
+        self.server_backend_override: str | None = rpc_runner_config.get("server_backend_override", None)
+        self.client_backend_override: str | None = rpc_runner_config.get("client_backend_override", None)
 
         warn_if_not_release(self.tester_path)
 
     def __run_server(
         self, backend: str, server_cpuset: str, server_async_worker_cpuset: str | None
     ) -> subprocess.Popen[str] | RemoteProcess:  # Creates a process
+        opts_argv = [
+            "--listen",
+            self.remote_listen_address,
+            "--port",
+            self.remote_listen_port,
+            "--reactor-backend",
+            self.server_backend_override if self.server_backend_override is not None else backend,
+            "--cpuset",
+            server_cpuset,
+        ] + self.extra_server_options
+
+        if server_async_worker_cpuset is not None:
+            opts_argv.extend(["--async-workers-cpuset", server_async_worker_cpuset])
+
         if self.server_remote is None:
             argv = [
-                self.tester_path,
+                str(self.tester_path),
                 "--conf",
-                self.config_path,
-                "--listen",
-                self.ip_address,
-                "--reactor-backend",
-                backend,
-                "--cpuset",
-                server_cpuset,
-            ]
-            if server_async_worker_cpuset is not None:
-                argv.extend(["--async-workers-cpuset", server_async_worker_cpuset])
+                str(self.config_path),
+            ] + opts_argv
 
             return subprocess.Popen(
                 argv,
@@ -69,33 +85,29 @@ class RpcTestRunner:
                     raise RuntimeError("Remote listen port not specified")
                 assert isinstance(self.remote_listen_address, str)
                 assert isinstance(self.remote_listen_port, str)
-                return self.server_remote.run_rpc_tester(
-                    RpcTesterParams(
-                        f.read(),
-                        backend,
-                        self.remote_listen_address,
-                        self.remote_listen_port,
-                        is_server=True,
-                        app_cpuset=server_cpuset,
-                        async_worker_cpuset=server_async_worker_cpuset,
-                    )
-                )
+                return self.server_remote.run_rpc_tester(RpcTesterParams(f.read(), opts_argv))
 
     def __run_client(self, backend: str, client_cpuset: str, client_async_worker_cpuset: str | None) -> CmdOutput:
+        opts_argv = [
+            "--connect",
+            self.remote_connect_address,
+            "--port",
+            self.remote_connect_port,
+            "--reactor-backend",
+            self.client_backend_override if self.client_backend_override is not None else backend,
+            "--cpuset",
+            client_cpuset,
+        ] + self.extra_client_options
+
+        if client_async_worker_cpuset is not None:
+            opts_argv.extend(["--async-workers-cpuset", client_async_worker_cpuset])
+
         if self.client_remote is None:
             argv = [
-                self.tester_path,
+                str(self.tester_path),
                 "--conf",
-                self.config_path,
-                "--connect",
-                self.ip_address,
-                "--reactor-backend",
-                backend,
-                "--cpuset",
-                client_cpuset,
-            ]
-            if client_async_worker_cpuset is not None:
-                argv.extend(["--async-workers-cpuset", client_async_worker_cpuset])
+                str(self.config_path),
+            ] + opts_argv
 
             output = subprocess.run(
                 argv,
@@ -113,17 +125,7 @@ class RpcTestRunner:
                     raise RuntimeError("Remote connect port not specified")
                 assert isinstance(self.remote_connect_address, str)
                 assert isinstance(self.remote_connect_port, str)
-                return self.client_remote.run_rpc_tester(
-                    RpcTesterParams(
-                        f.read(),
-                        backend,
-                        self.remote_connect_address,
-                        self.remote_connect_port,
-                        is_server=False,
-                        app_cpuset=client_cpuset,
-                        async_worker_cpuset=client_async_worker_cpuset,
-                    )
-                ).wait()
+                return self.client_remote.run_rpc_tester(RpcTesterParams(f.read(), opts_argv)).wait()
 
     def ___run_test(
         self,
@@ -178,7 +180,7 @@ class RpcTestRunner:
         server_async_worker_cpuset: str | None,
         client_cpuset: str,
         client_async_worker_cpuset: str | None,
-    ) -> str:
+    ) -> RawBackendData:
         logger.info(
             f"Running rpc_tester with backend {backend}, server cpuset: {server_cpuset}, server async worker cpuset: {server_async_worker_cpuset}, client cpuset: {client_cpuset}, client async worker cpuset: {client_async_worker_cpuset}"
         )
@@ -208,46 +210,41 @@ class RpcTestRunner:
         with open(client_stderr_output_path, "w") as f:
             print(client.stderr, file=f)
 
-        if (err := server.returncode) != 0:
-            raise RuntimeError(f"Server failed with exit code {err}")
+        if server.returncode is not None and server.returncode != 0:
+            raise RuntimeError(f"Server failed with exit code {server.returncode}")
 
-        if err := client.returncode != 0:
-            raise RuntimeError(f"Client failed with exit code {err}")
+        if client.returncode is not None and client.returncode != 0:
+            raise RuntimeError(f"Client failed with exit code {client.returncode}")
 
-        return client.stdout
+        return load_data(client.stdout)
 
-    def run(self) -> dict:
-        backends_data_raw = {}
-
-        for backend in self.backends:
-            if backend == "asymmetric_io_uring":
-                if self.skip_async_workers_cpuset:
-                    backends_data_raw[backend] = self.__run_test(
-                        backend,
-                        backend,
-                        self.asymmetric_server_app_cpuset,
-                        None,
-                        self.asymmetric_client_app_cpuset,
-                        None,
-                    )
-                else:
-                    backends_data_raw[backend] = self.__run_test(
-                        backend,
-                        backend,
-                        self.asymmetric_server_app_cpuset,
-                        self.asymmetric_server_async_worker_cpuset,
-                        self.asymmetric_client_app_cpuset,
-                        self.asymmetric_client_async_worker_cpuset,
-                    )
-            else:
-                backends_data_raw[backend] = self.__run_test(
-                    backend, backend, self.symmetric_server_cpuset, None, self.symmetric_client_cpuset, None
+    def run(self, backend: str) -> RawBackendData:
+        if backend == "asymmetric_io_uring":
+            if self.skip_async_workers_cpuset:
+                return self.__run_test(
+                    backend,
+                    backend,
+                    self.asymmetric_server_app_cpuset,
+                    None,
+                    self.asymmetric_client_app_cpuset,
+                    None,
                 )
+            else:
+                return self.__run_test(
+                    backend,
+                    backend,
+                    self.asymmetric_server_app_cpuset,
+                    self.asymmetric_server_async_worker_cpuset,
+                    self.asymmetric_client_app_cpuset,
+                    self.asymmetric_client_async_worker_cpuset,
+                )
+        else:
+            return self.__run_test(
+                backend, backend, self.symmetric_server_cpuset, None, self.symmetric_client_cpuset, None
+            )
 
-        return backends_data_raw
 
-
-def run_rpc_test(rpc_runner_config: dict, config_path, run_output_dir, backends, skip_async_workers_cpuset) -> dict:
-    return RpcTestRunner(
-        rpc_runner_config, Path(config_path), Path(run_output_dir), backends, skip_async_workers_cpuset
-    ).run()
+def run_rpc_test(
+    rpc_runner_config: dict, config_path: Path, run_output_dir: Path, backend: str, skip_async_workers_cpuset: bool
+) -> RawBackendData:
+    return RpcTestRunner(rpc_runner_config, config_path, run_output_dir, skip_async_workers_cpuset).run(backend)
