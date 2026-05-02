@@ -81,5 +81,5 @@ def test_redraw_suite(invoke_main, tmp_path, suite_name: str, runs_count: int):
         benchmarks=[{"name": suite_name, "iterations": runs_count}],
         generate_graphs=True,
         generate_summary_graphs=True,
-        generate_pdf=False,  # PDF generation is not part of redraw_suite
+        generate_pdf=True,
     )
